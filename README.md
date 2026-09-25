@@ -5,7 +5,8 @@ Trang giới thiệu vợt cầu lông bằng Laravel, Inertia, React và Three.
 ## Hiện có
 - Vợt Hyper Core8000, mặt dây minh họa, giới thiệu bộ phận theo cuộn.
 - Giao diện tiếng Việt, điện thoại/máy tính, chế độ đọc tĩnh.
-- Ảnh dự phòng, tải lại khi lỗi. Phần tải ban đầu và nền sân đang được hoàn thiện.
+- Giữ ảnh vợt khi tải, chuyển nhẹ sang 3D khi sẵn sàng; có thử lại và bản tĩnh.
+- Nền sân phối cảnh, ánh sáng và đường cầu nhẹ; mặt dây được dựng sẵn, không tính lại khi mở trang.
 - Chưa có đặt hàng, thanh toán hoặc AI tư vấn hoạt động.
 
 ## Chạy local

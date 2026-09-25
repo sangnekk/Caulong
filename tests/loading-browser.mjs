@@ -54,8 +54,13 @@ const waitFor = (expression) =>
             `)resolve(true);else if(Date.now()>until)reject(new Error('Condition timeout'));else setTimeout(check,100)};check()})`,
     );
 const held=[];
+let resolvePaused;
+const pausedRequest = () => held.length ? Promise.resolve() : new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { resolvePaused = undefined; reject(new Error('No intercepted model request')); }, 20000);
+    resolvePaused = () => { clearTimeout(timer); resolvePaused = undefined; resolve(); };
+});
 const originalHandler=ws.onmessage;
-ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.method==='Fetch.requestPaused')held.push(m.params.requestId);else originalHandler(event);};
+ws.onmessage=event=>{const m=JSON.parse(event.data);if(m.method==='Fetch.requestPaused'){held.push(m.params.requestId);resolvePaused?.();}else originalHandler(event);};
 try {
  await command('Runtime.enable');await command('Page.enable');await command('Network.enable');await command('Network.setCacheDisabled',{cacheDisabled:true});
  await command('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'no-preference'}]});
@@ -65,6 +70,7 @@ try {
  await waitFor("document.querySelector('.rv-viewer[data-status=loading]')");
  const initial=await evaluate("({height:document.querySelector('.racket-story').offsetHeight,poster:!!document.querySelector('.rv-poster'),ready:document.querySelector('.racket-story').dataset.ready,disabled:document.querySelector('.story-next').disabled})");
  assert.equal(initial.poster,true);assert.equal(initial.ready,'false');assert.equal(initial.disabled,true);
+ await pausedRequest();
  await evaluate("window.scrollTo(0,1600)");
  await evaluate('new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))');
  assert.equal(await evaluate("document.querySelector('.racket-story').dataset.chapter"),'0','Keep intro readable while loading');
@@ -79,7 +85,7 @@ try {
  await command('Fetch.enable',{patterns:[{urlPattern:'*hyper-core.glb*',requestStage:'Request'}]});
  await command('Page.reload',{ignoreCache:true});
  await waitFor("document.querySelector('.rv-viewer[data-status=loading]')");
- await evaluate('new Promise(r=>setTimeout(r,100))');
+ await pausedRequest();
  for(const requestId of held.splice(0))await command('Fetch.failRequest',{requestId,errorReason:'Failed'});
  await command('Fetch.disable');
  await waitFor("document.querySelector('.rv-viewer[data-status=error]')");
