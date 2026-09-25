@@ -1,0 +1,9 @@
+Hyper Core8000 - badminton racket 3D modeling
+Author: ghks1120 (https://sketchfab.com/ghks1120)
+Source: https://sketchfab.com/3d-models/hyper-core8000-badminton-racket-3d-modeling-c6f5e27f657a48d6b3cbb52120d75f83
+License: Creative Commons Attribution 4.0 International
+https://creativecommons.org/licenses/by/4.0/
+
+Local file supplied by user. Original license/source/author metadata is embedded in the GLB.
+Changes: retained the first of two rackets (group7_1); removed unreachable data; compacted binary buffers; deduplicated identical UV accessor storage without removing channels. Original retained geometry, textures and material properties preserved. Runtime orientation, lighting and centering adapted for web. Poster is rendered from this adapted view. Some concept cards apply a display-only hue filter.
+Runtime modification: added an illustrative woven string bed fitted to the measured head opening; not manufacturer stringing instructions or certified tension. The downloadable hyper-core.glb remains the optimized original; strings are generated offline from racket-strings.ts into hyper-core-strings.glb and loaded alongside the base model. Poster includes the added strings. Original has no string bed; main structural mesh combines frame, shaft and handle. No manufacturer endorsement or certified product accuracy is claimed.
