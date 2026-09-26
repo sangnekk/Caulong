@@ -1,0 +1,423 @@
+.commerce-admin {
+    --admin-ink: oklch(0.22 0.03 255);
+    --admin-muted: oklch(0.45 0.025 255);
+    --admin-line: oklch(0.88 0.02 255);
+    --admin-surface: oklch(0.99 0.005 255);
+    --admin-accent: oklch(0.48 0.18 255);
+    min-height: 100vh;
+    background: oklch(0.97 0.012 255);
+    color: var(--admin-ink);
+    font:
+        15px/1.5 ui-sans-serif,
+        system-ui,
+        sans-serif;
+}
+.commerce-admin * {
+    box-sizing: border-box;
+}
+.commerce-admin a {
+    color: var(--admin-accent);
+    font-weight: 600;
+}
+.admin-skip {
+    position: absolute;
+    left: -10000px;
+}
+.admin-skip:focus {
+    left: 1rem;
+    top: 1rem;
+    z-index: 3;
+    background: #fff;
+    padding: 0.6rem 1rem;
+}
+.admin-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem max(1rem, calc((100vw - 1200px) /2));
+    background: oklch(0.2 0.04 255);
+    color: #fff;
+}
+.admin-header a {
+    color: #fff;
+}
+.admin-brand {
+    font-size: 1.05rem;
+    text-decoration: none;
+}
+.admin-brand span {
+    font-size: 0.8rem;
+    font-weight: 500;
+    opacity: 0.75;
+    margin-left: 0.5rem;
+}
+.admin-shell {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    max-width: 1200px;
+    margin: auto;
+    min-height: calc(100vh - 64px);
+}
+.admin-shell > nav {
+    padding: 1.5rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.admin-shell > nav a {
+    padding: 0.65rem 0.8rem;
+    text-decoration: none;
+    border-radius: 8px;
+}
+.admin-shell > nav a[aria-current='page'],
+.admin-shell > nav a:hover {
+    background: #fff;
+}
+.commerce-admin main {
+    padding: 2rem 1.25rem 4rem;
+    min-width: 0;
+}
+.admin-heading,
+.admin-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.admin-heading h1 {
+    margin: 0.2rem 0;
+    font-size: clamp(1.6rem, 3vw, 2.3rem);
+    line-height: 1.15;
+    text-wrap: balance;
+}
+.admin-heading h2,
+.admin-form-section h2 {
+    margin: 0 0 0.8rem;
+    font-size: 1.15rem;
+}
+.admin-back {
+    font-size: 0.85rem;
+}
+.admin-muted,
+.admin-form-section small {
+    color: var(--admin-muted);
+}
+.admin-button,
+.commerce-admin button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid var(--admin-accent);
+    border-radius: 8px;
+    background: var(--admin-accent);
+    color: #fff;
+    text-decoration: none;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+.admin-button-secondary {
+    background: #fff;
+    color: var(--admin-accent);
+}
+.commerce-admin button:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+.admin-toolbar {
+    display: flex;
+    align-items: end;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+}
+.admin-toolbar label,
+.admin-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+.admin-toolbar input {
+    min-width: 16rem;
+}
+.commerce-admin input,
+.commerce-admin select,
+.commerce-admin textarea {
+    width: 100%;
+    border: 1px solid oklch(0.75 0.025 255);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--admin-ink);
+    padding: 0.58rem 0.65rem;
+    font: inherit;
+}
+.commerce-admin input:focus,
+.commerce-admin select:focus,
+.commerce-admin textarea:focus,
+.commerce-admin button:focus,
+.commerce-admin a:focus {
+    outline: 3px solid oklch(0.8 0.12 255);
+    outline-offset: 2px;
+}
+.admin-form-section {
+    background: var(--admin-surface);
+    border: 1px solid var(--admin-line);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin: 1rem 0;
+}
+.admin-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.admin-field {
+    margin: 0.75rem 0;
+}
+.admin-field label,
+.admin-variant legend {
+    font-weight: 700;
+}
+.admin-field textarea {
+    resize: vertical;
+}
+.admin-field small {
+    font-size: 0.82rem;
+}
+.admin-error {
+    color: oklch(0.42 0.17 25);
+    font-size: 0.88rem;
+    margin: 0.2rem 0;
+}
+.admin-error-summary {
+    border: 1px solid oklch(0.7 0.15 25);
+    background: oklch(0.97 0.04 25);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+    color: oklch(0.35 0.15 25);
+}
+.admin-error-summary ul {
+    margin: 0.35rem 0 0;
+    padding-left: 1.2rem;
+}
+.admin-notice {
+    background: oklch(0.95 0.05 90);
+    border: 1px solid oklch(0.78 0.12 90);
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+}
+.admin-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.admin-checks label,
+.admin-variant-active {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.admin-checks input,
+.admin-variant-active input {
+    width: auto;
+}
+.admin-product-preview {
+    display: block;
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 0.8rem;
+    border: 1px solid var(--admin-line);
+}
+.admin-variants {
+    display: grid;
+    gap: 1rem;
+}
+.admin-variant {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+    border: 1px solid var(--admin-line);
+    border-radius: 8px;
+    padding: 0.7rem;
+}
+.admin-variant legend {
+    padding: 0 0.35rem;
+}
+.admin-variant .admin-field {
+    margin: 0.25rem 0;
+}
+.admin-variant-active {
+    align-self: end;
+    padding: 0.6rem 0;
+}
+.admin-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+}
+.admin-table-wrap {
+    overflow-x: auto;
+    background: #fff;
+    border: 1px solid var(--admin-line);
+    border-radius: 10px;
+}
+.commerce-admin table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 620px;
+}
+.commerce-admin th,
+.commerce-admin td {
+    padding: 0.8rem 0.9rem;
+    border-bottom: 1px solid var(--admin-line);
+    text-align: left;
+    vertical-align: top;
+}
+.commerce-admin tbody tr:last-child > * {
+    border-bottom: 0;
+}
+.commerce-admin th small,
+.commerce-admin td small {
+    display: block;
+    color: var(--admin-muted);
+    font-weight: 400;
+}
+.admin-number {
+    text-align: right !important;
+    white-space: nowrap;
+}
+.admin-empty {
+    background: #fff;
+    border: 1px dashed var(--admin-line);
+    padding: 1.25rem;
+    border-radius: 8px;
+}
+.admin-pagination {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+}
+.admin-pagination div {
+    display: flex;
+    gap: 1rem;
+}
+.admin-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+.admin-stats div {
+    background: #fff;
+    border: 1px solid var(--admin-line);
+    border-radius: 10px;
+    padding: 1rem;
+}
+.admin-stats dt {
+    color: var(--admin-muted);
+}
+.admin-stats dd {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin: 0.2rem 0;
+}
+.admin-two-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+.admin-taxonomies {
+    margin-top: 2rem;
+}
+.admin-taxonomy-form {
+    padding: 1rem;
+    background: #fff;
+    border: 1px solid var(--admin-line);
+    border-radius: 8px;
+}
+.admin-totals {
+    max-width: 360px;
+    margin-left: auto;
+}
+.admin-totals div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.35rem 0;
+}
+.admin-totals dd {
+    margin: 0;
+}
+@media (max-width: 760px) {
+    .admin-header {
+        padding: 1rem;
+    }
+    .admin-shell {
+        display: block;
+    }
+    .admin-shell > nav {
+        padding: 0.65rem 1rem;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--admin-line);
+        background: #fff;
+    }
+    .admin-shell > nav a {
+        white-space: nowrap;
+    }
+    .commerce-admin main {
+        padding: 1.25rem 0.85rem 3rem;
+    }
+    .admin-form-grid,
+    .admin-two-columns,
+    .admin-stats {
+        grid-template-columns: 1fr;
+    }
+    .admin-variant {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .admin-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+    .admin-toolbar input {
+        min-width: 0;
+    }
+    .admin-form-actions {
+        position: sticky;
+        bottom: 0;
+        background: oklch(0.97 0.012 255);
+        padding: 0.75rem 0;
+    }
+    .commerce-admin table {
+        min-width: 560px;
+    }
+}
+@media (max-width: 420px) {
+    .admin-variant {
+        grid-template-columns: 1fr;
+    }
+    .admin-form-actions {
+        flex-direction: column-reverse;
+    }
+    .admin-form-actions > * {
+        width: 100%;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .commerce-admin * {
+        scroll-behavior: auto !important;
+        transition: none !important;
+    }
+}

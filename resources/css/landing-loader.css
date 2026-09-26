@@ -1,0 +1,220 @@
+/* Landing intro overlay. Brand tokens fall back to the committed cobalt/lime palette
+   so the loader still looks right if rendered outside .badminton-landing. */
+.landing-loader {
+    --ll-cobalt: var(--shop-primary, oklch(0.4 0.13 260));
+    --ll-cobalt-deep: var(--shop-hero, oklch(0.36 0.12 260));
+    --ll-lime: var(--shop-accent, oklch(0.91 0.14 115));
+    --ll-white: var(--shop-white, oklch(1 0 0));
+    --ll-muted: oklch(0.9 0.03 260);
+    --ll-line: oklch(0.74 0.08 250 / 0.42);
+
+    position: fixed;
+    inset: 0;
+    z-index: 120;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    color: var(--ll-white);
+    font-family: inherit;
+    text-align: center;
+    background: radial-gradient(
+        118% 86% at 50% 4%,
+        oklch(0.52 0.14 260) 0%,
+        var(--ll-cobalt) 44%,
+        oklch(0.24 0.07 260) 100%
+    );
+    opacity: 1;
+    transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.landing-loader[data-state='exiting'] {
+    opacity: 0;
+    transition-duration: 300ms;
+}
+
+.landing-loader__court {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.landing-loader__lines {
+    fill: none;
+    stroke: var(--ll-line);
+    stroke-width: 2;
+}
+
+.landing-loader__lines .is-net {
+    stroke: var(--ll-lime);
+    stroke-width: 3;
+    stroke-dasharray: 12 9;
+    stroke-opacity: 0.85;
+}
+
+.landing-loader__trail {
+    fill: none;
+    stroke: var(--ll-lime);
+    stroke-width: 2;
+    stroke-dasharray: 7 12;
+    stroke-opacity: 0.4;
+}
+
+.landing-loader__shuttle {
+    transform-box: view-box;
+    transform-origin: 0 0;
+    animation: landing-loader-flight 1900ms cubic-bezier(0.45, 0, 0.55, 1)
+        infinite;
+}
+
+.landing-loader__shuttle .feathers {
+    fill: none;
+    stroke: var(--ll-lime);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-opacity: 0.9;
+}
+
+.landing-loader__shuttle .cork {
+    fill: var(--ll-lime);
+}
+
+.landing-loader__panel {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 18px;
+    padding: 32px;
+    animation: landing-loader-rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-loader__brand {
+    margin: 0;
+    font-size: clamp(2.5rem, 8vw, 5.25rem);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    font-weight: 500;
+    text-transform: uppercase;
+    text-wrap: balance;
+}
+
+.landing-loader__brand span {
+    display: block;
+    font-size: 0.32em;
+    letter-spacing: 0.34em;
+    text-indent: 0.34em;
+    font-weight: 600;
+    color: var(--ll-muted);
+}
+
+.landing-loader__brand strong {
+    font-weight: 700;
+    color: var(--ll-white);
+}
+
+.landing-loader__status {
+    margin: 0;
+    font-size: clamp(0.95rem, 1.6vw, 1.1rem);
+    letter-spacing: 0.01em;
+    color: var(--ll-muted);
+}
+
+.landing-loader__status::before {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 10px;
+    border-radius: 50%;
+    background: var(--ll-lime);
+    vertical-align: 0.08em;
+    animation: landing-loader-pulse 1400ms ease-in-out infinite;
+}
+
+.landing-loader__skip {
+    margin-top: 6px;
+    padding: 12px 26px;
+    border: 1px solid var(--ll-lime);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ll-lime);
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition:
+        background-color 160ms ease-out,
+        color 160ms ease-out;
+}
+
+.landing-loader__skip:hover,
+.landing-loader__skip:focus-visible {
+    background: var(--ll-lime);
+    color: var(--ll-cobalt-deep);
+}
+
+.landing-loader__skip:focus-visible {
+    outline: 3px solid var(--ll-white);
+    outline-offset: 4px;
+}
+
+@keyframes landing-loader-rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes landing-loader-flight {
+    0% {
+        transform: translate(390px, 650px) rotate(28deg) scale(0.85);
+        opacity: 0;
+    }
+    12% {
+        opacity: 1;
+    }
+    50% {
+        transform: translate(720px, 195px) rotate(60deg) scale(1);
+        opacity: 1;
+    }
+    88% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(1050px, 250px) rotate(100deg) scale(0.85);
+        opacity: 0;
+    }
+}
+
+@keyframes landing-loader-pulse {
+    0%,
+    100% {
+        opacity: 0.35;
+    }
+    50% {
+        opacity: 1;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-loader,
+    .landing-loader * {
+        animation: none !important;
+        transition: none !important;
+    }
+
+    /* Static flight: shuttle rests at the arc apex instead of moving. */
+    .landing-loader__shuttle {
+        transform: translate(720px, 195px) rotate(60deg);
+        opacity: 1;
+    }
+
+    .landing-loader__status::before {
+        opacity: 1;
+    }
+}

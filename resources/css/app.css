@@ -132,6 +132,37 @@
     --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* Native document view transitions for landing/store; no dependency or forced page reload. */
+@supports (view-transition-name: root) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 220ms;
+        animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    ::view-transition-old(root) {
+        animation-name: shop-fade-out;
+    }
+    ::view-transition-new(root) {
+        animation-name: shop-fade-in;
+    }
+}
+@keyframes shop-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+@keyframes shop-fade-in {
+    from {
+        opacity: 0;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation-duration: 0.01ms !important;
+    }
+}
+
 @layer base {
     * {
         @apply border-border;
