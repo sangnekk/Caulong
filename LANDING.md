@@ -41,18 +41,26 @@ Nhãn chỉ điểm được chiếu từ tọa độ 3D; mỗi chương có C�
 
 ## Liên kết cửa hàng
 
-Landing mở đầu một lần mỗi tab: chờ ảnh vợt/font tối thiểu 600ms, tối đa 4 giây, có Bỏ qua và chế độ giảm chuyển động; chỉ nạp 3D sau khi màn mở đầu khép lại. Xem `resources/js/components/landing-loader.tsx`.
+Landing mở đầu sau mỗi lần tải lại trang. Màn mở đầu là bản vẽ nét của Hyper Core8000 (`racket-blueprint.tsx`, số đo từ model và đầu dây của lưới đã bake) được căng dây theo byte model tải thật: 20 dây dọc rồi 24 dây ngang, tối thiểu khoảng 1,2 giây khi model đã có trong cache. Model bắt đầu tải cùng chunk trang (`racket-download.ts`), song song với three.js. Khi 3D sẵn sàng, bản vẽ lùi về đúng tư thế vợt 3D (vị trí lấy từ camera, `getScreenAffine`) rồi mờ thành vợt thật, sau đó header và chữ vào; vì vậy landing không còn trạng thái tải thứ hai. Trần 10 giây cho mạng chậm; Bỏ qua/Escape đóng ngay; khi đóng sớm, nút “Đang căng dây…” giữ cùng tiến độ tại chỗ. Reload khi đang ở giữa/cuối trang: mở đầu vẫn chạy ở màn đầu (vị trí cuộn Inertia lưu được đặt lại về đầu, và trang được giữ ở đầu cho tới khi mở đầu kết thúc). Liên kết có neo (`/#hoi-dap`) bỏ qua mở đầu và tới thẳng mục đó. Giảm chuyển động: không tải 3D, không animation, không chờ. Xem `resources/js/components/landing-loader.tsx`.
 
-Các nút “Vào cửa hàng”, kết thúc câu chuyện, và từng lối chơi là Inertia Link; không tải lại tài liệu. Trang sản phẩm nạp trước sau màn mở đầu/di chuột, dữ liệu giữ tối đa 5 giây để tránh giá/tồn kho quá cũ; server vẫn kiểm tra lại trước khi nhận đơn. Quay về landing không phát lại mở đầu cùng tab. View Transitions của trình duyệt làm mờ ngắn; giảm chuyển động tắt hiệu ứng. Chạy `node tests/landing-loader-browser.mjs` và `node tests/landing-store-navigation.mjs` với Chrome debug :9222.
+Các nút “Vào cửa hàng”, kết thúc câu chuyện, và từng lối chơi là Inertia Link; không tải lại tài liệu. Trang sản phẩm nạp trước sau màn mở đầu/di chuột, dữ liệu giữ tối đa 5 giây để tránh giá/tồn kho quá cũ; server vẫn kiểm tra lại trước khi nhận đơn. Quay về landing bằng Inertia trong cùng tài liệu không phát lại mở đầu; reload thực sự phát lại. View Transitions của trình duyệt làm mờ ngắn; giảm chuyển động tắt hiệu ứng. Chạy `node tests/landing-loader-browser.mjs` và `node tests/landing-store-navigation.mjs` với Chrome debug :9222.
+
+## Chuyển trang và lối vào cửa hàng
+
+Header landing ghim trên cùng: trong suốt trên mặt sân, chuyển nền trắng khi phần câu chuyện đã cuộn qua; nút “Vào cửa hàng” (mobile: “Cửa hàng”) luôn trong tầm mắt. Cuối phần lối chơi có khối “Xem tất cả vợt”, footer có nút cửa hàng.
+
+Mọi lượt chuyển trang Inertia sang đường dẫn khác chạy View Transitions (`resources/js/lib/page-transition.ts`, CSS trong `app.css`): giữa các trang: nội dung cũ nhấc lên và tắt trong 100ms, nội dung mới nhô lên vào chỗ ngay sau (320ms), hai trang chỉ chồng vài khung hình. Rời landing (kiểu `leave-landing`): cả trang cửa hàng trồi lên như một tấm che nhà thi đấu đang lùi và tối dần (480ms); về landing (`enter-landing`): tấm cửa hàng rơi xuống để lộ nhà thi đấu. Không trộn nền tối với nền trắng. Header cửa hàng và thanh bên admin đứng yên giữa các trang; ảnh sản phẩm được bấm ở danh sách biến hình thành ảnh trang chi tiết. Lọc, phân trang và form gửi về cùng trang không chạy hiệu ứng. Nền `html` theo trang hiện tại để khoảng giữa hai trang không lóe màu cũ. Giảm chuyển động: đổi trang tức thì. Nút lùi/tiến của trình duyệt đổi trang không hiệu ứng (Inertia khôi phục lịch sử không qua View Transitions). Cửa hàng dùng chung Archivo với landing.
 
 ## Vào trang
 
-Giữ chiều cao phần giới thiệu ngay lần render đầu, không đổi từ danh sách sang màn hình ghim sau khi tải. Hiển thị ảnh dự phòng và thanh đang tải không giả phần trăm; giữ nội dung mở đầu cho đến lúc model, texture và shader đã sẵn sàng. Chuyển mờ ảnh sang canvas 450ms. Không khóa cuộn toàn trang, không kéo người dùng về đầu; có bỏ qua/bản tĩnh/thử lại. Timeout tải 30 giây. Nền sân phối cảnh, ánh sáng và quỹ đạo cầu dùng CSS/SVG tĩnh, không thêm vòng render.
+Giữ chiều cao phần giới thiệu ngay lần render đầu, không đổi từ danh sách sang màn hình ghim sau khi tải. Tiến độ là byte thật (Content-Length, dự phòng kích thước file đã biết), không giả phần trăm; giữ nội dung mở đầu cho đến lúc model, texture và shader đã sẵn sàng. Chuyển mờ ảnh sang canvas 450ms. Không kéo người dùng về đầu sau khi tải; có bỏ qua/bản tĩnh/thử lại. Tải bị hủy khi 20 giây không nhận thêm byte (mạng chậm nhưng còn chạy thì không bị cắt). Nền là sân thi đấu phối cảnh (SVG tĩnh, số đo BWF 13,40 × 6,10 m, vạch 40 mm, lưới 1,55 m ở cột; `resources/js/lib/court-view.ts`), không thêm vòng render.
+
+Chữ dùng Archivo variable tự host (`public/fonts/archivo`, SIL OFL) có subset tiếng Việt; Instrument Sans của starter không có subset này nên dấu chồng (ể, ừ, ầ) từng rơi về font hệ thống.
 
 Kiểm tra tải bị giữ lại/lỗi: `node tests/loading-browser.mjs` với Chrome debug :9222.
 
 ## Giới hạn
 
-Shop có catalog, giỏ, đơn COD và gợi ý theo dữ liệu; local chỉ có dữ liệu mẫu, chưa có hàng thật được chủ shop xác nhận. Ba bộ sưu tập landing là định hướng lối chơi, không phải mẫu bán chạy. Không có thanh toán online hoặc AI thật; không thu thông tin thẻ. Chưa tuyên bố điểm Core Web Vitals/FPS trên điện thoại thật.
+Shop có catalog, giỏ, đơn COD và gợi ý theo dữ liệu. Vợt nhập từ VNB ở trạng thái ẩn, tồn kho 0 cho tới khi chủ shop nhập số lượng thật và mở bán; trước đó cửa hàng chỉ hiện sản phẩm demo có nhãn. Ba lối chơi trên landing được đặt theo vị trí trên nửa sân (gần lưới/giữa sân/cuối sân), là định hướng, không phải mẫu bán chạy hay phân loại của hãng. Không có thanh toán online hoặc AI thật; không thu thông tin thẻ. Chưa tuyên bố điểm Core Web Vitals/FPS trên điện thoại thật.
 
 Three.js được tải qua dynamic import; bundle cảnh khoảng 613 KB minified (~154 KB gzip). Build còn cảnh báo kích thước chunk và fontaine tùy chọn của starter; không thêm thư viện chỉ để bỏ cảnh báo.

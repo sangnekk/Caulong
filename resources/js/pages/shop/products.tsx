@@ -1,4 +1,7 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent, MouseEvent } from 'react';
 import { DemoBadge, FormErrors, ProductImage } from '@/layouts/shop-layout';
 import {
     playStyles,
@@ -12,23 +15,125 @@ import {
 type Props = {
     products: Pagination<Product>;
     filters: ProductFilters;
+    inStock: number;
     categories: Taxonomy[];
     brands: Taxonomy[];
 };
 
+const prices: Record<string, string> = {
+    'under-1m': 'Dưới 1 triệu',
+    '1m-2m': '1 – 2 triệu',
+    '2m-3m': '2 – 3 triệu',
+    '3m-4m': '3 – 4 triệu',
+    'over-4m': 'Trên 4 triệu',
+};
+const sorts: Record<string, string> = {
+    featured: 'Nổi bật',
+    price_asc: 'Giá thấp đến cao',
+    price_desc: 'Giá cao đến thấp',
+    newest: 'Mới nhất',
+};
+
+/** Name only the clicked card's photo, so it alone morphs into the product page photo. */
+function heroFrom(event: MouseEvent<Element>) {
+    document
+        .querySelectorAll<HTMLElement>('.store-product-card .store-image')
+        .forEach((figure) => (figure.style.viewTransitionName = ''));
+    const figure = event.currentTarget
+        .closest('.store-product-card')
+        ?.querySelector<HTMLElement>('.store-image');
+    if (figure) figure.style.viewTransitionName = 'product-hero';
+}
+
+/** Drop empty values and the defaults so URLs stay short and shareable. */
+const cleaned = (filters: ProductFilters) =>
+    Object.fromEntries(
+        Object.entries(filters).filter(
+            ([key, value]) =>
+                value && !(key === 'sort' && value === 'featured'),
+        ),
+    );
+
 export default function Products({
     products,
     filters,
+    inStock,
     categories,
     brands,
 }: Props) {
-    const form = useForm<ProductFilters>({
-        q: filters.q ?? '',
-        category: filters.category ?? '',
-        brand: filters.brand ?? '',
-        style: filters.style ?? '',
-        sort: filters.sort || 'featured',
-    });
+    const { errors } = usePage<{ errors: Record<string, string> }>().props;
+    const [q, setQ] = useState(filters.q ?? '');
+    const [loading, setLoading] = useState(false);
+    const [panelOpen, setPanelOpen] = useState(false);
+    const typing = useRef<number | undefined>(undefined);
+
+    // Every choice applies at once: no separate "apply" step to find and press.
+    const visit = (next: Partial<ProductFilters>) => {
+        window.clearTimeout(typing.current);
+        router.get('/products', cleaned({ ...filters, q, ...next }), {
+            preserveState: true,
+            preserveScroll: true,
+            replace: true,
+            onStart: () => setLoading(true),
+            onFinish: () => setLoading(false),
+        });
+    };
+    const onType = (value: string) => {
+        setQ(value);
+        window.clearTimeout(typing.current);
+        if (value.trim() === (filters.q ?? '')) return;
+        typing.current = window.setTimeout(
+            () => visit({ q: value.trim() }),
+            450,
+        );
+    };
+    useEffect(() => () => window.clearTimeout(typing.current), []);
+    const submit = (event: FormEvent) => {
+        event.preventDefault();
+        visit({ q: q.trim() });
+    };
+
+    const nameOf = (list: Taxonomy[], slug: string) =>
+        list.find((item) => item.slug === slug)?.name ?? slug;
+    const chips = [
+        filters.q && { key: 'q', label: '“' + filters.q + '”' },
+        filters.category && {
+            key: 'category',
+            label: nameOf(categories, filters.category),
+        },
+        filters.brand && { key: 'brand', label: nameOf(brands, filters.brand) },
+        filters.style && {
+            key: 'style',
+            label: playStyles[filters.style as keyof typeof playStyles],
+        },
+        filters.price && { key: 'price', label: prices[filters.price] },
+        filters.stock && { key: 'stock', label: 'Còn hàng' },
+    ].filter(Boolean) as { key: keyof ProductFilters; label: string }[];
+    const panelCount = chips.filter((chip) => chip.key !== 'q').length;
+
+    const select = (
+        key: keyof ProductFilters,
+        label: string,
+        all: string,
+        options: [string, string][],
+    ) => (
+        <div className="store-field">
+            <label htmlFor={'filter-' + key}>{label}</label>
+            <select
+                id={'filter-' + key}
+                value={filters[key] ?? ''}
+                onChange={(event) => visit({ [key]: event.target.value })}
+            >
+                {all && <option value="">{all}</option>}
+                {options.map(([value, text]) => (
+                    <option key={value} value={value}>
+                        {text}
+                    </option>
+                ))}
+            </select>
+        </div>
+    );
+
     return (
         <>
             <Head title="Cửa hàng cầu lông" />
@@ -36,125 +141,142 @@ export default function Products({
                 <div>
                     <h1>Chọn vợt cho cuộc chơi của bạn</h1>
                     <p>
-                        Lọc theo lối chơi, thương hiệu và mức giá. Xem từng
-                        phiên bản trước khi chọn.
+                        Lọc theo lối chơi, thương hiệu và mức giá. Hàng còn luôn
+                        hiện trước.
                     </p>
                 </div>
-                <Link href="/advisor" className="store-text-link">
+                <Link href="/advisor" className="store-pill-link">
                     Cần gợi ý chọn vợt?
                 </Link>
             </header>
+
             <form
-                className="store-filters"
-                onSubmit={(event) => {
-                    event.preventDefault();
-                    form.get('/products', { preserveState: true });
-                }}
-                aria-label="Lọc sản phẩm"
+                className="store-search-row"
+                onSubmit={submit}
+                role="search"
+                aria-label="Tìm sản phẩm"
             >
-                <div className="store-field store-search">
-                    <label htmlFor="q">Tìm sản phẩm</label>
+                <label htmlFor="q" className="store-sr-only">
+                    Tìm sản phẩm
+                </label>
+                <div className="store-search-box">
+                    <Search aria-hidden="true" size={18} />
                     <input
                         id="q"
                         type="search"
                         maxLength={100}
-                        placeholder="Tên vợt bạn muốn tìm"
-                        value={form.data.q}
-                        onChange={(event) =>
-                            form.setData('q', event.target.value)
-                        }
+                        placeholder="Tìm theo tên vợt hoặc hãng"
+                        value={q}
+                        onChange={(event) => onType(event.target.value)}
+                        enterKeyHint="search"
                     />
                 </div>
-                <div className="store-field">
-                    <label htmlFor="category">Danh mục</label>
-                    <select
-                        id="category"
-                        value={form.data.category}
-                        onChange={(event) =>
-                            form.setData('category', event.target.value)
-                        }
-                    >
-                        <option value="">Tất cả danh mục</option>
-                        {categories.map((item) => (
-                            <option key={item.id} value={item.slug}>
-                                {item.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="store-field">
-                    <label htmlFor="brand">Thương hiệu</label>
-                    <select
-                        id="brand"
-                        value={form.data.brand}
-                        onChange={(event) =>
-                            form.setData('brand', event.target.value)
-                        }
-                    >
-                        <option value="">Tất cả thương hiệu</option>
-                        {brands.map((item) => (
-                            <option key={item.id} value={item.slug}>
-                                {item.name}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="store-field">
-                    <label htmlFor="style">Lối chơi</label>
-                    <select
-                        id="style"
-                        value={form.data.style}
-                        onChange={(event) =>
-                            form.setData('style', event.target.value)
-                        }
-                    >
-                        <option value="">Tất cả lối chơi</option>
-                        {Object.entries(playStyles).map(([value, label]) => (
-                            <option key={value} value={value}>
-                                {label}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-                <div className="store-field">
-                    <label htmlFor="sort">Sắp xếp</label>
-                    <select
-                        id="sort"
-                        value={form.data.sort}
-                        onChange={(event) =>
-                            form.setData('sort', event.target.value)
-                        }
-                    >
-                        <option value="featured">Nổi bật</option>
-                        <option value="price_asc">Giá thấp đến cao</option>
-                        <option value="price_desc">Giá cao đến thấp</option>
-                        <option value="newest">Mới nhất</option>
-                    </select>
-                </div>
-                <div className="store-filter-actions">
-                    <button className="store-button" disabled={form.processing}>
-                        {form.processing ? 'Đang lọc…' : 'Áp dụng'}
-                    </button>
-                    <Link href="/products" className="store-text-link">
-                        Xóa bộ lọc
-                    </Link>
-                </div>
+                <button
+                    type="button"
+                    className="store-filter-toggle"
+                    aria-expanded={panelOpen}
+                    aria-controls="store-filter-panel"
+                    onClick={() => setPanelOpen((open) => !open)}
+                >
+                    <SlidersHorizontal size={18} aria-hidden="true" />
+                    Bộ lọc
+                    {panelCount > 0 && <span>{panelCount}</span>}
+                </button>
             </form>
-            <FormErrors errors={form.errors} />
+
+            <div
+                id="store-filter-panel"
+                className="store-filters"
+                data-open={panelOpen}
+            >
+                {select(
+                    'brand',
+                    'Thương hiệu',
+                    'Tất cả thương hiệu',
+                    brands.map((item) => [item.slug, item.name]),
+                )}
+                {select(
+                    'style',
+                    'Lối chơi',
+                    'Tất cả lối chơi',
+                    Object.entries(playStyles),
+                )}
+                {select(
+                    'price',
+                    'Mức giá',
+                    'Mọi mức giá',
+                    Object.entries(prices),
+                )}
+                {categories.length > 1 &&
+                    select(
+                        'category',
+                        'Danh mục',
+                        'Tất cả danh mục',
+                        categories.map((item) => [item.slug, item.name]),
+                    )}
+                {select('sort', 'Sắp xếp', '', Object.entries(sorts))}
+            </div>
+            <FormErrors errors={errors} />
+
             <div className="store-results" aria-live="polite">
                 <p>
-                    {products.total} sản phẩm
-                    {products.from !== null && (
-                        <>
-                            {' '}
-                            · Đang xem {products.from}–{products.to}
-                        </>
-                    )}
+                    <strong>{products.total.toLocaleString('vi-VN')}</strong>{' '}
+                    sản phẩm
+                    {products.last_page > 1 &&
+                        ' · trang ' +
+                            products.current_page +
+                            '/' +
+                            products.last_page}
                 </p>
-                <span>Giá theo phiên bản · Đơn vị VND</span>
+                <label className="store-switch">
+                    <input
+                        type="checkbox"
+                        checked={filters.stock === 'in'}
+                        onChange={(event) =>
+                            visit({ stock: event.target.checked ? 'in' : '' })
+                        }
+                    />
+                    <span>
+                        Chỉ hàng còn{' '}
+                        <small>({inStock.toLocaleString('vi-VN')})</small>
+                    </span>
+                </label>
             </div>
+
+            {chips.length > 0 && (
+                <ul className="store-chips" aria-label="Bộ lọc đang dùng">
+                    {chips.map((chip) => (
+                        <li key={chip.key}>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (chip.key === 'q') setQ('');
+                                    visit({ [chip.key]: '' });
+                                }}
+                                aria-label={'Bỏ lọc ' + chip.label}
+                            >
+                                {chip.label}
+                                <X size={15} aria-hidden="true" />
+                            </button>
+                        </li>
+                    ))}
+                    {chips.length > 1 && (
+                        <li>
+                            <Link
+                                href="/products"
+                                className="store-chips-clear"
+                                preserveScroll
+                                onClick={() => setQ('')}
+                            >
+                                Xóa tất cả
+                            </Link>
+                        </li>
+                    )}
+                </ul>
+            )}
+
             {products.data.length ? (
-                <div className="store-product-grid">
+                <div className="store-product-grid" data-loading={loading}>
                     {products.data.map((product) => {
                         const variants = product.variants.filter(
                             (variant) => variant.is_active,
@@ -171,17 +293,12 @@ export default function Products({
                             <article
                                 className="store-product-card"
                                 key={product.id}
+                                data-available={available}
                             >
-                                <Link
-                                    href={'/products/' + product.slug}
-                                    className="store-product-photo"
-                                    aria-label={'Xem ' + product.name}
-                                >
-                                    <ProductImage
-                                        src={product.image_url}
-                                        name={product.name}
-                                    />
-                                </Link>
+                                <ProductImage
+                                    src={product.image_url}
+                                    name={product.name}
+                                />
                                 <div className="store-product-meta">
                                     <span>
                                         {product.brand?.name ??
@@ -191,7 +308,13 @@ export default function Products({
                                     {product.is_demo && <DemoBadge />}
                                 </div>
                                 <h2>
-                                    <Link href={'/products/' + product.slug}>
+                                    {/* The whole card is this one link (see .store-card-link). */}
+                                    <Link
+                                        href={'/products/' + product.slug}
+                                        className="store-card-link"
+                                        prefetch="hover"
+                                        onClick={heroFrom}
+                                    >
                                         {product.name}
                                     </Link>
                                 </h2>
@@ -199,14 +322,14 @@ export default function Products({
                                 <div className="store-product-price">
                                     <strong>
                                         {price === null
-                                            ? 'Chưa có phiên bản bán'
+                                            ? 'Chưa có giá'
                                             : 'Từ ' + vnd(price)}
                                     </strong>
                                     <span
                                         className={
                                             available
                                                 ? 'store-stock'
-                                                : 'store-muted'
+                                                : 'store-out'
                                         }
                                     >
                                         {available ? 'Còn hàng' : 'Hết hàng'}
@@ -220,7 +343,11 @@ export default function Products({
                 <section className="store-empty">
                     <h2>Chưa tìm thấy sản phẩm phù hợp</h2>
                     <p>Thử bớt điều kiện hoặc tìm bằng tên khác.</p>
-                    <Link className="store-button" href="/products">
+                    <Link
+                        className="store-button"
+                        href="/products"
+                        onClick={() => setQ('')}
+                    >
                         Xem tất cả sản phẩm
                     </Link>
                 </section>
@@ -231,22 +358,34 @@ export default function Products({
                     aria-label="Phân trang sản phẩm"
                 >
                     {products.links.map((link, index) => {
-                        const label =
+                        const edge =
                             index === 0
-                                ? 'Trước'
+                                ? 'prev'
                                 : index === products.links.length - 1
+                                  ? 'next'
+                                  : null;
+                        const label =
+                            edge === 'prev'
+                                ? 'Trước'
+                                : edge === 'next'
                                   ? 'Sau'
                                   : link.label.replace(/<[^>]*>/g, '');
                         return link.url ? (
                             <Link
                                 key={index}
                                 href={link.url}
+                                data-edge={edge ?? undefined}
                                 aria-current={link.active ? 'page' : undefined}
+                                aria-label={edge ? undefined : 'Trang ' + label}
                             >
                                 {label}
                             </Link>
                         ) : (
-                            <span key={index} aria-disabled="true">
+                            <span
+                                key={index}
+                                data-edge={edge ?? undefined}
+                                aria-disabled="true"
+                            >
                                 {label}
                             </span>
                         );

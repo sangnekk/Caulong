@@ -76,6 +76,7 @@ class OrderService
                     'variant_name' => $variant->name,
                     'sku' => $variant->sku,
                     'unit_price' => $price,
+                    'unit_cost' => $variant->cost_price,
                     'quantity' => $quantity,
                     'line_total' => $lineTotal,
                 ];
@@ -154,7 +155,7 @@ class OrderService
                     }
                 }
             }
-            $locked->update(['status' => $status]);
+            $locked->update(['status' => $status, $status.'_at' => now()]);
 
             return $locked;
         }, 3);
@@ -168,7 +169,7 @@ class OrderService
                 throw ValidationException::withMessages(['payment_status' => 'Chỉ xác nhận đã thu tiền COD cho đơn đã giao thành công.']);
             }
             if ($locked->payment_status !== 'paid') {
-                $locked->update(['payment_status' => 'paid']);
+                $locked->update(['payment_status' => 'paid', 'paid_at' => now()]);
             }
 
             return $locked;

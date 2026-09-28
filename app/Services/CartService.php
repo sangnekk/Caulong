@@ -8,6 +8,8 @@ use Illuminate\Validation\ValidationException;
 
 class CartService
 {
+    public function __construct(private ShopSettings $settings) {}
+
     /** @return array<int, int> */
     public function quantities(Request $request): array
     {
@@ -34,12 +36,15 @@ class CartService
 
     public function shippingFee(int $subtotal): int
     {
-        return $subtotal === 0 || $subtotal >= (int) config('shop.free_shipping_threshold') ? 0 : (int) config('shop.shipping_fee');
+        // A threshold of 0 means no free delivery by order value; a fee of 0 means delivery is always free.
+        $threshold = $this->settings->freeShippingThreshold();
+
+        return $subtotal === 0 || ($threshold > 0 && $subtotal >= $threshold) ? 0 : $this->settings->shippingFee();
     }
 
     public function lineTotal(int $price, int $quantity, int $subtotal = 0): int
     {
-        if ($price < 0 || $price > intdiv(PHP_INT_MAX - $subtotal - (int) config('shop.shipping_fee'), $quantity)) {
+        if ($price < 0 || $price > intdiv(PHP_INT_MAX - $subtotal - $this->settings->shippingFee(), $quantity)) {
             throw ValidationException::withMessages(['cart' => 'Giá trị giỏ hàng vượt giới hạn. Vui lòng liên hệ cửa hàng.']);
         }
 

@@ -1,4 +1,5 @@
 import { Link } from '@inertiajs/react';
+import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 export type Taxonomy = { id: number; name: string; slug: string };
@@ -7,6 +8,7 @@ export type Variant = {
     sku: string;
     name: string;
     price: number;
+    cost_price?: number | null;
     stock: number;
     is_active: boolean;
 };
@@ -44,8 +46,12 @@ export type Order = {
     total: number;
     is_demo: boolean;
     created_at: string;
+    updated_at?: string;
+    items_count?: number;
+    user?: { id: number; name: string; email: string } | null;
     items: {
         id: number;
+        product_id?: number | null;
         product_name: string;
         variant_name: string;
         sku: string;
@@ -59,8 +65,11 @@ export type Pagination<T> = {
     current_page: number;
     last_page: number;
     total: number;
+    from: number | null;
+    to: number | null;
     prev_page_url: string | null;
     next_page_url: string | null;
+    links?: { url: string | null; label: string; active: boolean }[];
 };
 export const money = (amount: number) =>
     new Intl.NumberFormat('vi-VN', {
@@ -68,6 +77,23 @@ export const money = (amount: number) =>
         currency: 'VND',
         maximumFractionDigits: 0,
     }).format(amount);
+/** Gross margin on a sale price, or null while the cost is unknown. */
+export const margin = (price: number, cost: number | null | undefined) =>
+    cost === null || cost === undefined || cost === 0 || price <= 0
+        ? null
+        : { profit: price - cost, rate: ((price - cost) / price) * 100 };
+export const date = (value: string | null | undefined) =>
+    value ? new Date(value).toLocaleDateString('vi-VN') : '—';
+export const dateTime = (value: string | null | undefined) =>
+    value
+        ? new Date(value).toLocaleString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric',
+          })
+        : '—';
 export const statuses: Record<string, string> = {
     pending: 'Chờ xác nhận',
     confirmed: 'Đã xác nhận',
@@ -75,6 +101,118 @@ export const statuses: Record<string, string> = {
     delivered: 'Đã giao',
     cancelled: 'Đã hủy',
 };
+const statusTone: Record<string, string> = {
+    pending: 'warning',
+    confirmed: 'accent',
+    shipped: 'info',
+    delivered: 'success',
+    cancelled: 'danger',
+};
+export const styles: Record<string, string> = {
+    attack: 'Tấn công',
+    speed: 'Tốc độ',
+    balanced: 'Cân bằng',
+};
+
+export function PageHeader({
+    title,
+    description,
+    back,
+    actions,
+}: {
+    title: ReactNode;
+    description?: ReactNode;
+    back?: { href: string; label: string };
+    actions?: ReactNode;
+}) {
+    return (
+        <div className="admin-heading">
+            <div>
+                {back && (
+                    <Link href={back.href} className="admin-back">
+                        <ChevronLeft aria-hidden="true" />
+                        {back.label}
+                    </Link>
+                )}
+                <h1>{title}</h1>
+                {description && <p>{description}</p>}
+            </div>
+            {actions && <div className="admin-heading-actions">{actions}</div>}
+        </div>
+    );
+}
+
+export function OrderStatus({ status }: { status: string }) {
+    return (
+        <span className="admin-badge" data-tone={statusTone[status]}>
+            {statuses[status] ?? status}
+        </span>
+    );
+}
+
+export function PaymentStatus({ status }: { status: string }) {
+    return status === 'paid' ? (
+        <span className="admin-badge" data-tone="success">
+            Đã thu tiền
+        </span>
+    ) : (
+        <span className="admin-badge">Chưa thu</span>
+    );
+}
+
+export function ProductStatus({
+    product,
+}: {
+    product: { is_active: boolean; is_demo: boolean };
+}) {
+    if (product.is_demo)
+        return (
+            <span className="admin-badge" data-tone="warning">
+                {product.is_active ? 'Demo · đang hiện' : 'Demo · đã ẩn'}
+            </span>
+        );
+    return product.is_active ? (
+        <span className="admin-badge" data-tone="success">
+            Đang bán
+        </span>
+    ) : (
+        <span className="admin-badge">Đang ẩn</span>
+    );
+}
+
+/** Status filters as links, so each view has its own URL and back/forward works. */
+export function Tabs({
+    label,
+    items,
+}: {
+    label: string;
+    items: { href: string; label: string; count?: number; current: boolean }[];
+}) {
+    return (
+        <nav className="admin-tabs" aria-label={label}>
+            {items.map((item) => (
+                <Link
+                    key={item.href}
+                    href={item.href}
+                    preserveScroll
+                    aria-current={item.current ? 'page' : undefined}
+                >
+                    {item.label}
+                    {item.count !== undefined && <span>{item.count}</span>}
+                </Link>
+            ))}
+        </nav>
+    );
+}
+
+/** Build a query string from filters, dropping empty values. */
+export const query = (base: string, params: Record<string, string>) => {
+    const search = new URLSearchParams(
+        Object.entries(params).filter(([, value]) => value !== ''),
+    ).toString();
+    return search ? base + '?' + search : base;
+};
+
 export function Field({
     name,
     label,
@@ -115,25 +253,63 @@ export function Errors({
         </div>
     ) : null;
 }
-export function Pages<T>({ page }: { page: Pagination<T> }) {
+export function Pages<T>({
+    page,
+    noun = 'kết quả',
+}: {
+    page: Pagination<T>;
+    noun?: string;
+}) {
+    if (page.total === 0) return null;
+    // Laravel's links: [previous, 1, 2, …, next]; keep only the numbered pages and gaps.
+    const numbers = (page.links ?? []).slice(1, -1);
     return (
         <nav className="admin-pagination" aria-label="Phân trang">
             <span>
-                {page.total} kết quả · Trang {page.current_page}/
-                {page.last_page}
+                {page.from ?? 0}–{page.to ?? 0} trong {page.total} {noun}
             </span>
-            <div>
-                {page.prev_page_url && (
-                    <Link href={page.prev_page_url}>Trang trước</Link>
-                )}
-                {page.next_page_url && (
-                    <Link href={page.next_page_url}>Trang sau</Link>
-                )}
-            </div>
+            {page.last_page > 1 && (
+                <ol>
+                    {page.prev_page_url && (
+                        <li>
+                            <Link href={page.prev_page_url} preserveScroll>
+                                Trước
+                            </Link>
+                        </li>
+                    )}
+                    {numbers.map((link, index) => (
+                        <li key={index}>
+                            {link.url === null ? (
+                                <span className="admin-gap">…</span>
+                            ) : link.active ? (
+                                <span aria-current="page">{link.label}</span>
+                            ) : (
+                                <Link
+                                    href={link.url}
+                                    aria-label={'Trang ' + link.label}
+                                >
+                                    {link.label}
+                                </Link>
+                            )}
+                        </li>
+                    ))}
+                    {page.next_page_url && (
+                        <li>
+                            <Link href={page.next_page_url}>Sau</Link>
+                        </li>
+                    )}
+                </ol>
+            )}
         </nav>
     );
 }
-export function OrderTable({ orders }: { orders: Order[] }) {
+export function OrderTable({
+    orders,
+    empty,
+}: {
+    orders: Order[];
+    empty?: ReactNode;
+}) {
     return orders.length ? (
         <div
             className="admin-table-wrap"
@@ -161,18 +337,22 @@ export function OrderTable({ orders }: { orders: Order[] }) {
                                     #{order.id}
                                 </Link>
                                 <small>
-                                    {new Date(
-                                        order.created_at,
-                                    ).toLocaleDateString('vi-VN')}
+                                    {dateTime(order.created_at)}
+                                    {order.items_count !== undefined &&
+                                        ' · ' + order.items_count + ' sản phẩm'}
                                 </small>
-                                {order.is_demo && <small>Đơn mẫu</small>}
                             </th>
-                            <td>{order.name}</td>
-                            <td>{statuses[order.status] ?? order.status}</td>
                             <td>
-                                {order.payment_status === 'paid'
-                                    ? 'Đã thu tiền'
-                                    : 'Chưa thu tiền'}
+                                {order.name}
+                                <small>
+                                    {order.is_demo ? 'Đơn mẫu' : order.phone}
+                                </small>
+                            </td>
+                            <td>
+                                <OrderStatus status={order.status} />
+                            </td>
+                            <td>
+                                <PaymentStatus status={order.payment_status} />
                             </td>
                             <td className="admin-number">
                                 {money(order.total)}
@@ -183,9 +363,13 @@ export function OrderTable({ orders }: { orders: Order[] }) {
             </table>
         </div>
     ) : (
-        <p className="admin-empty">
-            Chưa có đơn hàng trong danh sách này. Đơn đặt tại cửa hàng sẽ xuất
-            hiện ở đây.
-        </p>
+        <div className="admin-empty">
+            {empty ?? (
+                <>
+                    <strong>Chưa có đơn hàng.</strong>
+                    Đơn khách đặt ở cửa hàng sẽ hiện ở đây, mới nhất ở trên.
+                </>
+            )}
+        </div>
     );
 }

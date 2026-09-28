@@ -13,13 +13,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sku
  * @property string $name
  * @property int $price
+ * @property int|null $cost_price
  * @property int $stock
  * @property bool $is_active
  * @property-read Product $product
  */
 class ProductVariant extends Model
 {
-    protected $fillable = ['product_id', 'sku', 'name', 'price', 'stock', 'is_active'];
+    protected $fillable = ['product_id', 'sku', 'name', 'price', 'cost_price', 'stock', 'is_active'];
+
+    /** What the shop paid is for the admin only; storefront payloads never carry it. */
+    protected $hidden = ['cost_price'];
 
     /** @return Attribute<string, string> */
     protected function sku(): Attribute
@@ -29,7 +33,7 @@ class ProductVariant extends Model
 
     protected function casts(): array
     {
-        return ['price' => 'integer', 'stock' => 'integer', 'is_active' => 'boolean'];
+        return ['price' => 'integer', 'cost_price' => 'integer', 'stock' => 'integer', 'is_active' => 'boolean'];
     }
 
     /** @return BelongsTo<Product, $this> */

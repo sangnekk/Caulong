@@ -1,5 +1,5 @@
 import { Link } from '@inertiajs/react';
-import { ArrowDown, ArrowRight, ArrowUpRight, Pause, Play } from 'lucide-react';
+import { ArrowDown, ArrowRight, Pause, Play } from 'lucide-react';
 import {
     lazy,
     Suspense,
@@ -9,73 +9,160 @@ import {
     useState,
 } from 'react';
 import type { CSSProperties } from 'react';
+import { courtView } from '@/lib/court-view';
+import { downloadRacketModel, onRacketDownload } from '@/lib/racket-download';
+import { racketLoad, useRacketLoad } from '@/lib/racket-load';
 import type { RacketScene } from '@/lib/racket-scene';
 import '../../css/racket-story.css';
 
 const Viewer = lazy(() => import('@/components/racket-viewer'));
+const STATIC_QUERY = '(prefers-reduced-motion: reduce), (max-height: 550px)';
+
+// The 5 MB model is the long pole: start it with this chunk, alongside three.js.
+if (typeof window !== 'undefined' && !window.matchMedia(STATIC_QUERY).matches)
+    void downloadRacketModel().catch(() => {
+        // The viewer retries and shows its own error state.
+    });
+// Each chapter: one sentence in two halves (the second quieter), then one short paragraph.
 const chapters = [
     {
         label: 'Tổng thể',
-        title: ['Hiểu từng phần.', 'Chọn đúng cảm giác.'],
-        text: 'Khung, thân, cán và mặt dây cùng tạo nên cây vợt. Cuộn chậm để nhìn gần từng bộ phận.',
-        detail: 'HYPER CORE8000',
-        side: 'left',
-        structure: '',
-        function: '',
+        title: ['Hiểu cây vợt', 'trước khi chọn.'],
+        text: 'Khung, thân, cán, mặt dây: mỗi phần đổi một chút cảm giác trong tay. Xem gần từng phần, rồi chọn cây hợp với lối chơi của bạn.',
     },
     {
         label: 'Đầu vợt',
-        title: ['Khung giữ dây.', 'Đệm nhỏ bảo vệ dây.'],
-        text: 'Vành bao quanh đầu vợt giữ mặt dây và chịu lực căng.',
-        detail: 'ĐẦU VỢT',
-        side: 'left',
-        structure: 'Khung bao quanh mặt dây, có các lỗ để luồn dây.',
-        function:
-            'Mỗi lỗ có một ống nhựa nhỏ, gọi là gen, giúp dây không cọ vào cạnh khung.',
+        title: ['Khung vợt', 'giữ cả mặt dây.'],
+        text: 'Vành khung chịu lực căng của toàn bộ mặt dây. Mỗi lỗ luồn dây có một ống gen nhỏ để dây không cọ vào cạnh khung.',
     },
     {
         label: 'Thân vợt',
-        title: ['Nối tay cầm', 'với đầu vợt.'],
-        text: 'Thanh mảnh giữa đầu và cán truyền chuyển động của tay đến khung.',
-        detail: 'THÂN & KHỚP NỐI',
-        side: 'left',
-        structure: 'Thanh mảnh nằm giữa đầu vợt và tay cầm.',
-        function:
-            'Thân vợt uốn nhẹ khi vung. Cảm giác cứng hay mềm cần được thử trực tiếp.',
+        title: ['Thân vợt', 'truyền lực cổ tay.'],
+        text: 'Thanh mảnh nối cán với đầu vợt, uốn nhẹ theo mỗi cú vung. Cứng hay dẻo là cảm giác nên thử bằng chính tay mình.',
     },
     {
         label: 'Cán vợt',
-        title: ['Cầm vừa tay.', 'Đánh thoải mái.'],
-        text: 'Cán là điểm tiếp xúc với bàn tay; phần đang phóng gần là lớp quấn xoắn bên ngoài.',
-        detail: 'CÁN & QUẤN CÁN',
-        side: 'left',
-        structure: 'Phần cán bên trong, lớp quấn bên ngoài và nắp dưới đáy.',
-        function:
-            'Độ dày, độ bám và khả năng thấm hút cần phù hợp tay người chơi.',
+        title: ['Cán vợt,', 'nơi bàn tay quyết định.'],
+        text: 'Độ dày, lớp quấn và độ bám cho biết bạn cầm chắc hay phải gồng tay. Phần đang phóng gần là lớp quấn cán.',
     },
     {
         label: 'Mặt dây',
-        title: ['Dọc đan ngang.', 'Cầu chạm tại đây.'],
-        text: 'Các dây dọc và dây ngang đan qua nhau, tạo bề mặt tiếp xúc với cầu.',
-        detail: 'MẶT DÂY ĐAN',
-        side: 'left',
-        structure: 'Dây dọc đan với dây ngang thành mặt lưới.',
-        function:
-            'Mặt lưới tiếp xúc với cầu. Lưới ở đây chỉ để minh họa, không chỉ dẫn cách căng dây.',
+        title: ['Mặt dây,', 'nơi cầu chạm.'],
+        text: 'Dây dọc đan qua dây ngang thành mặt lưới. Lưới trên mô hình được thêm để minh họa, không phải thông số căng dây.',
     },
     {
         label: 'Chọn vợt',
-        title: ['Hiểu cấu tạo.', 'Tìm nhịp chơi riêng.'],
-        text: 'Hãy thử độ nặng, độ dễ vung và cảm giác cầm để tìm cây vợt phù hợp.',
-        detail: 'TỪ CẤU TẠO ĐẾN LỐI CHƠI',
-        side: 'left',
-        structure: '',
-        function: '',
+        title: ['Giờ là lúc', 'chọn cây của bạn.'],
+        text: 'Thử độ nặng, độ dễ vung và cảm giác cầm. Cửa hàng lọc sẵn theo lối chơi để bạn bắt đầu.',
     },
 ] as const;
 const smooth = (value: number) => value * value * (3 - 2 * value);
 
-export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
+/** Doubles court to scale (13.40 × 6.10 m), drawn in metres. */
+// Projected once per layout; the court is still, only the racket and camera move.
+const COURTS = { wide: courtView('wide'), tall: courtView('tall') };
+
+function CourtArena() {
+    return (
+        <div className="court-plan">
+            {(['wide', 'tall'] as const).map((kind) => {
+                const view = COURTS[kind];
+                const [cx, cy] = view.centre;
+                return (
+                    <svg
+                        key={kind}
+                        className={'court-view court-view--' + kind}
+                        viewBox={'0 0 ' + view.width + ' ' + view.height}
+                        preserveAspectRatio="xMidYMid slice"
+                        aria-hidden="true"
+                        focusable="false"
+                    >
+                        <defs>
+                            <linearGradient
+                                id={'court-floor-' + kind}
+                                gradientUnits="userSpaceOnUse"
+                                x1="0"
+                                y1={view.horizon}
+                                x2="0"
+                                y2={view.height}
+                            >
+                                <stop offset="0" stopColor="var(--arena-far)" />
+                                <stop
+                                    offset="1"
+                                    stopColor="var(--arena-floor)"
+                                />
+                            </linearGradient>
+                            <radialGradient
+                                id={'court-light-' + kind}
+                                gradientUnits="userSpaceOnUse"
+                                cx={cx}
+                                cy={cy}
+                                r={view.height * 0.62}
+                                gradientTransform={
+                                    'translate(' +
+                                    cx +
+                                    ' ' +
+                                    cy +
+                                    ') scale(1.35 0.62) translate(' +
+                                    -cx +
+                                    ' ' +
+                                    -cy +
+                                    ')'
+                                }
+                            >
+                                <stop
+                                    offset="0"
+                                    stopColor="#fff"
+                                    stopOpacity="0.16"
+                                />
+                                <stop
+                                    offset="0.55"
+                                    stopColor="#fff"
+                                    stopOpacity="0.05"
+                                />
+                                <stop
+                                    offset="1"
+                                    stopColor="#fff"
+                                    stopOpacity="0"
+                                />
+                            </radialGradient>
+                        </defs>
+                        <path
+                            className="court-floor"
+                            d={view.floor}
+                            fill={'url(#court-floor-' + kind + ')'}
+                        />
+                        <path className="court-mat" d={view.court} />
+                        <path className="court-lines" d={view.lines} />
+                        <path className="court-shadow" d={view.shadow} />
+                        <path className="court-net" d={view.net} />
+                        <path className="court-mesh" d={view.mesh} />
+                        <path className="court-tape" d={view.tape} />
+                        <path className="court-posts" d={view.posts} />
+                        <rect
+                            className="court-light"
+                            width={view.width}
+                            height={view.height}
+                            fill={'url(#court-light-' + kind + ')'}
+                        />
+                    </svg>
+                );
+            })}
+        </div>
+    );
+}
+
+/** The wait the intro already showed, continued in place when the visitor skips it. */
+function StringingMeter() {
+    const { progress } = useRacketLoad();
+    return (
+        <span className="stringing-meter" aria-hidden="true">
+            <span style={{ transform: 'scaleX(' + progress + ')' }} />
+        </span>
+    );
+}
+
+export default function RacketStory() {
     const root = useRef<HTMLElement>(null);
     const scene = useRef<RacketScene | null>(null);
     const progress = useRef(0);
@@ -83,9 +170,7 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
     const [reduced, setReduced] = useState(
         () =>
             typeof window !== 'undefined' &&
-            window.matchMedia(
-                '(prefers-reduced-motion: reduce), (max-height: 550px)',
-            ).matches,
+            window.matchMedia(STATIC_QUERY).matches,
     );
     const [ready, setReady] = useState(false);
     const [reading, setReading] = useState(false);
@@ -95,12 +180,51 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
         scene.current = value;
         value?.setProgress(progress.current);
         setReady(Boolean(value));
+        if (!value) return;
+        racketLoad.set({
+            phase: 'ready',
+            progress: 1,
+            measure: () => {
+                const affine = value.getScreenAffine();
+                const host = root.current
+                    ?.querySelector('.rv-canvas')
+                    ?.getBoundingClientRect();
+                if (!affine || !host) return null;
+                return {
+                    ...affine,
+                    e: affine.e + host.left,
+                    f: affine.f + host.top,
+                };
+            },
+        });
+    }, []);
+    const onProgress = useCallback((fraction: number) => {
+        if (racketLoad.get().phase !== 'ready')
+            racketLoad.set({ phase: 'loading', progress: fraction });
+    }, []);
+    const onFail = useCallback(() => {
+        racketLoad.set({ phase: 'error', measure: null });
     }, []);
 
     useEffect(() => {
-        const media = matchMedia(
-            '(prefers-reduced-motion: reduce), (max-height: 550px)',
+        if (!cinematic) {
+            racketLoad.set({ phase: 'static', progress: 1, measure: null });
+            return () =>
+                racketLoad.set({ phase: 'idle', progress: 0, measure: null });
+        }
+        racketLoad.set({ phase: 'loading', progress: 0, measure: null });
+        // Bytes count before the viewer chunk has even arrived.
+        const stop = onRacketDownload((fraction) =>
+            onProgress(fraction * 0.86),
         );
+        return () => {
+            stop();
+            racketLoad.set({ phase: 'idle', progress: 0, measure: null });
+        };
+    }, [cinematic, onProgress]);
+
+    useEffect(() => {
+        const media = matchMedia(STATIC_QUERY);
         const change = () => setReduced(media.matches);
         change();
         media.addEventListener('change', change);
@@ -123,13 +247,15 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
             current = 0,
             lastTime = 0;
         let stageWidth = 1,
-            stageHeight = 1;
+            stageHeight = 1,
+            markerWidth = 0;
         let alive = true;
         const opacity = panels.map(() => -1);
         const measure = () => {
             start = scrollY + element.getBoundingClientRect().top;
             stageWidth = stage.clientWidth;
             stageHeight = stage.offsetHeight;
+            markerWidth = 0;
             range = Math.max(1, element.offsetHeight - stageHeight);
             const anchor =
                 element.querySelector<HTMLElement>('.material-anchor');
@@ -166,19 +292,25 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
             if (marker.current) {
                 marker.current.hidden = !point;
                 if (point) {
+                    const label = marker.current.querySelector('span')!;
+                    if (label.textContent !== point.label) {
+                        label.textContent = point.label;
+                        markerWidth = 0;
+                    }
+                    // Measure once per label; flip the callout when it would leave the stage.
+                    if (!markerWidth) markerWidth = marker.current.offsetWidth;
+                    const x = (point.x * stageWidth) / 100;
+                    const left =
+                        point.x > 65 || x + markerWidth > stageWidth - 12;
                     marker.current.style.transform =
                         'translate3d(' +
-                        (point.x * stageWidth) / 100 +
+                        x +
                         'px,' +
                         (point.y * stageHeight) / 100 +
                         'px,0) translate(' +
-                        (point.x > 65 ? '-100%' : '0') +
+                        (left ? '-100%' : '0') +
                         ',-50%)';
-                    marker.current.dataset.side =
-                        point.x > 65 ? 'left' : 'right';
-                    const label = marker.current.querySelector('span')!;
-                    if (label.textContent !== point.label)
-                        label.textContent = point.label;
+                    marker.current.dataset.side = left ? 'left' : 'right';
                 }
             }
             if (previous !== index) {
@@ -270,6 +402,7 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
                 'racket-story ' + (cinematic ? 'is-cinematic' : 'is-reading')
             }
             aria-label="Câu chuyện Hyper Core8000"
+            data-surface="night"
             data-chapter="0"
             data-ready={ready}
             aria-busy={cinematic && !ready}
@@ -282,35 +415,10 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
             )}
             <div className="story-stage">
                 <div className="story-backdrop" aria-hidden="true">
-                    <span className="arena-light arena-light-near" />
-                    <span className="arena-light arena-light-far" />
-                    <div className="arena-court">
-                        <span />
-                        <i />
-                    </div>
-                    <svg
-                        className="arena-flight"
-                        viewBox="0 0 1000 800"
-                        fill="none"
-                    >
-                        <path d="M120 730 C760 690 940 170 620 65" />
-                        <path d="M190 730 C785 675 922 205 642 93" />
-                    </svg>
-                    <span className="arena-caption">
-                        SẴN SÀNG CHO NHỊP CẦU MỚI
-                        <span>Chạm cầu. Bắt đầu câu chuyện.</span>
-                    </span>
-                </div>
-                <div className="story-topline">
-                    <span>
-                        HYPER CORE<span className="story-edition">8000</span>
-                    </span>
-                    <a href="#bo-suu-tap">
-                        Bỏ qua giới thiệu <ArrowUpRight size={15} />
-                    </a>
+                    <CourtArena />
                 </div>
                 <div className="story-model">
-                    {cinematic && enabled ? (
+                    {cinematic ? (
                         <Suspense
                             fallback={
                                 <img
@@ -321,7 +429,12 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
                                 />
                             }
                         >
-                            <Viewer story onReady={onReady} />
+                            <Viewer
+                                story
+                                onReady={onReady}
+                                onProgress={onProgress}
+                                onFail={onFail}
+                            />
                         </Suspense>
                     ) : (
                         <img
@@ -342,73 +455,84 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
                     <span />
                 </div>
                 <div className="story-panels">
-                    {chapters.map((chapter, index) => (
-                        <article
-                            key={chapter.label}
-                            id={
-                                !cinematic && index === 1
-                                    ? 'cac-bo-phan'
-                                    : undefined
-                            }
-                            className={'story-panel story-' + chapter.side}
-                            style={{ '--chapter': index } as CSSProperties}
-                        >
-                            <div className="story-copy">
-                                <p className="story-detail">{chapter.detail}</p>
-                                {index === 0 ? (
-                                    <h1>
-                                        {chapter.title[0]}
-                                        <br />
-                                        <span>{chapter.title[1]}</span>
-                                    </h1>
-                                ) : (
-                                    <h2>
-                                        {chapter.title[0]}
-                                        <br />
-                                        <span>{chapter.title[1]}</span>
-                                    </h2>
-                                )}
-                                <p className="story-description">
-                                    {chapter.text}
-                                </p>
-                                {chapter.structure && (
-                                    <dl className="anatomy-details">
-                                        <div>
-                                            <dt>Cấu tạo</dt>
-                                            <dd>{chapter.structure}</dd>
+                    {chapters.map((chapter, index) => {
+                        const Heading = index === 0 ? 'h1' : 'h2';
+                        return (
+                            <article
+                                key={chapter.label}
+                                id={
+                                    !cinematic && index === 1
+                                        ? 'cac-bo-phan'
+                                        : undefined
+                                }
+                                className="story-panel"
+                                style={{ '--chapter': index } as CSSProperties}
+                            >
+                                <div className="story-copy">
+                                    <Heading>
+                                        <span className="story-line">
+                                            <span>{chapter.title[0]}</span>
+                                        </span>{' '}
+                                        <span className="story-line">
+                                            <span>{chapter.title[1]}</span>
+                                        </span>
+                                    </Heading>
+                                    <p className="story-description">
+                                        {chapter.text}
+                                    </p>
+                                    {index === 0 && (
+                                        <div className="story-actions">
+                                            <button
+                                                className="story-next"
+                                                disabled={cinematic && !ready}
+                                                onClick={() => goTo(1)}
+                                            >
+                                                {cinematic && !ready ? (
+                                                    <>
+                                                        Đang căng dây…
+                                                        <StringingMeter />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        Xem từng phần{' '}
+                                                        <ArrowDown size={18} />
+                                                    </>
+                                                )}
+                                            </button>
+                                            <Link
+                                                className="story-store"
+                                                href="/products"
+                                                prefetch="hover"
+                                                viewTransition
+                                            >
+                                                Vào cửa hàng{' '}
+                                                <ArrowRight size={17} />
+                                            </Link>
                                         </div>
-                                        <div>
-                                            <dt>Để làm gì?</dt>
-                                            <dd>{chapter.function}</dd>
+                                    )}
+                                    {index === 5 && (
+                                        <div className="story-actions">
+                                            <Link
+                                                className="landing-button light-button"
+                                                href="/products"
+                                                prefetch="hover"
+                                                viewTransition
+                                            >
+                                                Xem vợt trong cửa hàng{' '}
+                                                <ArrowRight size={18} />
+                                            </Link>
+                                            <a
+                                                className="story-store"
+                                                href="#bo-suu-tap"
+                                            >
+                                                Chọn theo lối chơi
+                                            </a>
                                         </div>
-                                    </dl>
-                                )}
-                                {index === 0 && (
-                                    <button
-                                        className="story-next"
-                                        disabled={cinematic && !ready}
-                                        onClick={() => goTo(1)}
-                                    >
-                                        {cinematic && !ready
-                                            ? 'Đang chuẩn bị vợt…'
-                                            : 'Bắt đầu khám phá'}{' '}
-                                        <ArrowDown size={18} />
-                                    </button>
-                                )}
-                                {index === 5 && (
-                                    <Link
-                                        className="landing-button accent-button"
-                                        href="/products"
-                                        prefetch="hover"
-                                        viewTransition
-                                    >
-                                        Xem vợt trong cửa hàng{' '}
-                                        <ArrowRight size={18} />
-                                    </Link>
-                                )}
-                            </div>
-                        </article>
-                    ))}
+                                    )}
+                                </div>
+                            </article>
+                        );
+                    })}
                 </div>
                 <div className="story-bottom">
                     <nav
@@ -426,30 +550,30 @@ export default function RacketStory({ enabled = true }: { enabled?: boolean }) {
                                 aria-label={'Đến chương ' + chapter.label}
                                 onClick={() => goTo(index)}
                             >
-                                <span className="chapter-dot" />
                                 <span className="chapter-label">
                                     {chapter.label}
                                 </span>
                             </button>
                         ))}
+                        <a className="story-skip" href="#bo-suu-tap">
+                            Bỏ qua <ArrowDown size={13} aria-hidden="true" />
+                        </a>
                     </nav>
-                    <button
-                        className="story-mode"
-                        onClick={() => setReading(!reading)}
-                        disabled={reduced}
-                        aria-pressed={reading || reduced}
-                    >
-                        {reading || reduced ? (
-                            <Play size={14} />
-                        ) : (
-                            <Pause size={14} />
-                        )}
-                        {reduced
-                            ? 'Đang xem bản tĩnh'
-                            : reading
-                              ? 'Xem vợt chuyển động'
-                              : 'Xem bản tĩnh'}
-                    </button>
+                    <p className="story-caption" aria-hidden="true">
+                        Hyper Core8000 · mô hình 3D
+                    </p>
+                    {!reduced && (
+                        <button
+                            className="story-mode"
+                            onClick={() => setReading(!reading)}
+                            aria-pressed={reading}
+                        >
+                            {reading ? <Play size={14} /> : <Pause size={14} />}
+                            {reading
+                                ? 'Xem lại mô hình 3D'
+                                : 'Đọc bản không có 3D'}
+                        </button>
+                    )}
                 </div>
                 <div className="story-progress" aria-hidden="true">
                     <span />

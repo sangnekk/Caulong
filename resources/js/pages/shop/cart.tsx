@@ -180,7 +180,7 @@ export default function Cart({ cart }: { cart: CartData }) {
                     </section>
                     <aside className="store-summary">
                         <h2>Tóm tắt giỏ hàng</h2>
-                        <OrderTotals totals={cart} />
+                        <OrderTotals totals={cart} hint />
                         <p className="store-hint">
                             Phí giao hàng được tính cho giỏ hàng hiện tại.
                         </p>

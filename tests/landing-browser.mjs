@@ -71,6 +71,10 @@ try {
     await waitFor(
         "document.querySelector('.racket-story.is-cinematic canvas[data-story-pose]')",
     );
+    // The intro hands over only once the 3D is ready; drive the story after it.
+    await waitFor(
+        "document.querySelector('.badminton-landing').dataset.intro==='done'",
+    );
     await evaluate('document.fonts.ready.then(()=>true)');
     await mkdir('artifacts', { recursive: true });
     const shot = async (name) => {
@@ -104,11 +108,10 @@ try {
         await evaluate(
             "[...document.querySelectorAll('.desktop-navigation a')].map(a=>a.textContent.trim())",
         ),
-        ['Khám phá vợt', 'Các bộ phận', 'Chọn theo lối chơi'],
+        ['Cây vợt', 'Lối chơi', 'Tư vấn chọn vợt', 'Hỏi đáp'],
     );
-    await evaluate(
-        'document.querySelector(\'.desktop-navigation a[href="#cac-bo-phan"]\').click()',
-    );
+    // The first chapter's own button walks into the parts; the nav brings the whole racket back.
+    await evaluate("document.querySelector('.story-next').click()");
     await waitFor("document.querySelector('canvas').dataset.storyPose==='1'");
     await evaluate(
         'document.querySelector(\'.desktop-navigation a[href="#kham-pha-vot"]\').click()',
@@ -175,13 +178,13 @@ try {
                 false,
                 'Anatomy callout visible',
             );
-            assert.equal(
-                await evaluate(
+            assert.ok(
+                (await evaluate(
                     "document.querySelectorAll('.story-panel')[" +
                         index +
-                        "].querySelectorAll('dl dd').length",
-                ),
-                2,
+                        "].querySelector('.story-description').textContent.length",
+                )) > 40,
+                'Each part is explained in its chapter',
             );
         }
         await shot('story-desktop-' + index);
@@ -257,27 +260,29 @@ try {
         true,
     );
     await evaluate(
-        "document.querySelectorAll('.collection-filters button')[2].click()",
+        "[...document.querySelectorAll('.collection-filters button')].find(b=>b.textContent.trim()==='Tốc độ').click()",
     );
     assert.equal(
         await evaluate("document.querySelectorAll('.collection-card').length"),
         1,
     );
-    await evaluate("document.querySelector('.collection-image').click()");
-    assert.equal(await evaluate("document.querySelector('dialog').open"), true);
-    await command('Input.dispatchKeyEvent', {
-        type: 'keyDown',
-        key: 'Escape',
-        code: 'Escape',
-        windowsVirtualKeyCode: 27,
-    });
-    await command('Input.dispatchKeyEvent', {
-        type: 'keyUp',
-        key: 'Escape',
-        code: 'Escape',
-        windowsVirtualKeyCode: 27,
-    });
-    await waitFor("!document.querySelector('dialog').open");
+    // The chosen style lights its zone on the court and links straight to the shop.
+    assert.deepEqual(
+        await evaluate(
+            "({zones:document.querySelectorAll('.styles-court__zone[data-active]').length,label:document.querySelector('.styles-court__zone[data-active] text').textContent,href:document.querySelector('.collection-card a').getAttribute('href'),status:document.querySelector('.collection-disclaimer').textContent})",
+        ).then(({ zones, label, href, status }) => ({
+            zones,
+            label,
+            href,
+            status: status.startsWith('Đang xem: Tốc độ.'),
+        })),
+        {
+            zones: 1,
+            label: 'Tốc độ',
+            href: '/products?style=speed',
+            status: true,
+        },
+    );
     await evaluate(
         "window.scrollTo(0,0);document.querySelector('.mobile-navigation summary').click()",
     );
@@ -292,7 +297,7 @@ try {
     );
     assert.deepEqual(errors, [], 'Browser runtime errors');
     console.log(
-        'PASS: pinned six-chapter story, forward/reverse camera, one canvas, text states, 1440/768/390/320px, static reading, reduced motion, WebGL retry, collection/modal/menu.',
+        'PASS: pinned six-chapter story, forward/reverse camera, one canvas, text states, 1440/768/390/320px, static reading, reduced motion, WebGL retry, court-zone styles, menu.',
     );
 } finally {
     await command('Emulation.setEmulatedMedia', { features: [] });

@@ -1,5 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
-import { DemoBadge, OrderTotals } from '@/layouts/shop-layout';
+import { Head, Link, usePage } from '@inertiajs/react';
+import { DemoBadge, OrderTotals, ShopContact } from '@/layouts/shop-layout';
 import { vnd, type Order } from '@/types/commerce';
 
 const statusLabels: Record<string, string> = {
@@ -17,24 +17,35 @@ const paymentLabels: Record<string, string> = {
 export default function OrderPage({
     order,
     trackingUrl,
+    justPlaced = false,
 }: {
     order: Order;
     trackingUrl: string;
+    justPlaced?: boolean;
 }) {
+    const signedIn = !!usePage<{ auth: { user: unknown } }>().props.auth?.user;
+    const code = order.public_id.slice(0, 8).toUpperCase();
     return (
         <>
-            <Head title={'Đơn hàng ' + order.public_id.slice(0, 8)}>
+            <Head title={'Đơn hàng ' + code}>
                 <meta name="robots" content="noindex, nofollow" />
             </Head>
             <header className="store-page-heading">
                 <div>
-                    <h1>Đặt hàng thành công</h1>
+                    <h1>
+                        {justPlaced
+                            ? 'Đặt hàng thành công'
+                            : 'Đơn hàng ' + code}
+                    </h1>
                     <p>
                         Mã đơn: <strong>{order.public_id}</strong>
                     </p>
                 </div>
-                <Link href="/products" className="store-text-link">
-                    Tiếp tục mua sắm
+                <Link
+                    href={signedIn ? '/account#don-hang' : '/products'}
+                    className="store-text-link"
+                >
+                    {signedIn ? 'Về đơn hàng của tôi' : 'Tiếp tục mua sắm'}
                 </Link>
             </header>
             {order.is_demo && (
@@ -103,6 +114,7 @@ export default function OrderPage({
                     <p className="store-hint">
                         Lưu đường dẫn này để xem lại đơn trong phiên hiện tại.
                     </p>
+                    <ShopContact />
                     <a className="store-button store-full" href={trackingUrl}>
                         Tải lại đơn hàng
                     </a>

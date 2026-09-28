@@ -16,7 +16,7 @@ type Props = {
 export default function Register({ passwordRules }: Props) {
     return (
         <>
-            <Head title="Register" />
+            <Head title="Đăng ký" />
             <Form
                 {...store.form()}
                 resetOnSuccess={['password', 'password_confirmation']}
@@ -27,7 +27,7 @@ export default function Register({ passwordRules }: Props) {
                     <>
                         <div className="grid gap-6">
                             <div className="grid gap-2">
-                                <Label htmlFor="name">Name</Label>
+                                <Label htmlFor="name">Họ và tên</Label>
                                 <Input
                                     id="name"
                                     type="text"
@@ -36,7 +36,7 @@ export default function Register({ passwordRules }: Props) {
                                     tabIndex={1}
                                     autoComplete="name"
                                     name="name"
-                                    placeholder="Full name"
+                                    placeholder="Họ và tên"
                                 />
                                 <InputError
                                     message={errors.name}
@@ -45,7 +45,7 @@ export default function Register({ passwordRules }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                <Label htmlFor="email">Địa chỉ email</Label>
                                 <Input
                                     id="email"
                                     type="email"
@@ -59,14 +59,14 @@ export default function Register({ passwordRules }: Props) {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">Password</Label>
+                                <Label htmlFor="password">Mật khẩu</Label>
                                 <PasswordInput
                                     id="password"
                                     required
                                     tabIndex={3}
                                     autoComplete="new-password"
                                     name="password"
-                                    placeholder="Password"
+                                    placeholder="Mật khẩu"
                                     passwordrules={passwordRules}
                                 />
                                 <InputError message={errors.password} />
@@ -74,7 +74,7 @@ export default function Register({ passwordRules }: Props) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password_confirmation">
-                                    Confirm password
+                                    Xác nhận mật khẩu
                                 </Label>
                                 <PasswordInput
                                     id="password_confirmation"
@@ -82,7 +82,7 @@ export default function Register({ passwordRules }: Props) {
                                     tabIndex={4}
                                     autoComplete="new-password"
                                     name="password_confirmation"
-                                    placeholder="Confirm password"
+                                    placeholder="Xác nhận mật khẩu"
                                     passwordrules={passwordRules}
                                 />
                                 <InputError
@@ -97,14 +97,14 @@ export default function Register({ passwordRules }: Props) {
                                 data-test="register-user-button"
                             >
                                 {processing && <Spinner />}
-                                Create account
+                                Tạo tài khoản
                             </Button>
                         </div>
 
                         <div className="text-center text-sm text-muted-foreground">
-                            Already have an account?{' '}
+                            Đã có tài khoản?{' '}
                             <TextLink href={login()} tabIndex={6}>
-                                Log in
+                                Đăng nhập
                             </TextLink>
                         </div>
                     </>
@@ -115,6 +115,6 @@ export default function Register({ passwordRules }: Props) {
 }
 
 Register.layout = {
-    title: 'Create an account',
-    description: 'Enter your details below to create your account',
+    title: 'Tạo tài khoản',
+    description: 'Nhập thông tin của bạn bên dưới để tạo tài khoản',
 };

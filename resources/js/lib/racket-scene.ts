@@ -1,5 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import {
+    downloadRacketModel,
+    onRacketDownload,
+    releaseRacketDownload,
+} from '@/lib/racket-download';
 
 export type RacketPart = 'all' | 'frame' | 'shaft' | 'strings' | 'grip';
 export type RacketScene = {
@@ -9,6 +14,15 @@ export type RacketScene = {
     setPart: (part: RacketPart) => void;
     setProgress: (progress: number) => void;
     getAnnotation: () => { x: number; y: number; label: string } | null;
+    /** Model plane (x right, y down) to canvas pixels for the current story pose. */
+    getScreenAffine: () => {
+        a: number;
+        b: number;
+        c: number;
+        d: number;
+        e: number;
+        f: number;
+    } | null;
     dispose: () => void;
 };
 
@@ -43,17 +57,22 @@ export async function createRacketScene(
     host: HTMLElement,
     signal: AbortSignal,
     onError: () => void,
+    // Download is ~86% of the wait; parsing, shaders and texture uploads fill the rest.
+    onProgress?: (fraction: number) => void,
 ): Promise<RacketScene> {
-    const requestSignal = AbortSignal.any([signal, AbortSignal.timeout(30000)]);
-    const buffers = await Promise.all(
-        ['hyper-core.glb', 'hyper-core-strings.glb'].map(async (name) => {
-            const response = await fetch('/models/' + name, {
-                signal: requestSignal,
-            });
-            if (!response.ok) throw new Error('Racket model unavailable');
-            return response.arrayBuffer();
-        }),
+    const stopProgress = onRacketDownload((fraction) =>
+        onProgress?.(fraction * 0.86),
     );
+    // The download is shared and may already be running; unmounting only stops waiting.
+    const buffers = await new Promise<ArrayBuffer[]>((resolve, reject) => {
+        const abort = () =>
+            reject(new DOMException('Viewer unmounted', 'AbortError'));
+        if (signal.aborted) return abort();
+        signal.addEventListener('abort', abort, { once: true });
+        downloadRacketModel()
+            .then(resolve, reject)
+            .finally(() => signal.removeEventListener('abort', abort));
+    }).finally(stopProgress);
     const loader = new GLTFLoader();
     const gltf = await loader.parseAsync(buffers[0], '/models/');
     try {
@@ -63,6 +82,8 @@ export async function createRacketScene(
         disposeModel(gltf.scene);
         throw error;
     }
+    releaseRacketDownload();
+    onProgress?.(0.9);
     const model = new THREE.Group();
     model.add(gltf.scene);
     // Source head points toward -Z; orient it upward without altering source meshes.
@@ -376,6 +397,7 @@ export async function createRacketScene(
     try {
         // Prepare shaders and upload maps before exposing the canvas; yield between uploads.
         await renderer.compileAsync(scene, camera);
+        onProgress?.(0.94);
         const maps = new Set<THREE.Texture>();
         model.traverse((object) => {
             if (!(object instanceof THREE.Mesh)) return;
@@ -387,10 +409,12 @@ export async function createRacketScene(
                     if (value instanceof THREE.Texture) maps.add(value);
                 }
         });
+        let uploaded = 0;
         for (const map of maps) {
             if (signal.aborted)
                 throw new DOMException('Viewer unmounted', 'AbortError');
             renderer.initTexture(map);
+            onProgress?.(0.94 + (0.05 * ++uploaded) / maps.size);
             await new Promise((resolve) => setTimeout(resolve, 0));
         }
         if (signal.aborted)
@@ -427,6 +451,34 @@ export async function createRacketScene(
     return {
         getAnnotation() {
             return annotation;
+        },
+        getScreenAffine() {
+            if (disposed || storyProgress === null) return null;
+            presentStory();
+            camera.updateMatrixWorld();
+            // Orthographic camera: the model plane maps affinely, so three points define it.
+            const toScreen = (x: number, y: number) => {
+                marker
+                    .set(x, y, 0)
+                    .applyMatrix4(transform)
+                    .add(presentation.position)
+                    .project(camera);
+                return [
+                    ((marker.x + 1) / 2) * viewportWidth,
+                    ((1 - marker.y) / 2) * viewportHeight,
+                ];
+            };
+            const [ox, oy] = toScreen(0, 0);
+            const [xx, xy] = toScreen(1, 0);
+            const [yx, yy] = toScreen(0, 1);
+            return {
+                a: xx - ox,
+                b: xy - oy,
+                c: ox - yx,
+                d: oy - yy,
+                e: ox,
+                f: oy,
+            };
         },
         setProgress(progress) {
             if (disposed || !Number.isFinite(progress)) return;

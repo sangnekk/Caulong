@@ -1,126 +1,212 @@
 import { Head, Link } from '@inertiajs/react';
-import {
-    ArrowRight,
-    ArrowUpRight,
-    Check,
-    ChevronDown,
-    Menu,
-    MoveUpRight,
-    Sparkles,
-    X,
-} from 'lucide-react';
-import { useRef, useState } from 'react';
+import { ArrowRight, ArrowUpRight, Menu, Plus } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import BrandMark from '@/components/brand-mark';
 import LandingLoader, {
-    LANDING_LOADER_SESSION_KEY,
+    shouldShowLandingIntro,
 } from '@/components/landing-loader';
+import type { RevealMode } from '@/components/landing-loader';
 import RacketStory from '@/components/racket-story';
+import { halfCourtView } from '@/lib/court-view';
 import '../../css/landing.css';
 
-const poster = '/models/hyper-core-poster.png';
-// ponytail: catalog minh họa; thay bằng SKU từ Laravel khi triển khai bán hàng.
-const collections = [
-    {
-        id: 'attack',
-        name: 'Tấn công',
-        label: 'Dành cho nhịp cầu chủ động',
-        color: 'lime',
-        description:
-            'Khám phá cảm giác vung chắc tay, chủ động tạo áp lực từ cuối sân.',
-        note: 'Vợt có phần đầu nặng hơn thường được cân nhắc khi thích đánh tấn công. Hãy thử để biết có vừa sức tay không.',
-        number: '01',
-    },
+// ponytail: gợi ý theo vị trí trên sân; thay bằng SKU từ Laravel khi có dữ liệu thật.
+const styles = [
     {
         id: 'speed',
         name: 'Tốc độ',
+        zone: 'Gần lưới',
         label: 'Nhanh trong từng phản xạ',
-        color: 'blue',
         description:
-            'Dành chỗ cho những pha bắt lưới, đổi hướng và phòng thủ liên tục.',
-        note: 'Vợt dễ xoay trở giúp bạn đổi hướng nhanh. Hãy thử trọng lượng và tay cầm để tìm cảm giác thoải mái.',
-        number: '02',
+            'Cho những pha bắt lưới, đổi hướng và phòng thủ liên tục, khi mỗi phần giây đều tính.',
+        note: 'Vợt nhẹ đầu, dễ xoay trở giúp bạn kịp đổi hướng. Thử trọng lượng và cỡ cán để tìm cảm giác thoải mái.',
     },
     {
         id: 'balance',
         name: 'Cân bằng',
+        zone: 'Giữa sân',
         label: 'Linh hoạt ở mọi vị trí',
-        color: 'coral',
         description:
-            'Tìm sự hài hòa giữa kiểm soát, phản tạt và những cú đánh cuối sân.',
-        note: 'Nếu thường đổi giữa tấn công và phòng thủ, hãy thử một cây vợt cho cảm giác cân bằng, dễ điều khiển.',
-        number: '03',
+            'Cho người đổi vai liên tục: kiểm soát, phản tạt, rồi lên đập khi có cơ hội.',
+        note: 'Nếu thường đổi giữa tấn công và phòng thủ, một cây vợt cân bằng cho bạn cả hai mà không phải gồng tay.',
+    },
+    {
+        id: 'attack',
+        name: 'Tấn công',
+        zone: 'Cuối sân',
+        label: 'Cho nhịp cầu chủ động',
+        description:
+            'Cho những cú vung chắc tay từ cuối sân, khi bạn muốn là người tạo áp lực.',
+        note: 'Vợt nặng đầu cho cú đập đầm hơn nhưng cần cổ tay khỏe. Hãy thử để biết có vừa sức tay không.',
     },
 ] as const;
-type Collection = (typeof collections)[number];
+const filterOrder = ['attack', 'balance', 'speed'] as const;
+const court = halfCourtView();
+
+type Intro = 'playing' | 'revealing' | 'done';
+type StyleId = (typeof styles)[number]['id'];
+
+function Brand({ label }: { label?: string }) {
+    return (
+        <a className="shop-brand" href="#" aria-label={label}>
+            <BrandMark className="brand-symbol" />
+            <span>
+                Shop <strong>Cầu Lông</strong>
+            </span>
+        </a>
+    );
+}
+
+/** One half of the court, lit where the chosen style is played. */
+function StylesCourt({
+    filter,
+    onPick,
+}: {
+    filter: 'all' | StyleId;
+    onPick: (id: StyleId) => void;
+}) {
+    return (
+        <svg
+            className="styles-court"
+            viewBox={'0 0 ' + court.width + ' ' + court.height}
+            aria-hidden="true"
+            focusable="false"
+        >
+            <path className="styles-court__mat" d={court.court} />
+            {court.zones.map((zone) => {
+                const style = styles.find((item) => item.id === zone.id)!;
+                return (
+                    <g
+                        key={zone.id}
+                        className="styles-court__zone"
+                        data-active={filter === zone.id || undefined}
+                        data-dim={
+                            (filter !== 'all' && filter !== zone.id) ||
+                            undefined
+                        }
+                        onClick={() => onPick(zone.id)}
+                    >
+                        <path d={zone.area} />
+                        <text x={zone.label[0]} y={zone.label[1] - 4}>
+                            {style.name}
+                        </text>
+                        <text
+                            className="styles-court__zone-note"
+                            x={zone.label[0]}
+                            y={zone.label[1] + 22}
+                        >
+                            {style.zone}
+                        </text>
+                    </g>
+                );
+            })}
+            <path className="styles-court__lines" d={court.lines} />
+            <path className="styles-court__net" d={court.net} />
+            <path className="styles-court__tape" d={court.tape} />
+            <path className="styles-court__posts" d={court.posts} />
+        </svg>
+    );
+}
 
 export default function Welcome() {
-    const [filter, setFilter] = useState('all');
-    const [introDone, setIntroDone] = useState(() => {
-        try {
-            return (
-                typeof window !== 'undefined' &&
-                sessionStorage.getItem(LANDING_LOADER_SESSION_KEY) === '1'
-            );
-        } catch {
-            return false;
-        }
-    });
-    const [selected, setSelected] = useState<Collection>(collections[0]);
-    const dialog = useRef<HTMLDialogElement>(null);
+    const [filter, setFilter] = useState<'all' | StyleId>('all');
+    const [intro, setIntro] = useState<Intro>(() =>
+        shouldShowLandingIntro() ? 'playing' : 'done',
+    );
+    const [reveal, setReveal] = useState<RevealMode>('cut');
     const menu = useRef<HTMLDetailsElement>(null);
+    const header = useRef<HTMLElement>(null);
     const closeMenu = () => {
         if (menu.current) menu.current.open = false;
     };
-    const openCollection = (collection: Collection) => {
-        setSelected(collection);
-        dialog.current?.showModal();
-    };
+    const visible = styles.filter(
+        (style) => filter === 'all' || style.id === filter,
+    );
+
+    // The header stays pinned (the store is always one tap away). Clear over the first screen,
+    // then it takes the tone of the surface under it, so the page never shows through.
+    useEffect(() => {
+        const element = header.current;
+        if (!element) return;
+        let frame = 0;
+        const update = () => {
+            frame = 0;
+            const edge = element.offsetHeight;
+            let tone = 'night';
+            if (window.scrollY < 24) tone = 'clear';
+            else
+                for (const surface of document.querySelectorAll<HTMLElement>(
+                    '[data-surface]',
+                )) {
+                    const box = surface.getBoundingClientRect();
+                    if (box.top <= edge && box.bottom > edge) {
+                        tone = surface.dataset.surface ?? 'night';
+                        break;
+                    }
+                }
+            if (element.dataset.tone !== tone) element.dataset.tone = tone;
+        };
+        const schedule = () => {
+            if (!frame) frame = requestAnimationFrame(update);
+        };
+        update();
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', schedule);
+        return () => {
+            cancelAnimationFrame(frame);
+            window.removeEventListener('scroll', schedule);
+            window.removeEventListener('resize', schedule);
+        };
+    }, []);
 
     return (
-        <div className="badminton-landing" lang="vi">
-            <LandingLoader onDone={() => setIntroDone(true)} />
-            <Head title="Shop Cầu Lông — Khám phá Hyper Core8000">
+        <div
+            className="badminton-landing"
+            lang="vi"
+            data-intro={intro}
+            data-reveal={reveal}
+        >
+            <LandingLoader
+                onReveal={(mode) => {
+                    setReveal(mode);
+                    setIntro('revealing');
+                }}
+                onDone={() => setIntro('done')}
+            />
+            <Head title="Shop Cầu Lông — Hiểu cây vợt trước khi chọn">
                 <meta
                     name="description"
-                    content="Khám phá vợt cầu lông qua mô hình 3D tương tác, tìm hiểu khung, thân, dây và tay cầm. Chọn cảm giác chơi phù hợp với bạn."
+                    content="Xem gần từng phần của một cây vợt cầu lông qua mô hình 3D, rồi chọn vợt hợp với lối chơi của bạn. Thanh toán khi nhận hàng."
                 />
-                <meta name="theme-color" content="#183d85" />
+                <meta name="theme-color" content="#0d1424" />
             </Head>
             <a className="skip-link" href="#main">
                 Bỏ qua điều hướng
             </a>
-            <header className="shop-header">
+            <header className="shop-header" ref={header} data-tone="clear">
                 <div className="landing-container header-inner">
-                    <a
-                        className="shop-brand"
-                        href="#"
-                        aria-label="Shop Cầu Lông — đầu trang"
-                    >
-                        <span className="brand-symbol" aria-hidden="true">
-                            <MoveUpRight />
-                            <MoveUpRight />
-                        </span>
-                        <span>
-                            SHOP
-                            <br />
-                            <strong>CẦU LÔNG</strong>
-                        </span>
-                    </a>
+                    <Brand label="Shop Cầu Lông — đầu trang" />
                     <nav
                         className="desktop-navigation"
                         aria-label="Điều hướng chính"
                     >
-                        <a href="#kham-pha-vot">Khám phá vợt</a>
-                        <a href="#cac-bo-phan">Các bộ phận</a>
-                        <a href="#bo-suu-tap">Chọn theo lối chơi</a>
+                        <a href="#kham-pha-vot">Cây vợt</a>
+                        <a href="#bo-suu-tap">Lối chơi</a>
+                        <Link href="/advisor" prefetch="hover">
+                            Tư vấn chọn vợt
+                        </Link>
+                        <a href="#hoi-dap">Hỏi đáp</a>
                     </nav>
                     <Link
                         href="/products"
                         className="header-cta"
-                        prefetch={introDone ? 'mount' : false}
+                        prefetch={intro === 'done' ? ['mount', 'hover'] : false}
                         cacheFor="5s"
                         viewTransition
                     >
-                        Vào cửa hàng <ArrowUpRight size={18} />
+                        <span className="header-cta-long">Vào cửa hàng</span>
+                        <span className="header-cta-short">Cửa hàng</span>
+                        <ArrowUpRight size={16} aria-hidden="true" />
                     </Link>
                     <details
                         className="mobile-navigation"
@@ -134,13 +220,20 @@ export default function Welcome() {
                         </summary>
                         <nav aria-label="Điều hướng di động">
                             <a href="#kham-pha-vot" onClick={closeMenu}>
-                                Khám phá vợt
-                            </a>
-                            <a href="#cac-bo-phan" onClick={closeMenu}>
-                                Các bộ phận
+                                Cây vợt
                             </a>
                             <a href="#bo-suu-tap" onClick={closeMenu}>
-                                Chọn theo lối chơi
+                                Lối chơi
+                            </a>
+                            <Link
+                                href="/advisor"
+                                onClick={closeMenu}
+                                prefetch="hover"
+                            >
+                                Tư vấn chọn vợt
+                            </Link>
+                            <a href="#hoi-dap" onClick={closeMenu}>
+                                Hỏi đáp
                             </a>
                             <Link
                                 href="/products"
@@ -150,249 +243,254 @@ export default function Welcome() {
                             >
                                 Vào cửa hàng
                             </Link>
-                            <Link
-                                href="/advisor"
-                                onClick={closeMenu}
-                                prefetch="hover"
-                            >
-                                Gợi ý chọn vợt
-                            </Link>
-                            <a href="#hoi-dap" onClick={closeMenu}>
-                                Câu hỏi thường gặp
-                            </a>
                         </nav>
                     </details>
                 </div>
             </header>
             <main id="main">
-                <RacketStory enabled={introDone} />
+                <RacketStory />
 
                 <section
-                    className="collection-section landing-container"
+                    className="styles-section"
                     id="bo-suu-tap"
+                    data-surface="night"
                     aria-labelledby="collection-title"
                 >
-                    <div className="section-heading">
-                        <div>
-                            <p className="section-intro">
-                                Không có cây vợt tốt nhất cho tất cả.
-                            </p>
-                            <h2 id="collection-title">
-                                Có cây vợt hợp với bạn.
+                    <div className="landing-container styles-layout">
+                        <div className="styles-intro">
+                            <h2 id="collection-title" className="section-title">
+                                Mỗi vị trí trên sân{' '}
+                                <span className="tone-soft">
+                                    cần một cây vợt khác.
+                                </span>
                             </h2>
-                        </div>
-                        <p>
-                            Bắt đầu từ cách bạn muốn chơi.
-                            <br />
-                            Ba hướng khám phá, một phong cách riêng.
-                        </p>
-                    </div>
-                    <div className="collection-toolbar">
-                        <div
-                            className="collection-filters"
-                            aria-label="Lọc theo lối chơi"
-                        >
-                            <button
-                                aria-pressed={filter === 'all'}
-                                onClick={() => setFilter('all')}
+                            <p className="section-lead">
+                                Người đứng gần lưới cần vợt xoay nhanh; người
+                                đập cầu cuối sân cần đầu vợt đầm. Chọn chỗ bạn
+                                hay đứng để xem gợi ý.
+                            </p>
+                            <div
+                                className="collection-filters"
+                                role="group"
+                                aria-label="Lọc theo lối chơi"
                             >
-                                Tất cả
-                            </button>
-                            {collections.map((item) => (
                                 <button
-                                    key={item.id}
-                                    aria-pressed={filter === item.id}
-                                    onClick={() => setFilter(item.id)}
+                                    type="button"
+                                    aria-pressed={filter === 'all'}
+                                    onClick={() => setFilter('all')}
                                 >
-                                    {item.name}
+                                    Tất cả
                                 </button>
-                            ))}
-                        </div>
-                        <Link
-                            href="/products"
-                            prefetch="hover"
-                            className="text-link"
-                        >
-                            Xem sản phẩm đang có <ArrowUpRight size={18} />
-                        </Link>
-                    </div>
-                    <div className="collection-grid">
-                        {collections
-                            .filter(
-                                (item) =>
-                                    filter === 'all' || item.id === filter,
-                            )
-                            .map((item) => (
-                                <article
-                                    className={
-                                        'collection-card color-' + item.color
-                                    }
-                                    key={item.id}
-                                >
+                                {filterOrder.map((id) => (
                                     <button
-                                        className="collection-image"
-                                        aria-label={
-                                            'Khám phá lối chơi ' +
-                                            item.name.toLowerCase()
-                                        }
-                                        onClick={() => openCollection(item)}
+                                        type="button"
+                                        key={id}
+                                        aria-pressed={filter === id}
+                                        onClick={() => setFilter(id)}
                                     >
-                                        <span className="concept-tag">
-                                            MINH HỌA / {item.number}
-                                        </span>
-                                        <img
-                                            src={poster}
-                                            width="700"
-                                            height="800"
-                                            alt={
-                                                'Phối cảnh vợt minh họa cho nhóm ' +
-                                                item.name.toLowerCase()
-                                            }
-                                            loading="lazy"
-                                        />
-                                        <span className="collection-open">
-                                            <ArrowUpRight size={23} />
-                                        </span>
+                                        {styles.find((s) => s.id === id)!.name}
                                     </button>
-                                    <div className="collection-description">
-                                        <small>{item.label}</small>
-                                        <h3>{item.name}</h3>
-                                        <p>{item.description}</p>
-                                        <button
-                                            className="text-link"
-                                            onClick={() => openCollection(item)}
-                                        >
-                                            Tìm hiểu lối chơi{' '}
-                                            <ArrowRight size={18} />
-                                        </button>
-                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <StylesCourt filter={filter} onPick={setFilter} />
+                        <div className="styles-list">
+                            {visible.map((style) => (
+                                <article
+                                    className="collection-card"
+                                    key={style.id}
+                                    data-style={style.id}
+                                >
+                                    <p className="collection-card__zone">
+                                        {style.zone} · {style.label}
+                                    </p>
+                                    <h3>{style.name}</h3>
+                                    <p>{style.description}</p>
+                                    {filter !== 'all' && (
+                                        <p className="collection-card__note">
+                                            {style.note}
+                                        </p>
+                                    )}
+                                    <Link
+                                        href={'/products?style=' + style.id}
+                                        className="text-link"
+                                        prefetch="hover"
+                                        viewTransition
+                                    >
+                                        Xem vợt {style.name.toLowerCase()}{' '}
+                                        <ArrowRight size={17} />
+                                    </Link>
                                 </article>
                             ))}
+                            <p className="collection-disclaimer" role="status">
+                                {filter === 'all'
+                                    ? '3 lối chơi.'
+                                    : 'Đang xem: ' +
+                                      styles.find((s) => s.id === filter)
+                                          ?.name +
+                                      '.'}{' '}
+                                Gợi ý theo vị trí trên sân, không phải phân loại
+                                của hãng. Hãy cầm thử trước khi chọn.
+                            </p>
+                            <div className="styles-shop">
+                                <p>
+                                    Đã biết mình hợp lối chơi nào? Xem vợt, giá
+                                    và phiên bản trong cửa hàng.
+                                </p>
+                                <Link
+                                    className="landing-button light-button"
+                                    href="/products"
+                                    prefetch="hover"
+                                    viewTransition
+                                >
+                                    Xem tất cả vợt <ArrowRight size={17} />
+                                </Link>
+                            </div>
+                        </div>
                     </div>
-                    <p className="collection-disclaimer" role="status">
-                        {filter === 'all'
-                            ? '3 hướng lựa chọn.'
-                            : 'Đang xem: ' +
-                              collections.find((item) => item.id === filter)
-                                  ?.name +
-                              '.'}{' '}
-                        Cùng một mẫu vợt dùng để minh họa ba lối chơi, không
-                        phải ba sản phẩm đang bán.
-                    </p>
                 </section>
 
                 <section
-                    className="guide-section landing-container"
+                    className="advisor-band surface-paper"
+                    data-surface="paper"
                     aria-labelledby="guide-title"
                 >
-                    <div className="guide-heading">
-                        <Sparkles size={30} />
-                        <h2 id="guide-title">
-                            Chọn đúng từ
-                            <br />
-                            những câu hỏi nhỏ.
-                        </h2>
-                    </div>
-                    <div className="guide-content">
-                        <p>
-                            Bạn thường đánh đơn hay đôi? Thích đập cầu hay đánh
-                            nhanh gần lưới? Điều gì ở cây vợt hiện tại khiến bạn
-                            muốn thay đổi?
-                        </p>
-                        <Link
-                            className="landing-button dark-button"
-                            href="/advisor"
-                            prefetch="hover"
-                        >
-                            Tìm vợt phù hợp <ArrowUpRight size={18} />
-                        </Link>
-                        <small>
-                            Gợi ý theo ngân sách và lối chơi bạn chọn; chưa sử
-                            dụng AI.
-                        </small>
+                    <div className="landing-container advisor-layout">
+                        <div>
+                            <h2 id="guide-title" className="section-title">
+                                Chưa chắc chọn cây nào?{' '}
+                                <span className="tone-soft">
+                                    Trả lời ba câu hỏi.
+                                </span>
+                            </h2>
+                            <p className="section-lead">
+                                Chúng tôi gợi ý vợt theo lối chơi, trình độ và
+                                ngân sách bạn chọn, từ những mẫu đang bán trong
+                                cửa hàng.
+                            </p>
+                        </div>
+                        <div>
+                            <ol className="advisor-questions">
+                                <li>
+                                    Bạn hay đứng ở đâu: gần lưới, giữa sân hay
+                                    cuối sân?
+                                </li>
+                                <li>Bạn đã chơi cầu được bao lâu?</li>
+                                <li>Bạn muốn chi khoảng bao nhiêu?</li>
+                            </ol>
+                            <div className="advisor-action">
+                                <Link
+                                    className="landing-button dark-button"
+                                    href="/advisor"
+                                    prefetch="hover"
+                                >
+                                    Bắt đầu tư vấn <ArrowRight size={17} />
+                                </Link>
+                                <small>
+                                    Gợi ý theo quy tắc rõ ràng, không dùng AI.
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 <section
-                    className="faq-section landing-container"
+                    className="faq-band surface-paper"
                     id="hoi-dap"
+                    data-surface="paper"
                     aria-labelledby="faq-title"
                 >
-                    <h2 id="faq-title">Trước khi bạn chọn vợt</h2>
-                    <div>
-                        <details>
-                            <summary>
-                                Vợt 3D này có phải sản phẩm đang bán?
-                                <ChevronDown size={18} />
-                            </summary>
-                            <p>
-                                Chưa. Hình vợt đang dùng để giới thiệu các bộ
-                                phận. Lưới dây được thêm để minh họa, không phải
-                                hướng dẫn căng dây. Mẫu vợt 3D này không phải
-                                sản phẩm đang bán; xem các mẫu có giá trong cửa
-                                hàng.
-                            </p>
-                        </details>
-                        <details>
-                            <summary>
-                                Tôi có thể đặt hàng hoặc thanh toán chưa?
-                                <ChevronDown size={18} />
-                            </summary>
-                            <p>
-                                Bạn có thể đặt hàng ở mục Cửa hàng và thanh toán
-                                khi nhận hàng. Sản phẩm có nhãn “Minh họa” chỉ
-                                dùng thử, không được giao thật. Chưa hỗ trợ
-                                thanh toán online; trang không thu thông tin
-                                thẻ.
-                            </p>
-                        </details>
-                        <details>
-                            <summary>
-                                Vì sao không thấy mô hình 3D?
-                                <ChevronDown size={18} />
-                            </summary>
-                            <p>
-                                Thiết bị hoặc trình duyệt có thể chưa hiển thị
-                                được vợt xoay. Bạn vẫn có thể xem ảnh dự phòng
-                                và toàn bộ nội dung. Cuộn để đổi góc nhìn, dùng
-                                thanh chương để chuyển nhanh hoặc chọn “Xem bản
-                                tĩnh”.
-                            </p>
-                        </details>
+                    <div className="faq-section landing-container">
+                        <div>
+                            <h2 id="faq-title" className="section-title">
+                                Hỏi nhanh
+                            </h2>
+                            <p>Những điều người chơi hay hỏi khi chọn vợt.</p>
+                        </div>
+                        <div>
+                            <details>
+                                <summary>
+                                    3U, 4U, 5U nghĩa là gì?
+                                    <Plus size={18} aria-hidden="true" />
+                                </summary>
+                                <p>
+                                    Là nhóm trọng lượng của khung vợt chưa căng
+                                    dây: 3U khoảng 85–89 g, 4U khoảng 80–84 g,
+                                    5U khoảng 75–79 g. Số càng lớn vợt càng nhẹ,
+                                    dễ xoay trở; vợt nặng hơn cho cú đánh đầm
+                                    hơn.
+                                </p>
+                            </details>
+                            <details>
+                                <summary>
+                                    Nặng đầu, nhẹ đầu hay cân bằng?
+                                    <Plus size={18} aria-hidden="true" />
+                                </summary>
+                                <p>
+                                    Điểm cân bằng cho biết trọng lượng dồn về
+                                    đâu. Nặng đầu hợp người thích đập cầu từ
+                                    cuối sân; nhẹ đầu hợp phản tạt, đánh nhanh
+                                    gần lưới; cân bằng dành cho người đổi vai
+                                    liên tục. Cầm thử vẫn là cách chắc nhất.
+                                </p>
+                            </details>
+                            <details>
+                                <summary>
+                                    Thanh toán thế nào?
+                                    <Plus size={18} aria-hidden="true" />
+                                </summary>
+                                <p>
+                                    Bạn thanh toán khi nhận hàng (COD). Cửa hàng
+                                    chưa nhận thanh toán online và không thu
+                                    thông tin thẻ.
+                                </p>
+                            </details>
+                            <details>
+                                <summary>
+                                    Cây vợt 3D trên trang là mẫu nào?
+                                    <Plus size={18} aria-hidden="true" />
+                                </summary>
+                                <p>
+                                    Hyper Core8000, mô hình 3D của ghks1120 theo
+                                    giấy phép CC BY 4.0. Mặt dây được thêm để
+                                    minh họa. Đây là mô hình giới thiệu cấu tạo,
+                                    không phải sản phẩm đang bán.
+                                </p>
+                            </details>
+                        </div>
                     </div>
                 </section>
             </main>
-            <footer className="shop-footer">
+            <footer className="shop-footer" data-surface="night">
                 <div className="landing-container">
                     <div className="footer-top">
-                        <a className="shop-brand" href="#">
-                            <span className="brand-symbol" aria-hidden="true">
-                                <MoveUpRight />
-                                <MoveUpRight />
-                            </span>
-                            <span>
-                                SHOP
-                                <br />
-                                <strong>CẦU LÔNG</strong>
-                            </span>
-                        </a>
-                        <p>
-                            Hiểu cây vợt.
-                            <br />
-                            Tìm nhịp chơi của riêng bạn.
-                        </p>
-                        <a href="#main" className="back-to-top">
-                            Về đầu trang <ArrowUpRight size={20} />
-                        </a>
+                        <div className="footer-action">
+                            <Brand />
+                            <p>
+                                Hiểu cây vợt.{' '}
+                                <span className="tone-soft">Rồi mới chọn.</span>
+                            </p>
+                        </div>
+                        <div className="footer-links">
+                            <Link
+                                className="landing-button light-button"
+                                href="/products"
+                                prefetch="hover"
+                                viewTransition
+                            >
+                                Vào cửa hàng <ArrowRight size={17} />
+                            </Link>
+                            <a href="#main" className="back-to-top">
+                                Về đầu trang
+                            </a>
+                        </div>
                     </div>
                     <div className="footer-bottom">
-                        <span>
-                            Shop Cầu Lông · Không gian trải nghiệm sản phẩm
-                        </span>
+                        <span>© Shop Cầu Lông · Thanh toán khi nhận hàng</span>
                         <nav aria-label="Thông tin cuối trang">
-                            <a href="#cac-bo-phan">Các bộ phận</a>
+                            <a href="#kham-pha-vot">Cây vợt</a>
                             <a href="#bo-suu-tap">Lối chơi</a>
-                            <a href="#hoi-dap">Câu hỏi thường gặp</a>
+                            <a href="#hoi-dap">Hỏi đáp</a>
                         </nav>
                         <span>
                             Mô hình{' '}
@@ -419,49 +517,11 @@ export default function Welcome() {
                             >
                                 CC BY 4.0
                             </a>
-                            . Đã chỉnh cách hiển thị, thêm mặt dây minh họa và
-                            đổi màu trong một số hình ảnh.
+                            , đã thêm mặt dây minh họa.
                         </span>
                     </div>
                 </div>
             </footer>
-            <dialog
-                className="collection-dialog"
-                ref={dialog}
-                onClick={(event) => {
-                    if (event.target === event.currentTarget)
-                        dialog.current?.close();
-                }}
-                aria-labelledby="collection-dialog-title"
-            >
-                <button
-                    className="dialog-close"
-                    aria-label="Đóng thông tin lối chơi"
-                    onClick={() => dialog.current?.close()}
-                >
-                    <X size={22} />
-                </button>
-                <span className="dialog-icon">
-                    <Check size={24} />
-                </span>
-                <p>Khám phá lối chơi</p>
-                <h2 id="collection-dialog-title">{selected.name}</h2>
-                <p>{selected.note}</p>
-                <div className="dialog-note">
-                    Đây là gợi ý về lối chơi, không phải ba mẫu vợt khác nhau.
-                    Xem các sản phẩm có giá và tồn kho trong cửa hàng.
-                </div>
-                <Link
-                    href={'/products?style=' + selected.id}
-                    className="landing-button dark-button"
-                    prefetch="hover"
-                    viewTransition
-                    onClick={() => dialog.current?.close()}
-                >
-                    Xem vợt {selected.name.toLowerCase()} trong cửa hàng{' '}
-                    <ArrowRight size={18} />
-                </Link>
-            </dialog>
         </div>
     );
 }

@@ -42,6 +42,8 @@ export type ProductFilters = {
     brand: string;
     style: string;
     sort: string;
+    price?: string;
+    stock?: string;
 };
 export type CartItem = {
     variant_id: number;
@@ -82,7 +84,13 @@ export type Order = Totals & {
     }[];
 };
 export type ShopSharedProps = {
-    shop: { cart_count: number; is_admin: boolean };
+    shop: {
+        cart_count: number;
+        is_admin: boolean;
+        pending_orders?: number;
+        contact?: { hotline: string; email: string };
+        free_shipping_from?: number;
+    };
     flash: { success: string | null; error: string | null };
 };
 export const vnd = (amount: number): string =>

@@ -54,8 +54,12 @@ export default function PasskeyVerify({
                         ? (loadingLabel ?? 'Authenticating...')
                         : (label ?? 'Sign in with a passkey')}
                 </Button>
+                {/* Browser and package errors are English and technical; the way forward is the same. */}
                 {error && (
-                    <InputError message={error} className="text-center" />
+                    <InputError
+                        message="Không đăng nhập được bằng passkey. Hãy thử lại hoặc đăng nhập bằng email."
+                        className="text-center"
+                    />
                 )}
             </div>
 

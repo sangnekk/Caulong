@@ -1,10 +1,12 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Minus, Phone, Plus } from 'lucide-react';
 import { DemoBadge, FormErrors, ProductImage } from '@/layouts/shop-layout';
 import {
     playStyles,
     skillLevels,
     vnd,
     type Product as ProductData,
+    type ShopSharedProps,
 } from '@/types/commerce';
 
 const specLabels = {
@@ -23,6 +25,11 @@ export default function Product({ product }: { product: ProductData }) {
         (variant) => variant.id === form.data.variant_id,
     );
     const limit = Math.min(20, selected?.stock ?? 0);
+    const available = variants.some((variant) => variant.stock > 0);
+    const hotline = usePage<ShopSharedProps>().props.shop?.contact?.hotline;
+    const quantity = form.data.quantity;
+    const setQuantity = (value: number) =>
+        form.setData('quantity', Math.min(Math.max(1, value), limit));
     return (
         <>
             <Head title={product.name} />
@@ -119,44 +126,123 @@ export default function Product({ product }: { product: ProductData }) {
                                 Mã hàng: {selected.sku}
                             </p>
                         )}
-                        <div className="store-add-row">
-                            <div className="store-field">
-                                <label htmlFor="quantity">Số lượng</label>
-                                <input
-                                    id="quantity"
-                                    type="number"
-                                    min={1}
-                                    max={Math.max(1, limit)}
-                                    step={1}
-                                    required
-                                    value={form.data.quantity}
-                                    disabled={limit < 1 || form.processing}
-                                    aria-invalid={!!form.errors.quantity}
-                                    onChange={(event) =>
-                                        form.setData(
-                                            'quantity',
-                                            Number(event.target.value),
-                                        )
+                        {available ? (
+                            <div className="store-add-row">
+                                <div className="store-field">
+                                    <label htmlFor="quantity">Số lượng</label>
+                                    <div className="store-stepper">
+                                        <button
+                                            type="button"
+                                            aria-label="Bớt một"
+                                            disabled={
+                                                quantity <= 1 || form.processing
+                                            }
+                                            onClick={() =>
+                                                setQuantity(quantity - 1)
+                                            }
+                                        >
+                                            <Minus
+                                                size={18}
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                        <input
+                                            id="quantity"
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={1}
+                                            max={Math.max(1, limit)}
+                                            step={1}
+                                            required
+                                            value={quantity}
+                                            disabled={form.processing}
+                                            aria-invalid={
+                                                !!form.errors.quantity
+                                            }
+                                            onChange={(event) =>
+                                                form.setData(
+                                                    'quantity',
+                                                    Number(event.target.value),
+                                                )
+                                            }
+                                        />
+                                        <button
+                                            type="button"
+                                            aria-label="Thêm một"
+                                            disabled={
+                                                quantity >= limit ||
+                                                form.processing
+                                            }
+                                            onClick={() =>
+                                                setQuantity(quantity + 1)
+                                            }
+                                        >
+                                            <Plus
+                                                size={18}
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                    </div>
+                                </div>
+                                <button
+                                    className="store-button store-add-button"
+                                    disabled={
+                                        form.processing ||
+                                        limit < 1 ||
+                                        !Number.isInteger(quantity) ||
+                                        quantity < 1 ||
+                                        quantity > limit
                                     }
-                                />
+                                >
+                                    {form.processing
+                                        ? 'Đang thêm…'
+                                        : 'Thêm vào giỏ'}
+                                </button>
                             </div>
-                            <button
-                                className="store-button"
-                                disabled={
-                                    form.processing ||
-                                    limit < 1 ||
-                                    !Number.isInteger(form.data.quantity) ||
-                                    form.data.quantity < 1 ||
-                                    form.data.quantity > limit
-                                }
-                            >
-                                {form.processing
-                                    ? 'Đang thêm…'
-                                    : limit < 1
-                                      ? 'Tạm hết hàng'
-                                      : 'Thêm vào giỏ'}
-                            </button>
-                        </div>
+                        ) : (
+                            <div className="store-soldout" role="status">
+                                <strong>Tạm hết hàng</strong>
+                                <p>
+                                    {hotline
+                                        ? 'Gọi cửa hàng để đặt trước hoặc hỏi ngày có hàng, hoặc xem các cây cùng lối chơi đang có sẵn.'
+                                        : 'Cây vợt này tạm hết. Xem các cây cùng lối chơi đang có sẵn.'}
+                                </p>
+                                <div className="store-soldout-actions">
+                                    {hotline && (
+                                        <a
+                                            className="store-button"
+                                            href={
+                                                'tel:' +
+                                                hotline.replace(/[^0-9+]/g, '')
+                                            }
+                                        >
+                                            <Phone
+                                                size={17}
+                                                aria-hidden="true"
+                                            />
+                                            Gọi {hotline}
+                                        </a>
+                                    )}
+                                    <Link
+                                        className={
+                                            hotline
+                                                ? 'store-button store-button-secondary'
+                                                : 'store-button'
+                                        }
+                                        href={
+                                            '/products?stock=in&style=' +
+                                            product.play_style
+                                        }
+                                    >
+                                        Vợt{' '}
+                                        {playStyles[
+                                            product.play_style
+                                        ].toLowerCase()}{' '}
+                                        còn hàng
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
                         {limit > 0 && (
                             <p className="store-hint">
                                 Còn {selected?.stock} sản phẩm. Tối đa {limit}{' '}

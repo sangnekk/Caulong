@@ -104,6 +104,9 @@ try {
     assert.equal(initial.ready, 'false');
     assert.equal(initial.disabled, true);
     await pausedRequest();
+    // The intro holds the first screen; a visitor who skips it scrolls while the model loads.
+    await evaluate("document.querySelector('.landing-loader__skip').click()");
+    await waitFor("!document.querySelector('.landing-loader')");
     await evaluate('window.scrollTo(0,1600)');
     await evaluate(
         'new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)))',
@@ -161,8 +164,9 @@ try {
     await waitFor(
         "document.querySelector('.is-reading') && !document.querySelector('canvas')",
     );
+    // Reduced motion is already the no-3D reading: no toggle to offer.
     assert.equal(
-        await evaluate("document.querySelector('.story-mode').disabled"),
+        await evaluate("!document.querySelector('.story-mode')"),
         true,
     );
     assert.deepEqual(errors, []);

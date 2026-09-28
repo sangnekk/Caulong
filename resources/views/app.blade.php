@@ -22,7 +22,7 @@
         {{-- Inline style to set the HTML background color based on our theme in app.css --}}
         <style>
             html {
-                background-color: {{ $page['component'] === 'welcome' ? 'oklch(0.36 0.12 260)' : 'oklch(1 0 0)' }};
+                background-color: {{ $page['component'] === 'welcome' ? 'oklch(0.145 0.032 262)' : 'oklch(1 0 0)' }};
             }
 
             html.dark {
@@ -35,6 +35,13 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
         @fonts
+
+        @if ($page['component'] === 'welcome' || str_starts_with($page['component'], 'shop/'))
+            {{-- Landing and store type: Archivo with the Vietnamese subset; italics only on the landing. --}}
+            @foreach ($page['component'] === 'welcome' ? ['latin', 'vietnamese', 'italic-latin', 'italic-vietnamese'] : ['latin', 'vietnamese'] as $subset)
+                <link rel="preload" href="/fonts/archivo/archivo-v25-{{ $subset }}.woff2" as="font" type="font/woff2" crossorigin>
+            @endforeach
+        @endif
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])

@@ -254,7 +254,9 @@ class CheckoutTest extends TestCase
         $token = $this->startCheckout($variant);
         $this->post('/checkout', $this->data($token))->assertRedirect();
         $order = Order::firstOrFail();
-        session()->flush();
+        // flushSession() starts the session first; a bare session()->flush() would be undone by
+        // withSession() reloading this session's saved data (its placed order) from the handler.
+        $this->flushSession();
         $this->withSession(['checkout_token' => $token, 'shopping_cart' => [$variant->id => 1]])
             ->post('/checkout', $this->data($token))->assertSessionHasErrors('checkout_token');
         $this->assertDatabaseCount('orders', 1);

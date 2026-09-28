@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Services\ShopSettings;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +16,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Read once per request; saving in the admin clears it.
+        $this->app->scoped(ShopSettings::class);
     }
 
     /**

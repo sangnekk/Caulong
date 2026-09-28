@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Order;
 use App\Services\CartService;
+use App\Services\ShopSettings;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -44,7 +46,17 @@ class HandleInertiaRequests extends Middleware
             ],
             'shop' => fn (): array => [
                 'cart_count' => app(CartService::class)->count($request),
+                // Set by the owner in /admin/settings; empty values are simply not shown.
+                'contact' => [
+                    'hotline' => app(ShopSettings::class)->all()['hotline'],
+                    'email' => app(ShopSettings::class)->all()['contact_email'],
+                ],
+                'free_shipping_from' => app(ShopSettings::class)->freeShippingThreshold(),
                 'is_admin' => (bool) $request->user()?->is_admin,
+                // Admin navigation badge: real orders waiting for a call (demo orders are labelled, not work).
+                'pending_orders' => $request->user()?->is_admin
+                    ? Order::where('is_demo', false)->where('status', 'pending')->count()
+                    : 0,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

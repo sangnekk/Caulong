@@ -97,11 +97,17 @@ try {
         mobile: false,
     });
     await navigate('/products', '.store-product-card');
+    // Up to 24 per page; what can be bought (the stocked demo rackets here) is listed first.
+    const cards = await evaluate(
+        "document.querySelectorAll('.store-product-card').length",
+    );
+    assert.ok(cards >= 6 && cards <= 24, 'cards ' + cards);
     assert.equal(
         await evaluate(
-            "document.querySelectorAll('.store-product-card').length",
+            "document.querySelector('.store-product-card').dataset.available",
         ),
-        6,
+        'true',
+        'In-stock products come first',
     );
     assert.match(await evaluate('document.body.innerText'), /mẫu|Minh họa/i);
     const href = await evaluate(

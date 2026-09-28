@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $variant_name
  * @property string $sku
  * @property int $unit_price
+ * @property int|null $unit_cost
  * @property int $quantity
  * @property int $line_total
  * @property-read Order $order
@@ -22,9 +23,12 @@ class OrderItem extends Model
 {
     protected $guarded = ['id'];
 
+    /** Cost at the time of sale: for reports, never shown to the customer. */
+    protected $hidden = ['unit_cost'];
+
     protected function casts(): array
     {
-        return ['unit_price' => 'integer', 'quantity' => 'integer', 'line_total' => 'integer'];
+        return ['unit_price' => 'integer', 'unit_cost' => 'integer', 'quantity' => 'integer', 'line_total' => 'integer'];
     }
 
     /** @return BelongsTo<Order, $this> */

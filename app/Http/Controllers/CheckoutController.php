@@ -64,7 +64,8 @@ class CheckoutController extends Controller
         ]);
         $order = $orders->checkout($request, $data);
 
-        return redirect()->route('orders.show', ['order' => $order->public_id]);
+        return redirect()->route('orders.show', ['order' => $order->public_id])
+            ->with('order_placed', $order->public_id);
     }
 
     public function show(Request $request, Order $order): Response
@@ -77,6 +78,11 @@ class CheckoutController extends Controller
         ]);
         $data['items'] = $order->items->map(fn ($item) => $item->only(['product_name', 'variant_name', 'sku', 'unit_price', 'quantity', 'line_total']))->all();
 
-        return Inertia::render('shop/order', ['order' => $data, 'trackingUrl' => route('orders.show', ['order' => $order->public_id], false)]);
+        return Inertia::render('shop/order', [
+            'order' => $data,
+            'trackingUrl' => route('orders.show', ['order' => $order->public_id], false),
+            // "Order placed" only right after checkout; reopening it later shows it as an order.
+            'justPlaced' => $request->session()->get('order_placed') === $order->public_id,
+        ]);
     }
 }

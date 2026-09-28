@@ -55,8 +55,8 @@ class CatalogTest extends TestCase
 
         $this->get('/products')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('shop/products', false)->has('products.data', 1)->where('products.data.0.id', $active->id)
-            ->has('products.data.0.variants', 1)->where('products.per_page', 12)->has('products.links')
-            ->where('filters', ['q' => '', 'category' => '', 'brand' => '', 'style' => '', 'sort' => 'featured']));
+            ->has('products.data.0.variants', 1)->where('products.per_page', 24)->has('products.links')
+            ->where('filters', ['q' => '', 'category' => '', 'brand' => '', 'style' => '', 'sort' => 'featured', 'price' => '', 'stock' => '']));
         $this->get('/products/'.$active->slug)->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('shop/product', false)->where('product.id', $active->id)
             ->where('product.is_demo', true)->where('product.specs.weight', '4U')
@@ -83,12 +83,30 @@ class CatalogTest extends TestCase
         $filters = ['q' => 'Swift', 'brand' => $brand->slug, 'category' => $category->slug, 'style' => 'speed', 'sort' => 'newest'];
 
         $this->get('/products?'.http_build_query($filters))->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->has('products.data', 1)->where('products.data.0.id', $match->id)->where('filters', $filters)
+            ->has('products.data', 1)->where('products.data.0.id', $match->id)->where('filters', [...$filters, 'price' => '', 'stock' => ''])
             ->where('products.data.0.brand', $brand->only(['id', 'name', 'slug']))
             ->where('products.data.0.category', $category->only(['id', 'name', 'slug']))
             ->has('brands', 1)->has('categories', 1));
         $this->get('/products?brand=not-found')->assertOk()->assertInertia(fn (Assert $page) => $page->has('products.data', 0));
         $this->get('/products?q='.urlencode("' OR 1=1 --"))->assertOk()->assertInertia(fn (Assert $page) => $page->has('products.data', 0));
+    }
+
+    public function test_filters_offer_only_taxonomy_with_products_on_sale(): void
+    {
+        $offered = Brand::create(['name' => 'On sale', 'slug' => 'on-sale']);
+        $hidden = Brand::create(['name' => 'Hidden only', 'slug' => 'hidden-only']);
+        Brand::create(['name' => 'Empty', 'slug' => 'empty']);
+        $category = Category::create(['name' => 'Rackets', 'slug' => 'rackets']);
+        Category::create(['name' => 'Retired demo', 'slug' => 'retired-demo']);
+        $this->product(['brand_id' => $offered->id, 'category_id' => $category->id]);
+        $this->product(['brand_id' => $hidden->id, 'is_active' => false]);
+
+        $this->get('/products')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->where('brands', [$offered->only(['id', 'name', 'slug'])])
+            ->where('categories', [$category->only(['id', 'name', 'slug'])]));
+        // A shared link to a brand with nothing on sale keeps its option selected.
+        $this->get('/products?brand=hidden-only')->assertOk()->assertInertia(fn (Assert $page) => $page
+            ->has('products.data', 0)->where('brands.0.slug', 'hidden-only')->has('brands', 2));
     }
 
     public function test_prices_sort_by_minimum_active_variant_with_null_prices_last(): void
@@ -119,11 +137,11 @@ class CatalogTest extends TestCase
         $featured->forceFill(['created_at' => now()->subDay()])->save();
         $newest = $this->product();
         $newest->forceFill(['created_at' => now()->addDay()])->save();
-        for ($i = 0; $i < 11; $i++) {
+        for ($i = 0; $i < 23; $i++) {
             $this->product();
         }
         $this->get('/products')->assertOk()->assertInertia(fn (Assert $page) => $page
-            ->has('products.data', 12)->where('products.total', 13)->where('products.data.0.id', $featured->id));
+            ->has('products.data', 24)->where('products.total', 25)->where('products.data.0.id', $featured->id));
         $this->get('/products?sort=newest')->assertOk()->assertInertia(fn (Assert $page) => $page->where('products.data.0.id', $newest->id));
         $this->get('/products?page=2')->assertOk()->assertInertia(fn (Assert $page) => $page->has('products.data', 1)->where('products.current_page', 2));
     }

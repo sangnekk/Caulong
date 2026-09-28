@@ -1,4 +1,4 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { DemoBadge, FormErrors, OrderTotals } from '@/layouts/shop-layout';
 import { vnd, type Cart } from '@/types/commerce';
 
@@ -23,12 +23,14 @@ export default function Checkout({
     checkoutToken,
     paymentMethods,
 }: Props) {
+    // A signed-in customer starts from their account's name and email; both stay editable.
+    const { user } = usePage().props.auth;
     const form = useForm<CheckoutFields>({
         checkout_token: checkoutToken,
-        name: '',
+        name: user?.name ?? '',
         phone: '',
         address: '',
-        email: '',
+        email: user?.email ?? '',
         notes: '',
         payment_method: 'cod',
         accept_terms: false,
@@ -320,7 +322,7 @@ export default function Checkout({
                                 </li>
                             ))}
                         </ul>
-                        <OrderTotals totals={cart} />
+                        <OrderTotals totals={cart} hint />
                         {cart.items.some((item) => item.is_demo) && (
                             <p className="store-notice">
                                 Đây sẽ là đơn mẫu vì có sản phẩm mẫu; không phải

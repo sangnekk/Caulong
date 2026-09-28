@@ -1,16 +1,55 @@
 import { useEffect, useRef, useState } from 'react';
+import RacketBlueprint, {
+    BLUEPRINT_BOX,
+    BLUEPRINT_SCALE,
+    HEAD_CENTER,
+    MAIN_COUNT,
+    STRING_COUNT,
+} from '@/components/racket-blueprint';
+import { racketLoad } from '@/lib/racket-load';
+import type { RacketAffine } from '@/lib/racket-load';
 
 import '../../css/landing-loader.css';
 
-// Tab-scoped: the intro plays once per session so shop navigation / back does not replay it.
-export const LANDING_LOADER_SESSION_KEY = 'shop-cau-long:landing-intro-seen';
+// A document reload creates a fresh module; an Inertia visit keeps this flag. A link to a
+// section (#hoi-dap) goes straight there instead.
+let seenInDocument = false;
+export const shouldShowLandingIntro = () =>
+    typeof window !== 'undefined' && !seenInDocument && !window.location.hash;
+
+// On reload Inertia scrolls back to the saved position one frame after the first render,
+// under the intro. The intro is staged on the first screen, so a reload of the landing
+// starts at the top (only here: during an SPA visit this state still belongs to the old page).
+if (
+    shouldShowLandingIntro() &&
+    window.location.pathname === '/' &&
+    window.history.state?.documentScrollPosition
+)
+    window.history.replaceState(
+        {
+            ...window.history.state,
+            documentScrollPosition: { top: 0, left: 0 },
+        },
+        '',
+    );
+
+export type RevealMode = 'pull' | 'fade' | 'cut';
 
 const POSTER = '/models/hyper-core-poster.png';
-const MIN_VISIBLE_MS = 600;
-const MAX_VISIBLE_MS = 4000;
-const EXIT_MS = 300;
+const DRAW_MS = 560;
+// Fastest cadence, so even a cached model is strung in about a second.
+const STRING_MS = 26;
+const SETTLE_MS = 260;
+const PULL_MS = 1050;
+// Share of the pull after which the drawing hands over to the 3D render beneath it.
+const MATERIALIZE_AT = 0.7;
+const FADE_MS = 420;
+// Slow network: stop waiting here; the story shows the same progress in place.
+const CEILING_MS = 10000;
 
 type LandingLoaderProps = {
+    /** The landing starts its entrance: court pull-back, 3D, header and copy. */
+    onReveal?: (mode: RevealMode) => void;
     /** Fired once the overlay has unmounted (after exit, or immediately when suppressed). */
     onDone?: () => void;
 };
@@ -19,106 +58,214 @@ const reducedMotion = () =>
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const hasSeen = () => {
-    try {
-        return (
-            window.sessionStorage.getItem(LANDING_LOADER_SESSION_KEY) === '1'
-        );
-    } catch {
-        return false;
-    }
-};
+/** Close-up on the head, on the racket's side of the net and less tilted than the story pose. */
+function closeUp(width: number, height: number) {
+    const mobile = width < 768;
+    const scale = mobile
+        ? Math.min((width * 0.64) / 1.72, (height * 0.4) / 2.12)
+        : Math.min((height * 0.64) / 2.12, (width * 0.4) / 1.72);
+    const angle = (12 * Math.PI) / 180;
+    const x = width * (mobile ? 0.5 : 0.63);
+    const y = height * (mobile ? 0.33 : 0.47);
+    const cos = Math.cos(angle) * scale;
+    const sin = Math.sin(angle) * scale;
+    const affine: RacketAffine = {
+        a: cos,
+        b: sin,
+        c: -sin,
+        d: cos,
+        e: x - sin * HEAD_CENTER,
+        f: y + cos * HEAD_CENTER,
+    };
+    return { affine, x, y };
+}
 
-const remember = () => {
-    try {
-        window.sessionStorage.setItem(LANDING_LOADER_SESSION_KEY, '1');
-    } catch {
-        // Storage disabled / private mode: overlay simply plays again next visit.
-    }
-};
+// Model-plane affine -> CSS matrix for the svg box laid out at BLUEPRINT_SCALE px per unit.
+const toCss = ({ a, b, c, d, e, f }: RacketAffine) =>
+    'matrix(' +
+    [
+        a / BLUEPRINT_SCALE,
+        b / BLUEPRINT_SCALE,
+        c / BLUEPRINT_SCALE,
+        d / BLUEPRINT_SCALE,
+        e + a * BLUEPRINT_BOX.x + c * BLUEPRINT_BOX.y,
+        f + b * BLUEPRINT_BOX.x + d * BLUEPRINT_BOX.y,
+    ].join(',') +
+    ')';
 
-export default function LandingLoader({ onDone }: LandingLoaderProps) {
+export default function LandingLoader({
+    onReveal,
+    onDone,
+}: LandingLoaderProps) {
     // Client-side entry: paint the intro on the first React frame, not one effect later.
-    const [open, setOpen] = useState(
-        () => typeof window !== 'undefined' && !hasSeen(),
+    const [open, setOpen] = useState(shouldShowLandingIntro);
+    const [stage, setStage] = useState<'stringing' | 'pulling' | 'fading'>(
+        'stringing',
     );
-    const [exiting, setExiting] = useState(false);
+    const [strung, setStrung] = useState(0);
+    const [loaded, setLoaded] = useState(false);
+    const [framing, setFraming] = useState(() =>
+        typeof window === 'undefined'
+            ? null
+            : closeUp(window.innerWidth, window.innerHeight),
+    );
+    const root = useRef<HTMLDivElement>(null);
+    const drawing = useRef<SVGSVGElement>(null);
     const skip = useRef<HTMLButtonElement>(null);
     const dismissRef = useRef<() => void>(() => {});
     const done = useRef(false);
-    const dismissed = useRef(false);
-    const onDoneRef = useRef(onDone);
-    onDoneRef.current = onDone;
+    const callbacks = useRef({ onReveal, onDone });
+    callbacks.current = { onReveal, onDone };
 
-    // Client-only decision: server renders nothing, so the overlay cannot hydrate-mismatch.
     useEffect(() => {
-        if (hasSeen()) {
-            if (!done.current) {
-                done.current = true;
-                onDoneRef.current?.();
-            }
-            return;
+        if (!open && !done.current) {
+            done.current = true;
+            callbacks.current.onDone?.();
         }
-        setOpen(true);
     }, []);
 
     useEffect(() => {
         if (!open) return;
-        dismissed.current = false;
         const reduced = reducedMotion();
+        const landing =
+            root.current?.closest<HTMLElement>('.badminton-landing');
         const body = document.body;
         const previousOverflow = body.style.overflow;
+        // The intro is staged on the story's first screen: hold the page there until it hands
+        // over, whatever restores a scroll position in the meantime (browser, Inertia, anchor).
+        const pin = () => {
+            if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
+        };
+        pin();
+        window.addEventListener('scroll', pin);
         body.style.overflow = 'hidden';
         skip.current?.focus();
 
         let cancelled = false;
+        let dismissed = false;
+        let frame = 0;
+        let count = 0;
+        let lastString = 0;
+        let fullAt = 0;
+        let near = closeUp(window.innerWidth, window.innerHeight);
         const timers: number[] = [];
         const wait = (ms: number, fn: () => void) => {
-            if (ms <= 0) {
-                fn();
-                return;
-            }
             timers.push(window.setTimeout(fn, ms));
         };
-
-        const dismiss = () => {
-            if (cancelled || dismissed.current) return;
-            dismissed.current = true;
-            remember();
-            setExiting(true);
-            wait(reduced ? 0 : EXIT_MS, () => {
-                setOpen(false);
-                done.current = true;
-                onDoneRef.current?.();
-            });
+        const frameCourt = () => {
+            landing?.style.setProperty('--intro-x', near.x + 'px');
+            landing?.style.setProperty('--intro-y', near.y + 'px');
         };
-        dismissRef.current = dismiss;
+        frameCourt();
 
-        // Ready when the poster has settled (load OR error: it is an enhancement, never a gate)
-        // and webfonts are usable. Never sooner than the anti-flash floor.
+        // The poster stands in for the racket whenever the 3D is not what we reveal.
+        let posterSettled = false;
         const poster = new Image();
-        poster.fetchPriority = 'high';
-        const posterSettled = new Promise<void>((resolve) => {
-            poster.onload = () => resolve();
-            poster.onerror = () => resolve();
-            poster.src = POSTER;
+        poster.onload = poster.onerror = () => {
+            posterSettled = true;
+        };
+        poster.src = POSTER;
+        let fontsReady = !document.fonts;
+        void document.fonts?.ready.then(() => {
+            fontsReady = true;
         });
-        const fonts = document.fonts?.ready ?? Promise.resolve();
-        const ready = Promise.all([posterSettled, fonts]).then(
-            () =>
-                new Promise<void>((resolve) => {
-                    wait(reduced ? 0 : MIN_VISIBLE_MS, resolve);
-                }),
-        );
-        const ceiling = new Promise<void>((resolve) => {
-            // Hard ceiling: a broken network can never trap the visitor here.
-            timers.push(window.setTimeout(resolve, MAX_VISIBLE_MS));
-        });
-        void Promise.race([ready, ceiling]).then(dismiss);
+
+        const finish = () => {
+            if (cancelled) return;
+            body.style.overflow = previousOverflow;
+            setOpen(false);
+            done.current = true;
+            callbacks.current.onDone?.();
+        };
+
+        const reveal = (interrupted: boolean) => {
+            if (cancelled || dismissed) return;
+            dismissed = true;
+            seenInDocument = true;
+            cancelAnimationFrame(frame);
+            const load = racketLoad.get();
+            const target =
+                !interrupted && !reduced && load.phase === 'ready'
+                    ? load.measure?.()
+                    : null;
+            const mode: RevealMode = reduced ? 'cut' : target ? 'pull' : 'fade';
+            callbacks.current.onReveal?.(mode);
+            if (mode === 'cut') {
+                finish();
+                return;
+            }
+            if (target && drawing.current) {
+                setStage('pulling');
+                drawing.current.animate(
+                    [
+                        { transform: toCss(near.affine) },
+                        { transform: toCss(target) },
+                    ],
+                    {
+                        duration: PULL_MS,
+                        easing: 'cubic-bezier(0.7, 0, 0.16, 1)',
+                        fill: 'forwards',
+                    },
+                );
+                wait(PULL_MS * MATERIALIZE_AT, () => setStage('fading'));
+                wait(PULL_MS * MATERIALIZE_AT + FADE_MS, finish);
+                return;
+            }
+            setStage('fading');
+            wait(FADE_MS, finish);
+        };
+        dismissRef.current = () => reveal(true);
+
+        const started = performance.now();
+        const tick = (now: number) => {
+            frame = requestAnimationFrame(tick);
+            const load = racketLoad.get();
+            const settled =
+                load.phase === 'ready' ||
+                load.phase === 'static' ||
+                load.phase === 'error';
+            // The last string waits for the render to be usable, not just downloaded.
+            const target = settled
+                ? STRING_COUNT
+                : Math.min(
+                      STRING_COUNT - 1,
+                      Math.floor(load.progress * STRING_COUNT),
+                  );
+            if (
+                count < target &&
+                now - started >= (reduced ? 0 : DRAW_MS * 0.7) &&
+                (reduced || now - lastString >= STRING_MS)
+            ) {
+                count = reduced ? target : count + 1;
+                lastString = now;
+                if (count === STRING_COUNT) fullAt = now;
+                setStrung(count);
+            }
+            if (settled) setLoaded(true);
+            const posterReady = load.phase === 'ready' || posterSettled;
+            if (
+                count === STRING_COUNT &&
+                settled &&
+                posterReady &&
+                fontsReady &&
+                now - fullAt >= (reduced ? 0 : SETTLE_MS)
+            )
+                reveal(false);
+            else if (now - started >= CEILING_MS) reveal(true);
+        };
+        frame = requestAnimationFrame(tick);
+
+        const onResize = () => {
+            if (dismissed) return;
+            near = closeUp(window.innerWidth, window.innerHeight);
+            frameCourt();
+            setFraming(near);
+        };
+        window.addEventListener('resize', onResize);
 
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                dismiss();
+                reveal(true);
                 return;
             }
             // Single-action dialog: keep Tab on the one control instead of leaking behind it.
@@ -131,63 +278,55 @@ export default function LandingLoader({ onDone }: LandingLoaderProps) {
 
         return () => {
             cancelled = true;
+            cancelAnimationFrame(frame);
             timers.forEach((id) => window.clearTimeout(id));
+            window.removeEventListener('resize', onResize);
+            window.removeEventListener('scroll', pin);
             document.removeEventListener('keydown', onKeyDown);
             body.style.overflow = previousOverflow;
         };
     }, [open]);
 
-    if (!open) return null;
+    if (!open || !framing) return null;
+
+    const crosses = strung > MAIN_COUNT;
+    const complete = strung === STRING_COUNT;
 
     return (
         <div
+            ref={root}
             className="landing-loader"
-            data-state={exiting ? 'exiting' : 'active'}
+            data-state={stage}
             role="dialog"
             aria-modal="true"
             aria-labelledby="landing-loader-title"
             aria-describedby="landing-loader-status"
         >
-            <svg
-                className="landing-loader__court"
-                viewBox="0 0 1440 900"
-                preserveAspectRatio="xMidYMid slice"
-                aria-hidden="true"
-                focusable="false"
-            >
-                <g className="landing-loader__lines">
-                    <rect x="360" y="110" width="720" height="680" />
-                    <line x1="383" y1="110" x2="383" y2="790" />
-                    <line x1="1057" y1="110" x2="1057" y2="790" />
-                    <line x1="360" y1="149" x2="1080" y2="149" />
-                    <line x1="360" y1="751" x2="1080" y2="751" />
-                    <line x1="360" y1="350" x2="1080" y2="350" />
-                    <line x1="360" y1="550" x2="1080" y2="550" />
-                    <line x1="720" y1="110" x2="720" y2="350" />
-                    <line x1="720" y1="550" x2="720" y2="790" />
-                    <line
-                        className="is-net"
-                        x1="322"
-                        y1="450"
-                        x2="1118"
-                        y2="450"
-                    />
-                </g>
-                <path
-                    className="landing-loader__trail"
-                    d="M390 650 Q720 -60 1050 250"
-                />
-                <g className="landing-loader__shuttle">
-                    <path
-                        className="feathers"
-                        d="M-6 -3 L-16 -22 M0 -5 L0 -24 M6 -3 L16 -22 M-16 -22 Q0 -30 16 -22"
-                    />
-                    <circle className="cork" cx="0" cy="0" r="7" />
-                </g>
-            </svg>
-            <div className="landing-loader__panel">
-                <p className="landing-loader__brand" id="landing-loader-title">
-                    <span>SHOP</span> <strong>CẦU LÔNG</strong>
+            <RacketBlueprint
+                ref={drawing}
+                strung={strung}
+                className="landing-loader__drawing"
+                style={{ transform: toCss(framing.affine) }}
+            />
+            <h2 className="landing-loader__title" id="landing-loader-title">
+                Shop Cầu Lông
+            </h2>
+            <div className="landing-loader__bar">
+                <p className="landing-loader__count" aria-hidden="true">
+                    <span>
+                        {complete
+                            ? 'Căng xong'
+                            : crosses
+                              ? 'Đan dây ngang'
+                              : 'Căng dây dọc'}
+                    </span>
+                    <b>
+                        {complete
+                            ? '44 dây'
+                            : crosses
+                              ? strung - MAIN_COUNT + '/24'
+                              : strung + '/20'}
+                    </b>
                 </p>
                 <p
                     className="landing-loader__status"
@@ -195,7 +334,9 @@ export default function LandingLoader({ onDone }: LandingLoaderProps) {
                     role="status"
                     aria-live="polite"
                 >
-                    Đang chuẩn bị trải nghiệm
+                    {loaded
+                        ? 'Vợt đã sẵn sàng.'
+                        : 'Đang chuẩn bị vợt 3D. Bạn có thể bỏ qua.'}
                 </p>
                 <button
                     className="landing-loader__skip"

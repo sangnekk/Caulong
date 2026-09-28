@@ -9,9 +9,30 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class TaxonomyController extends Controller
 {
+    public function index(): Response
+    {
+        $list = fn (string $model) => $model::query()->orderBy('name')
+            ->withCount(['products', 'products as active_products_count' => fn ($query) => $query->where('is_active', true)])
+            ->get(['id', 'name', 'slug'])
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'name' => $item->name,
+                'slug' => $item->slug,
+                'products' => (int) $item->getAttribute('products_count'),
+                'active' => (int) $item->getAttribute('active_products_count'),
+            ]);
+
+        return Inertia::render('admin/taxonomies', [
+            'brands' => $list(Brand::class),
+            'categories' => $list(Category::class),
+        ]);
+    }
+
     public function brand(Request $request): RedirectResponse
     {
         return $this->store($request, Brand::class, 'brands');

@@ -9,12 +9,12 @@ import { send } from '@/routes/verification';
 export default function VerifyEmail({ status }: { status?: string }) {
     return (
         <>
-            <Head title="Email verification" />
+            <Head title="Xác minh email" />
 
             {status === 'verification-link-sent' && (
                 <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
+                    Đã gửi liên kết xác minh mới đến địa chỉ email bạn đã cung
+                    cấp khi đăng ký.
                 </div>
             )}
 
@@ -23,14 +23,14 @@ export default function VerifyEmail({ status }: { status?: string }) {
                     <>
                         <Button disabled={processing} variant="secondary">
                             {processing && <Spinner />}
-                            Resend verification email
+                            Gửi lại email xác minh
                         </Button>
 
                         <TextLink
                             href={logout()}
                             className="mx-auto block text-sm"
                         >
-                            Log out
+                            Đăng xuất
                         </TextLink>
                     </>
                 )}
@@ -40,7 +40,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
 }
 
 VerifyEmail.layout = {
-    title: 'Email verification',
+    title: 'Xác minh email',
     description:
-        'Please verify your email address by clicking on the link we just emailed to you.',
+        'Vui lòng xác minh địa chỉ email của bạn bằng cách nhấp vào liên kết chúng tôi vừa gửi qua email.',
 };

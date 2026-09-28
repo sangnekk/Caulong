@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
@@ -22,17 +23,161 @@ use Throwable;
 
 class ProductController extends Controller
 {
+    private const FILTER_RULES = [
+        'q' => ['nullable', 'string', 'max:100'],
+        'status' => ['nullable', 'in:active,hidden,demo'],
+        'stock' => ['nullable', 'in:in,low,out'],
+        'brand' => ['nullable', 'integer', 'exists:brands,id'],
+        'style' => ['nullable', 'in:attack,speed,balanced'],
+    ];
+
     public function index(Request $request): Response
     {
-        $filters = $request->validate(['q' => ['nullable', 'string', 'max:100']]);
+        $validated = $request->validate([
+            ...self::FILTER_RULES,
+            'sort' => ['nullable', Rule::in(['newest', 'name', 'price_asc', 'price_desc'])],
+        ]);
+        $filters = [...$this->filters($validated), 'sort' => $validated['sort'] ?? 'newest'];
+
+        $query = $this->filtered($filters)->with(['brand:id,name', 'category:id,name', 'variants' => fn ($query) => $query->orderBy('id')]);
+        if (in_array($filters['sort'], ['price_asc', 'price_desc'], true)) {
+            $query->orderBy(ProductVariant::query()->selectRaw('MIN(price)')->whereColumn('product_id', 'products.id'), $filters['sort'] === 'price_asc' ? 'asc' : 'desc');
+        } elseif ($filters['sort'] === 'name') {
+            $query->orderBy('name');
+        }
 
         return Inertia::render('admin/products', [
-            'products' => Product::with(['brand', 'category', 'variants'])
-                ->when($filters['q'] ?? null, fn ($query, $q) => $query->where('name', 'like', '%'.$q.'%'))
-                ->latest('id')->paginate(20)->withQueryString(),
-            'filters' => ['q' => $filters['q'] ?? ''],
-            ...$this->taxonomies(),
+            'products' => $query->latest('id')->paginate(25)->withQueryString()
+                ->through(fn (Product $product) => [
+                    ...$product->only(['id', 'name', 'slug', 'play_style', 'is_active', 'is_featured', 'is_demo']),
+                    'image_url' => $product->image_url,
+                    'brand' => $product->brand?->name,
+                    'category' => $product->category?->name,
+                    'variants' => $product->variants->map->only(['id', 'sku', 'name', 'price', 'cost_price', 'stock', 'is_active'])->all(),
+                ]),
+            'filters' => $filters,
+            'counts' => [
+                'all' => Product::count(),
+                'active' => Product::where('is_active', true)->where('is_demo', false)->count(),
+                'hidden' => Product::where('is_active', false)->where('is_demo', false)->count(),
+                'demo' => Product::where('is_demo', true)->count(),
+            ],
+            'brands' => Brand::orderBy('name')->get(['id', 'name']),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array{q: string, status: string, stock: string, brand: string, style: string}
+     */
+    private function filters(array $validated): array
+    {
+        return [
+            'q' => trim((string) ($validated['q'] ?? '')),
+            'status' => (string) ($validated['status'] ?? ''),
+            'stock' => (string) ($validated['stock'] ?? ''),
+            'brand' => isset($validated['brand']) ? (string) $validated['brand'] : '',
+            'style' => (string) ($validated['style'] ?? ''),
+        ];
+    }
+
+    /**
+     * Products matching the list filters; the bulk bar can act on all of them at once.
+     *
+     * @param  array{q: string, status: string, stock: string, brand: string, style: string}  $filters
+     * @return Builder<Product>
+     */
+    private function filtered(array $filters): Builder
+    {
+        $query = Product::query();
+        if ($filters['q'] !== '') {
+            $like = '%'.$filters['q'].'%';
+            $query->where(fn ($query) => $query->where('name', 'like', $like)
+                ->orWhereHas('variants', fn ($query) => $query->where('sku', 'like', $like)));
+        }
+        match ($filters['status']) {
+            'active' => $query->where('is_active', true)->where('is_demo', false),
+            'hidden' => $query->where('is_active', false)->where('is_demo', false),
+            'demo' => $query->where('is_demo', true),
+            default => null,
+        };
+        // Stock is judged on sellable variants: "low" means some are nearly gone, "out" means none left.
+        $sellable = fn ($query) => $query->where('is_active', true)->where('stock', '>', 0);
+        match ($filters['stock']) {
+            'in' => $query->whereHas('variants', $sellable),
+            'low' => $query->whereHas('variants', fn ($query) => $query->where('is_active', true)->whereBetween('stock', [1, 5])),
+            'out' => $query->whereDoesntHave('variants', $sellable),
+            default => null,
+        };
+        $query->when($filters['brand'], fn ($query, $brand) => $query->where('brand_id', $brand))
+            ->when($filters['style'], fn ($query, $style) => $query->where('play_style', $style));
+
+        return $query;
+    }
+
+    /**
+     * Publish, hide or (un)feature products from the list: the ticked rows, or with `all` every
+     * product matching the list's current filters.
+     */
+    public function bulk(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'all' => ['nullable', 'boolean'],
+            'ids' => ['required_unless:all,1', 'array', 'min:1', 'max:200'],
+            'ids.*' => ['integer', 'distinct', 'exists:products,id'],
+            'action' => ['required', Rule::in(['publish', 'hide', 'feature', 'unfeature'])],
+            ...self::FILTER_RULES,
+        ], [
+            'ids.required_unless' => 'Chọn ít nhất một sản phẩm.',
+            'ids.min' => 'Chọn ít nhất một sản phẩm.',
+            'ids.max' => 'Mỗi lần chọn tay tối đa 200 sản phẩm; dùng “Chọn tất cả sản phẩm khớp bộ lọc” cho nhiều hơn.',
+            'action.*' => 'Thao tác không hợp lệ.',
+        ]);
+        $actions = [
+            'publish' => ['is_active', true, 'Đã mở bán'],
+            'hide' => ['is_active', false, 'Đã ẩn'],
+            'feature' => ['is_featured', true, 'Đã đánh dấu nổi bật'],
+            'unfeature' => ['is_featured', false, 'Đã bỏ nổi bật'],
+        ];
+        [$column, $value, $message] = $actions[(string) $data['action']];
+        $scope = ($data['all'] ?? false) ? $this->filtered($this->filters($data)) : Product::whereIn('id', $data['ids']);
+        $changed = $scope->where($column, '!=', $value)->update([$column => $value, 'updated_at' => now()]);
+
+        return back()->with('success', $message.' '.$changed.' sản phẩm.');
+    }
+
+    /** Quick edit from the list: price, cost and stock of a product's versions, nothing else. */
+    public function quick(Request $request, Product $product): RedirectResponse
+    {
+        $data = $request->validate([
+            'variants' => ['required', 'array', 'min:1', 'max:100'],
+            'variants.*' => ['required', 'array:id,price,cost_price,stock,expected_stock'],
+            'variants.*.id' => ['required', 'integer', 'distinct'],
+            'variants.*.price' => ['required', 'integer', 'min:0', 'max:1000000000'],
+            'variants.*.cost_price' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
+            'variants.*.stock' => ['required', 'integer', 'min:0', 'max:1000000'],
+            'variants.*.expected_stock' => ['required', 'integer', 'min:0'],
+        ], [
+            'variants.*.price.*' => 'Giá bán phải là số đồng từ 0.',
+            'variants.*.cost_price.*' => 'Giá nhập phải là số đồng từ 0, hoặc để trống.',
+            'variants.*.stock.*' => 'Tồn kho phải là số nguyên từ 0.',
+        ]);
+        DB::transaction(function () use ($product, $data) {
+            // Same lock order as checkout (variants by id), so a sale and an edit never deadlock.
+            $rows = $product->variants()->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+            foreach ($data['variants'] as $index => $variant) {
+                $row = $rows->get($variant['id']);
+                if (! $row) {
+                    throw ValidationException::withMessages(["variants.{$index}.id" => 'Phiên bản không thuộc sản phẩm này.']);
+                }
+                if ($row->stock !== (int) $variant['expected_stock']) {
+                    throw ValidationException::withMessages(["variants.{$index}.stock" => 'Tồn kho “'.$row->name.'” vừa đổi thành '.$row->stock.' (có đơn mới). Tải lại rồi sửa lại.']);
+                }
+                $row->update(Arr::only($variant, ['price', 'cost_price', 'stock']));
+            }
+        });
+
+        return back()->with('success', 'Đã lưu giá và tồn kho “'.$product->name.'”.');
     }
 
     public function create(): Response
@@ -42,7 +187,8 @@ class ProductController extends Controller
 
     public function edit(Product $product): Response
     {
-        $payload = $product->load('variants')->toArray();
+        $product->load('variants')->variants->each->makeVisible('cost_price');
+        $payload = $product->toArray();
         $payload['image_url'] = $product->image_url;
 
         return Inertia::render('admin/product-form', ['product' => $payload, ...$this->taxonomies()]);
@@ -83,11 +229,12 @@ class ProductController extends Controller
             'specs.*' => ['nullable', 'string', 'max:200'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'variants' => ['required', 'array', 'min:1', 'max:100'],
-            'variants.*' => ['required', 'array:id,sku,name,price,stock,is_active,expected_stock'],
+            'variants.*' => ['required', 'array:id,sku,name,price,cost_price,stock,is_active,expected_stock'],
             'variants.*.id' => ['nullable', 'integer', 'min:1', 'distinct'],
             'variants.*.sku' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9][A-Za-z0-9._-]*$/', 'distinct:ignore_case'],
             'variants.*.name' => ['required', 'string', 'max:120'],
             'variants.*.price' => ['required', 'integer', 'min:0', 'max:1000000000'],
+            'variants.*.cost_price' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'variants.*.stock' => ['required', 'integer', 'min:0', 'max:1000000'],
             'variants.*.expected_stock' => ['nullable', 'integer', 'min:0', 'max:1000000'],
             'variants.*.is_active' => ['required', 'boolean'],

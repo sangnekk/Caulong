@@ -7,6 +7,8 @@ type Props = {
     className?: string;
     story?: boolean;
     onReady?: (scene: RacketScene | null) => void;
+    onProgress?: (fraction: number) => void;
+    onFail?: () => void;
 };
 const styles = [
     '.rv-viewer{position:relative;min-width:0;color:inherit;width:100%;height:100%;display:flex;flex-direction:column}',
@@ -21,6 +23,7 @@ const styles = [
     '.rv-viewer .rv-retry{border-radius:6px;padding:0 16px;gap:8px;margin-top:8px}',
     '.rv-viewer .rv-caption{font-size:12px;line-height:1.6;text-align:center;margin:14px 0 0}',
     '.rv-viewer .rv-status{font-size:13px;text-align:center;min-height:22px;margin:6px 0 0}',
+    '.rv-viewer.rv-story .rv-status{position:absolute;width:1px;height:1px;min-height:0;margin:-1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}',
     '.rv-viewer .rv-error{text-align:center}',
     '.rv-viewer.rv-story .rv-stage{position:absolute;inset:0;height:100%}',
     '@media(prefers-reduced-motion:reduce){.rv-viewer *{animation:none!important;transition:none!important}}',
@@ -31,14 +34,20 @@ export default function RacketViewer({
     className = '',
     story = false,
     onReady,
+    onProgress,
+    onFail,
 }: Props) {
     const host = useRef<HTMLDivElement>(null);
     const scene = useRef<RacketScene | null>(null);
     const selectedPart = useRef(part);
     const readyCallback = useRef(onReady);
+    const progressCallback = useRef(onProgress);
+    const failCallback = useRef(onFail);
     useEffect(() => {
         readyCallback.current = onReady;
-    }, [onReady]);
+        progressCallback.current = onProgress;
+        failCallback.current = onFail;
+    }, [onReady, onProgress, onFail]);
     const [attempt, setAttempt] = useState(0);
     const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
         'loading',
@@ -62,6 +71,7 @@ export default function RacketViewer({
             activeScene?.dispose();
             scene.current = null;
             readyCallback.current?.(null);
+            failCallback.current?.();
             setStatus('error');
         };
         const start = async () => {
@@ -76,6 +86,10 @@ export default function RacketViewer({
                     element,
                     controller.signal,
                     fail,
+                    (fraction) => {
+                        if (!controller.signal.aborted)
+                            progressCallback.current?.(fraction);
+                    },
                 );
                 if (controller.signal.aborted) {
                     instance.dispose();
@@ -93,7 +107,8 @@ export default function RacketViewer({
                 fail();
             }
         };
-        if ('IntersectionObserver' in window) {
+        // The story is the first screen and the intro waits on it: never defer it.
+        if (!story && 'IntersectionObserver' in window) {
             observer = new IntersectionObserver(
                 ([entry]) => {
                     if (entry.isIntersecting) void start();
@@ -191,13 +206,15 @@ export default function RacketViewer({
                     ))}
                 </div>
             )}
-            <div
-                className="rv-loading-track"
-                hidden={status !== 'loading'}
-                aria-hidden="true"
-            >
-                <span />
-            </div>
+            {!story && (
+                <div
+                    className="rv-loading-track"
+                    hidden={status !== 'loading'}
+                    aria-hidden="true"
+                >
+                    <span />
+                </div>
+            )}
             <p className="rv-status" role="status" aria-live="polite">
                 {status === 'ready'
                     ? story
@@ -214,6 +231,7 @@ export default function RacketViewer({
                         type="button"
                         onClick={() => {
                             setStatus('loading');
+                            progressCallback.current?.(0);
                             setAttempt((value) => value + 1);
                         }}
                     >

@@ -1,9 +1,13 @@
 import { Head, Link, useForm } from '@inertiajs/react';
+import { ExternalLink, Plus } from 'lucide-react';
 import type { ChangeEvent, FormEvent } from 'react';
-import { Errors, Field } from './shared';
+import { Errors, Field, margin, money, PageHeader } from './shared';
 import type { Product, Taxonomy, Variant } from './shared';
 
-type FormVariant = Variant & { expected_stock: number };
+type FormVariant = Omit<Variant, 'cost_price'> & {
+    cost_price: number | '';
+    expected_stock: number;
+};
 type FormData = {
     name: string;
     slug: string;
@@ -31,6 +35,7 @@ const emptyVariant = (): FormVariant => ({
     sku: '',
     name: '',
     price: 0,
+    cost_price: '',
     stock: 0,
     expected_stock: 0,
     is_active: true,
@@ -56,8 +61,16 @@ function initial(product: Product | null): FormData {
             max_tension: '',
             ...product?.specs,
         },
+        // Only the fields the server accepts (it whitelists variant keys): the payload also
+        // carries product_id and timestamps, which would make every save fail.
         variants: product?.variants?.map((v) => ({
-            ...v,
+            id: v.id,
+            sku: v.sku,
+            name: v.name,
+            price: v.price,
+            cost_price: v.cost_price ?? '',
+            stock: v.stock,
+            is_active: v.is_active,
             expected_stock: v.stock,
         })) ?? [emptyVariant()],
         image: null,
@@ -101,20 +114,83 @@ export default function ProductForm({
     return (
         <>
             <Head title={product ? 'Sửa ' + product.name : 'Thêm sản phẩm'} />
-            <div className="admin-heading">
-                <div>
-                    <Link href="/admin/products" className="admin-back">
-                        ← Sản phẩm
-                    </Link>
-                    <h1>{product ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}</h1>
-                </div>
-            </div>
+            <PageHeader
+                back={{ href: '/admin/products', label: 'Sản phẩm' }}
+                title={product ? product.name : 'Thêm sản phẩm'}
+                description={
+                    product
+                        ? 'Sửa thông tin, giá và tồn kho. Thay đổi chỉ áp dụng khi bấm Lưu.'
+                        : 'Sản phẩm mới mặc định đang ẩn cho tới khi bạn bật “Đang bán”.'
+                }
+                actions={
+                    product?.is_active ? (
+                        <a
+                            className="admin-button admin-button-secondary"
+                            href={'/products/' + product.slug}
+                            target="_blank"
+                            rel="noreferrer"
+                        >
+                            <ExternalLink aria-hidden="true" />
+                            Xem ở cửa hàng
+                        </a>
+                    ) : undefined
+                }
+            />
             <Errors errors={form.errors} />
             <form
                 className="admin-product-form"
                 onSubmit={submit}
                 encType="multipart/form-data"
             >
+                <section className="admin-form-section">
+                    <h2>Hiển thị</h2>
+                    <div className="admin-switches">
+                        <label className="admin-switch">
+                            <input
+                                type="checkbox"
+                                checked={form.data.is_active}
+                                onChange={(e) =>
+                                    form.setData('is_active', e.target.checked)
+                                }
+                            />
+                            <strong>Đang bán</strong>
+                            <small>
+                                Hiện ở cửa hàng và nhận đơn. Chỉ bật khi đã có
+                                số lượng thật ở phần tồn kho bên dưới.
+                            </small>
+                        </label>
+                        <label className="admin-switch">
+                            <input
+                                type="checkbox"
+                                checked={form.data.is_featured}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'is_featured',
+                                        e.target.checked,
+                                    )
+                                }
+                            />
+                            <strong>Nổi bật</strong>
+                            <small>
+                                Xếp lên đầu khi khách xem theo “Nổi bật”.
+                            </small>
+                        </label>
+                        <label className="admin-switch">
+                            <input
+                                type="checkbox"
+                                checked={form.data.is_demo}
+                                onChange={(e) =>
+                                    form.setData('is_demo', e.target.checked)
+                                }
+                            />
+                            <strong>Dữ liệu mẫu</strong>
+                            <small>
+                                Gắn nhãn “Dữ liệu mẫu” ở cửa hàng và không tính
+                                vào số liệu. Không dùng cho hàng thật.
+                            </small>
+                        </label>
+                    </div>
+                </section>
                 <section className="admin-form-section">
                     <h2>Thông tin cơ bản</h2>
                     <div className="admin-form-grid">
@@ -234,7 +310,7 @@ export default function ProductForm({
                                     form.setData('play_style', e.target.value)
                                 }
                             >
-                                <option value="attack">Công</option>
+                                <option value="attack">Tấn công</option>
                                 <option value="speed">Tốc độ</option>
                                 <option value="balanced">Cân bằng</option>
                             </select>
@@ -253,41 +329,6 @@ export default function ProductForm({
                                 <option value="advanced">Nâng cao</option>
                             </select>
                         </Field>
-                    </div>
-                    <div className="admin-checks">
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={form.data.is_active}
-                                onChange={(e) =>
-                                    form.setData('is_active', e.target.checked)
-                                }
-                            />{' '}
-                            Đang bán
-                        </label>
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={form.data.is_featured}
-                                onChange={(e) =>
-                                    form.setData(
-                                        'is_featured',
-                                        e.target.checked,
-                                    )
-                                }
-                            />{' '}
-                            Nổi bật
-                        </label>
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={form.data.is_demo}
-                                onChange={(e) =>
-                                    form.setData('is_demo', e.target.checked)
-                                }
-                            />{' '}
-                            Dữ liệu mẫu
-                        </label>
                     </div>
                 </section>
                 <section className="admin-form-section">
@@ -335,7 +376,8 @@ export default function ProductForm({
                                 ])
                             }
                         >
-                            + Thêm biến thể
+                            <Plus aria-hidden="true" />
+                            Thêm biến thể
                         </button>
                     </div>
                     <div className="admin-variants">
@@ -360,7 +402,7 @@ export default function ProductForm({
                                     value={variant.expected_stock}
                                 />
                                 <Field
-                                    name={'variants.' + index + '.sku'}
+                                    name={'variant-' + index + '-sku'}
                                     label="SKU"
                                     error={
                                         (
@@ -386,7 +428,7 @@ export default function ProductForm({
                                     />
                                 </Field>
                                 <Field
-                                    name={'variants.' + index + '.name'}
+                                    name={'variant-' + index + '-name'}
                                     label="Tên biến thể"
                                     error={
                                         (
@@ -412,7 +454,7 @@ export default function ProductForm({
                                     />
                                 </Field>
                                 <Field
-                                    name={'variants.' + index + '.price'}
+                                    name={'variant-' + index + '-price'}
                                     label="Giá (VND)"
                                     error={
                                         (
@@ -441,7 +483,64 @@ export default function ProductForm({
                                     />
                                 </Field>
                                 <Field
-                                    name={'variants.' + index + '.stock'}
+                                    name={'variant-' + index + '-cost'}
+                                    label="Giá nhập (VND)"
+                                    error={
+                                        (
+                                            form.errors as Record<
+                                                string,
+                                                string | undefined
+                                            >
+                                        )['variants.' + index + '.cost_price']
+                                    }
+                                >
+                                    <input
+                                        id={'variant-' + index + '-cost'}
+                                        type="number"
+                                        min="0"
+                                        max="1000000000"
+                                        step="1"
+                                        placeholder="Không bắt buộc"
+                                        value={variant.cost_price}
+                                        onChange={(e) =>
+                                            updateVariant(
+                                                index,
+                                                'cost_price',
+                                                e.target.value === ''
+                                                    ? ''
+                                                    : Number(e.target.value),
+                                            )
+                                        }
+                                        aria-describedby={
+                                            'variant-' + index + '-cost-help'
+                                        }
+                                    />
+                                    <small
+                                        id={'variant-' + index + '-cost-help'}
+                                    >
+                                        {(() => {
+                                            const m = margin(
+                                                variant.price,
+                                                variant.cost_price === ''
+                                                    ? null
+                                                    : variant.cost_price,
+                                            );
+                                            if (!m)
+                                                return 'Chỉ admin thấy. Dùng để tính lãi gộp.';
+                                            return m.profit < 0
+                                                ? 'Lỗ ' +
+                                                      money(-m.profit) +
+                                                      ' mỗi cái'
+                                                : 'Lãi ' +
+                                                      money(m.profit) +
+                                                      ' · ' +
+                                                      Math.round(m.rate) +
+                                                      '%';
+                                        })()}
+                                    </small>
+                                </Field>
+                                <Field
+                                    name={'variant-' + index + '-stock'}
                                     label="Tồn kho"
                                     error={
                                         (
@@ -495,11 +594,7 @@ export default function ProductForm({
                     <h2>Thông số kỹ thuật</h2>
                     <div className="admin-form-grid">
                         {Object.entries(specLabels).map(([key, label]) => (
-                            <Field
-                                key={key}
-                                name={'specs.' + key}
-                                label={label}
-                            >
+                            <Field key={key} name={'spec-' + key} label={label}>
                                 <input
                                     id={'spec-' + key}
                                     maxLength={200}
@@ -516,13 +611,22 @@ export default function ProductForm({
                     </div>
                 </section>
                 <div className="admin-form-actions">
+                    <span className="admin-form-hint" aria-live="polite">
+                        {form.isDirty
+                            ? 'Có thay đổi chưa lưu.'
+                            : 'Chưa có thay đổi.'}
+                    </span>
                     <Link
                         href="/admin/products"
                         className="admin-button admin-button-secondary"
                     >
                         Hủy
                     </Link>
-                    <button className="admin-button" disabled={form.processing}>
+                    <button
+                        className="admin-button"
+                        disabled={form.processing}
+                        data-busy={form.processing}
+                    >
                         {form.processing ? 'Đang lưu…' : 'Lưu sản phẩm'}
                     </button>
                 </div>

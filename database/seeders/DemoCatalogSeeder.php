@@ -58,12 +58,16 @@ class DemoCatalogSeeder extends Seeder
 
                 foreach (['4U', '5U'] as $variantIndex => $weight) {
                     // Model normalizes SKU to lowercase; match that so reruns stay idempotent.
-                    $product->variants()->firstOrCreate(['sku' => 'demo-mv-'.($index + 1).'-'.strtolower($weight)], [
+                    $variant = $product->variants()->firstOrCreate(['sku' => 'demo-mv-'.($index + 1).'-'.strtolower($weight)], [
                         'name' => $weight.' / G5 (demo)',
                         'price' => $price + $variantIndex * 50000,
                         'stock' => 10,
                         'is_active' => true,
                     ]);
+                    // Demo cost (58–68% of price) so the profit report has something to show.
+                    if ($variant->cost_price === null) {
+                        $variant->update(['cost_price' => (int) round($variant->price * [0.62, 0.66, 0.6, 0.68, 0.63, 0.58][$index], -3)]);
+                    }
                 }
             }
         });
