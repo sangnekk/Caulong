@@ -12,6 +12,9 @@ export default defineConfig({
         laravel({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             refresh: true,
+            // The dev server has no publicDir, so CSS urls to public/fonts would 404 on it.
+            transformOnServe: (code) =>
+                code.replace(/url\((['"]?)\/fonts\//g, 'url($1/public/fonts/'),
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],

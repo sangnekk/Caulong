@@ -1,7 +1,7 @@
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { vnd } from '@/types/commerce';
+import { shortOrderCode, vnd } from '@/types/commerce';
 
 type AccountOrder = {
     public_id: string;
@@ -145,9 +145,9 @@ export default function Account({
                                             <div>
                                                 <h3>
                                                     Đơn{' '}
-                                                    {order.public_id
-                                                        .slice(0, 8)
-                                                        .toUpperCase()}
+                                                    {shortOrderCode(
+                                                        order.public_id,
+                                                    )}
                                                     <span
                                                         className="store-status"
                                                         data-tone={tone}
@@ -188,9 +188,8 @@ export default function Account({
                                                     <span className="store-sr-only">
                                                         {' '}
                                                         đơn{' '}
-                                                        {order.public_id.slice(
-                                                            0,
-                                                            8,
+                                                        {shortOrderCode(
+                                                            order.public_id,
                                                         )}
                                                     </span>
                                                 </Link>

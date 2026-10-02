@@ -7,6 +7,7 @@ import {
     LayoutDashboard,
     LogOut,
     Menu,
+    MessageCircle,
     Package,
     ReceiptText,
     Settings,
@@ -30,6 +31,7 @@ const workNav = [
     { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard },
     { href: '/admin/reports', label: 'Báo cáo', icon: ChartColumn },
     { href: '/admin/orders', label: 'Đơn hàng', icon: ReceiptText },
+    { href: '/admin/support-chat', label: 'Chat hỗ trợ', icon: MessageCircle },
     { href: '/admin/products', label: 'Sản phẩm', icon: Package },
     { href: '/admin/imports', label: 'Nhập hàng', icon: FileUp },
     { href: '/admin/taxonomies', label: 'Hãng & danh mục', icon: Tags },
@@ -51,9 +53,12 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     const path = url.split('?')[0];
     const user = props.auth.user;
     const pending = props.shop?.pending_orders ?? 0;
+    const pendingSupportChats = props.shop?.pending_support_chats ?? 0;
     const [menuOpen, setMenuOpen] = useState(false);
     const [signingOut, setSigningOut] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);
+    const previousSupportChats = useRef(0);
+    const previousSupportCount = useRef(pendingSupportChats);
 
     // A visit closes the drawer; Escape closes it and gives focus back to the menu button.
     useEffect(() => router.on('start', () => setMenuOpen(false)), []);
@@ -67,6 +72,41 @@ export default function AdminLayout({ children }: PropsWithChildren) {
         document.addEventListener('keydown', onKey);
         return () => document.removeEventListener('keydown', onKey);
     }, [menuOpen]);
+
+    useEffect(() => {
+        if (!user || path === '/admin/support-chat') return;
+        const interval = window.setInterval(() => {
+            router.reload({ only: ['shop'] });
+        }, 5000);
+        return () => window.clearInterval(interval);
+    }, [path, user]);
+
+    useEffect(() => {
+        if (
+            pendingSupportChats > previousSupportChats.current &&
+            path !== '/admin/support-chat'
+        ) {
+            router.visit('/admin/support-chat?status=open');
+        }
+        previousSupportChats.current = pendingSupportChats;
+    }, [path, pendingSupportChats]);
+
+    useEffect(() => {
+        const interval = window.setInterval(() => {
+            router.reload({ only: ['shop'] });
+        }, 5000);
+        return () => window.clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
+        if (
+            pendingSupportChats > previousSupportCount.current &&
+            path !== '/admin/support-chat'
+        ) {
+            router.visit('/admin/support-chat?status=open');
+        }
+        previousSupportCount.current = pendingSupportChats;
+    }, [path, pendingSupportChats]);
 
     const isCurrent = (href: string) =>
         href === '/admin' ? path === href : path.startsWith(href);
@@ -116,6 +156,18 @@ export default function AdminLayout({ children }: PropsWithChildren) {
                                                 }
                                             >
                                                 {pending}
+                                            </span>
+                                        )}
+                                    {href === '/admin/support-chat' &&
+                                        pendingSupportChats > 0 && (
+                                            <span
+                                                className="admin-nav-count"
+                                                aria-label={
+                                                    pendingSupportChats +
+                                                    ' cuộc trò chuyện chưa đọc'
+                                                }
+                                            >
+                                                {pendingSupportChats}
                                             </span>
                                         )}
                                 </Link>

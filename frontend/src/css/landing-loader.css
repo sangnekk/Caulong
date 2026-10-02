@@ -1,0 +1,189 @@
+/* Intro: a line drawing of the Hyper Core8000 strung as the real model loads, then pulled back
+   onto the 3D racket. It has no backdrop of its own; the story's court shows through. */
+.landing-loader {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    pointer-events: none;
+    color: var(--paper, oklch(1 0 0));
+    font-family: var(--display, inherit);
+}
+.landing-loader__drawing {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+.landing-loader[data-state='fading'] .landing-loader__drawing {
+    opacity: 0;
+    transition: opacity 420ms ease-out;
+}
+
+.racket-blueprint {
+    fill: none;
+    stroke: var(--court-line, oklch(0.97 0.012 250));
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.racket-blueprint__bed {
+    /* Hides the court lines behind the head so only strings read inside it. */
+    fill: var(--court, oklch(0.44 0.15 262));
+    stroke: none;
+}
+.racket-blueprint__frame,
+.racket-blueprint__handle {
+    stroke-width: 0.012;
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: 1.001;
+    animation: blueprint-draw 640ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+.racket-blueprint__frame + .racket-blueprint__frame {
+    animation-delay: 90ms;
+}
+.racket-blueprint__handle {
+    stroke-width: 0.01;
+    animation-delay: 200ms;
+}
+.racket-blueprint__wrap {
+    stroke-width: 0.006;
+    opacity: 0;
+    animation: blueprint-appear 400ms ease-out 520ms forwards;
+}
+.racket-blueprint__strings line {
+    stroke-width: 0.0068;
+    stroke-opacity: 0.92;
+    stroke-dasharray: 1 2;
+    stroke-dashoffset: 1.001;
+    transition:
+        stroke-dashoffset 190ms linear,
+        stroke 520ms ease-out;
+}
+.racket-blueprint__strings line[data-strung] {
+    stroke-dashoffset: 0;
+}
+.racket-blueprint__strings line[data-active] {
+    stroke: var(--shuttle, oklch(0.91 0.14 115));
+    stroke-width: 0.011;
+    stroke-opacity: 1;
+}
+
+/* Bottom rail sits where the chapter rail will appear. */
+.landing-loader__bar {
+    position: absolute;
+    z-index: 1;
+    inset: auto max(5%, calc((100vw - 1360px) / 2)) 24px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    transition:
+        opacity 300ms ease-out,
+        transform 300ms ease-out;
+}
+/* The drawing runs off the bottom edge; let it sink into the court behind the rail. */
+.landing-loader__bar::before {
+    content: '';
+    position: absolute;
+    inset: -56px -50vw -24px;
+    z-index: -1;
+    background: linear-gradient(
+        to top,
+        var(--night, oklch(0.145 0.032 262)) 45%,
+        transparent
+    );
+}
+.landing-loader:not([data-state='stringing']) .landing-loader__bar {
+    opacity: 0;
+    transform: translateY(8px);
+}
+.landing-loader__count {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin: 0;
+    color: var(--court-text, oklch(0.9 0.03 262));
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-stretch: 88%;
+    line-height: 1.2;
+}
+.landing-loader__count b {
+    min-width: 4.2ch;
+    color: var(--paper, oklch(1 0 0));
+    font-size: 1.625rem;
+    font-style: italic;
+    font-weight: 800;
+    font-stretch: 112%;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+.landing-loader__skip {
+    min-height: 44px;
+    padding: 0 2px;
+    color: var(--paper, oklch(1 0 0));
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 6px;
+    pointer-events: auto;
+    transition: color 160ms ease-out;
+}
+.landing-loader__skip:hover {
+    color: var(--shuttle, oklch(0.91 0.14 115));
+}
+.landing-loader__skip:focus-visible {
+    outline: 3px solid var(--shuttle, oklch(0.91 0.14 115));
+    outline-offset: 4px;
+}
+.landing-loader__title,
+.landing-loader__status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+@keyframes blueprint-draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+@keyframes blueprint-appear {
+    to {
+        opacity: 1;
+    }
+}
+
+@media (max-width: 767px) {
+    .landing-loader__bar {
+        inset: auto 4% 12px;
+    }
+    .landing-loader__bar::before {
+        inset: -64px -50vw -12px;
+    }
+    .landing-loader__count b {
+        font-size: 1.375rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .landing-loader *,
+    .landing-loader *::before {
+        animation: none !important;
+        transition: none !important;
+    }
+    .racket-blueprint__frame,
+    .racket-blueprint__handle {
+        stroke-dashoffset: 0;
+    }
+    .racket-blueprint__wrap {
+        opacity: 1;
+    }
+}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Services\OrderService;
+use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -30,9 +31,9 @@ class OrderController extends Controller
             'status' => $validated['status'] ?? '',
             'payment' => $validated['payment'] ?? '',
             'q' => trim($validated['q'] ?? ''),
-            'demo' => (bool) ($validated['demo'] ?? false),
+            'demo' => (bool) ($validated['demo'] ?? DemoData::shownByDefault()),
         ];
-        // Demo orders are test data, not work: hidden unless asked for.
+        // Demo orders are test data, not work: hidden unless asked for (shown by default on a local machine).
         $base = Order::query()->when(! $filters['demo'], fn ($query) => $query->where('is_demo', false))
             ->when($filters['q'] !== '', fn ($query) => $this->search($query, $filters['q']))
             ->when($filters['payment'], fn ($query, $payment) => $payment === 'paid'
@@ -44,6 +45,7 @@ class OrderController extends Controller
                 ->when($filters['status'], fn ($query, $status) => $query->where('status', $status))
                 ->latest('id')->paginate(20)->withQueryString(),
             'filters' => $filters,
+            'demoDefault' => DemoData::shownByDefault(),
             'demoCount' => Order::where('is_demo', true)->count(),
             // Tabs show how many orders each status holds within the current search.
             'counts' => ['all' => (clone $base)->count()] + array_replace(

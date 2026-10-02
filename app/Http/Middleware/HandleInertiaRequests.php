@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Order;
+use App\Models\SupportConversation;
 use App\Services\CartService;
 use App\Services\ShopSettings;
 use Illuminate\Http\Request;
@@ -46,16 +47,23 @@ class HandleInertiaRequests extends Middleware
             ],
             'shop' => fn (): array => [
                 'cart_count' => app(CartService::class)->count($request),
+                'shipping_fee' => app(ShopSettings::class)->shippingFee(),
                 // Set by the owner in /admin/settings; empty values are simply not shown.
                 'contact' => [
                     'hotline' => app(ShopSettings::class)->all()['hotline'],
                     'email' => app(ShopSettings::class)->all()['contact_email'],
+                    'address' => app(ShopSettings::class)->all()['contact_address'],
+                    'chat_url' => app(ShopSettings::class)->all()['contact_chat_url'],
                 ],
                 'free_shipping_from' => app(ShopSettings::class)->freeShippingThreshold(),
                 'is_admin' => (bool) $request->user()?->is_admin,
                 // Admin navigation badge: real orders waiting for a call (demo orders are labelled, not work).
                 'pending_orders' => $request->user()?->is_admin
                     ? Order::where('is_demo', false)->where('status', 'pending')->count()
+                    : 0,
+                'pending_support_chats' => $request->user()?->is_admin
+                    ? SupportConversation::where('status', 'open')->where('needs_human', true)->whereHas('messages', fn ($query) => $query
+                        ->where('sender', 'customer')->whereNull('read_at'))->count()
                     : 0,
             ],
             'flash' => [

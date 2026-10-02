@@ -88,7 +88,14 @@ export type ShopSharedProps = {
         cart_count: number;
         is_admin: boolean;
         pending_orders?: number;
-        contact?: { hotline: string; email: string };
+        pending_support_chats?: number;
+        shipping_fee?: number;
+        contact?: {
+            hotline: string;
+            email: string;
+            address: string;
+            chat_url: string;
+        };
         free_shipping_from?: number;
     };
     flash: { success: string | null; error: string | null };
@@ -99,6 +106,8 @@ export const vnd = (amount: number): string =>
         currency: 'VND',
         maximumFractionDigits: 0,
     }).format(amount);
+export const shortOrderCode = (publicId: string): string =>
+    publicId.replaceAll('-', '').slice(0, 8).toUpperCase();
 export const playStyles = {
     attack: 'Tấn công',
     speed: 'Tốc độ',

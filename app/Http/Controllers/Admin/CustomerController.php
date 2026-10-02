@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\DemoData;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -19,7 +20,7 @@ class CustomerController extends Controller
             'role' => ['nullable', Rule::in(['customer', 'admin'])],
         ]);
         $filters = ['q' => trim($validated['q'] ?? ''), 'role' => $validated['role'] ?? ''];
-        $real = fn ($query) => $query->where('is_demo', false);
+        $real = fn ($query) => $query->when(! DemoData::shownByDefault(), fn ($query) => $query->where('is_demo', false));
 
         $users = User::query()
             ->when($filters['q'] !== '', fn ($query) => $query->where(fn ($query) => $query

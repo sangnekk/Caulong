@@ -1,6 +1,6 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import { DemoBadge, OrderTotals, ShopContact } from '@/layouts/shop-layout';
-import { vnd, type Order } from '@/types/commerce';
+import { shortOrderCode, vnd, type Order } from '@/types/commerce';
 
 const statusLabels: Record<string, string> = {
     pending: 'Chờ xác nhận',
@@ -24,7 +24,7 @@ export default function OrderPage({
     justPlaced?: boolean;
 }) {
     const signedIn = !!usePage<{ auth: { user: unknown } }>().props.auth?.user;
-    const code = order.public_id.slice(0, 8).toUpperCase();
+    const code = shortOrderCode(order.public_id);
     return (
         <>
             <Head title={'Đơn hàng ' + code}>
@@ -38,7 +38,7 @@ export default function OrderPage({
                             : 'Đơn hàng ' + code}
                     </h1>
                     <p>
-                        Mã đơn: <strong>{order.public_id}</strong>
+                        Mã đơn: <strong>{code}</strong>
                     </p>
                 </div>
                 <Link

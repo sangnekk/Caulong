@@ -26,17 +26,19 @@
     margin-inline: auto;
 }
 .store-header {
+    position: relative;
+    z-index: 50;
     border-bottom: 1px solid var(--line);
     background: #fff;
     /* Stays put while store pages swap (see app.css page transitions). */
     view-transition-name: store-header;
 }
+/* Three groups: the brand, the store's own pages, then cart and account at the far edge. */
 .store-header-inner {
-    min-height: 4.75rem;
+    min-height: 4.5rem;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 2rem;
+    align-items: stretch;
+    gap: 2.5rem;
 }
 .store-brand {
     display: flex;
@@ -50,49 +52,76 @@
 .store-brand strong {
     font-weight: 700;
 }
-.store-header nav {
+/* The current page is marked by a bar sitting on the header's bottom rule, like a tab. */
+.store-nav {
+    display: flex;
+    gap: 1.75rem;
+    margin-bottom: -1px;
+}
+.store-nav a {
+    display: inline-flex;
+    align-items: center;
+    padding-top: 2px;
+    border-bottom: 2px solid transparent;
+    font-size: 0.925rem;
+    font-weight: 500;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        color 150ms ease-out,
+        border-color 150ms ease-out;
+}
+.store-nav a:hover {
+    color: var(--accent);
+}
+.store-nav a[aria-current='page'] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+}
+.store-tools {
     display: flex;
     align-items: center;
-    gap: 1.2rem;
-    flex-wrap: wrap;
-}
-.store-header nav a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    font-size: 0.9rem;
-    text-decoration: none;
-}
-.store-header nav a:hover,
-.store-header nav a[aria-current='page'] {
-    color: var(--accent);
-    text-decoration: underline;
-}
-.store-cart-link {
-    display: inline-flex;
-    align-items: center;
     gap: 0.35rem;
-    font-weight: 600;
+    margin-left: auto;
 }
-.store-cart-link span {
+/* Account: sign-in link for guests, a menu (account, orders, admin, sign-out) once signed in. */
+.store-cart-link,
+.store-account-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.75rem;
+    padding-inline: 0.65rem;
+    border-radius: 999px;
+    font-size: 0.925rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        background-color 150ms ease-out,
+        color 150ms ease-out;
+}
+.store-cart-link:hover,
+.store-cart-link[aria-current='page'],
+.store-account-link:hover {
+    background: var(--surface);
+    color: var(--accent);
+}
+.store-cart-count {
     display: inline-grid;
     place-items: center;
     min-width: 1.35rem;
     height: 1.35rem;
-    border-radius: 50%;
+    padding-inline: 0.3rem;
+    border-radius: 999px;
     background: var(--accent);
     color: #fff;
     font-size: 0.72rem;
-}
-/* Account: sign-in link for guests, a menu (account, orders, admin, sign-out) once signed in. */
-.store-account-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-weight: 600;
+    font-variant-numeric: tabular-nums;
 }
 .store-account {
     position: relative;
+    z-index: 50;
 }
 .store-account-button {
     display: inline-flex;
@@ -166,7 +195,7 @@
     font-size: 0.82rem;
     overflow-wrap: anywhere;
 }
-.store-header nav .store-account-panel a,
+.store-account-panel a,
 .store-account-signout {
     display: flex;
     align-items: center;
@@ -182,7 +211,7 @@
     text-decoration: none;
     cursor: pointer;
 }
-.store-header nav .store-account-panel a:hover,
+.store-account-panel a:hover,
 .store-account-signout:hover:not(:disabled) {
     background: var(--surface);
     color: var(--accent);
@@ -1129,18 +1158,292 @@
 }
 .store-footer {
     border-top: 1px solid var(--line);
-    padding-block: 2rem;
+    padding-block: 2.5rem;
     color: var(--muted);
     font-size: 0.9rem;
+}
+.store-footer-inner {
+    display: grid;
+    grid-template-columns: 1fr;
+}
+.store-footer-with-contact {
+    grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.85fr);
+    align-items: center;
+    gap: 2.5rem;
 }
 .store-footer strong {
     color: var(--ink);
 }
-.store-footer p {
+.store-footer-about p {
     max-width: 60ch;
+    margin: 0.5rem 0;
 }
-.store-contact a {
+.store-footer-about > a {
+    color: var(--accent-dark);
     font-weight: 600;
+}
+.store-contact {
+    margin: 0;
+    padding-top: 1.1rem;
+    border-top: 1px solid var(--line);
+}
+.store-contact h2 {
+    margin: 0;
+    color: var(--ink);
+    font-size: 1rem;
+}
+.store-contact p {
+    margin: 0.2rem 0 0;
+}
+.store-contact-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem 1.5rem;
+    margin-top: 0.85rem;
+}
+.store-contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    min-height: 2.75rem;
+    text-decoration: none;
+}
+.store-contact-link > svg {
+    flex: 0 0 auto;
+    color: var(--accent);
+}
+.store-contact-link > span {
+    display: grid;
+    min-width: 0;
+    line-height: 1.35;
+}
+.store-contact-link > span > span {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+.store-contact-link strong {
+    color: var(--ink);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.store-contact-link:hover strong {
+    color: var(--accent-dark);
+}
+.store-chat-widget {
+    position: fixed;
+    right: max(1rem, env(safe-area-inset-right));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+.store-chat-panel {
+    display: flex;
+    flex-direction: column;
+    width: min(24rem, calc(100vw - 2rem));
+    height: min(36rem, calc(100dvh - 6.5rem));
+    min-height: 20rem;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 0.625rem;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 6px 8px -2px oklch(0.2 0.03 260 / 0.24);
+    pointer-events: auto;
+}
+.store-chat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.85rem 1rem;
+    background: var(--accent-dark);
+    color: #fff;
+}
+.store-chat-header > div {
+    display: grid;
+    gap: 0.15rem;
+}
+.store-chat-header strong {
+    color: #fff;
+    font-size: 0.98rem;
+}
+.store-chat-header span {
+    color: oklch(0.93 0.015 260);
+    font-size: 0.78rem;
+}
+.store-chat-close {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #fff;
+    cursor: pointer;
+}
+.store-chat-close:hover {
+    background: oklch(1 0 0 / 0.14);
+}
+.store-chat-thread {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 0.7rem;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 0.9rem;
+    background: var(--surface);
+    overscroll-behavior: contain;
+}
+.store-chat-message {
+    display: grid;
+    align-self: flex-start;
+    gap: 0.4rem;
+    max-width: 90%;
+}
+.store-chat-message[data-author='visitor'] {
+    align-self: flex-end;
+}
+.store-chat-message p {
+    margin: 0;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: #fff;
+    color: var(--ink);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+}
+.store-chat-message[data-author='visitor'] p {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+}
+.store-chat-message > a {
+    width: fit-content;
+    max-width: 100%;
+    color: var(--accent-dark);
+    font-size: 0.85rem;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+.store-chat-quick {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.65rem 0.75rem;
+    border-top: 1px solid var(--line);
+    background: #fff;
+}
+.store-chat-quick button {
+    min-height: 2.1rem;
+    padding: 0.3rem 0.55rem;
+    border: 1px solid var(--line);
+    border-radius: 0.375rem;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.78rem;
+    cursor: pointer;
+}
+.store-chat-quick button:hover {
+    border-color: var(--accent);
+    color: var(--accent-dark);
+}
+.store-chat-purchased > strong {
+    flex-basis: 100%;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.store-chat-compose {
+    display: flex;
+    flex: 0 0 auto;
+    gap: 0.5rem;
+    padding: 0.65rem 0.75rem;
+    border-top: 1px solid var(--line);
+    background: #fff;
+}
+.store-chat-compose input {
+    min-width: 0;
+    min-height: 2.75rem;
+    flex: 1 1 auto;
+    padding: 0.55rem 0.65rem;
+    border: 1px solid var(--line);
+    border-radius: 0.375rem;
+    background: #fff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 0.9rem;
+}
+.store-chat-compose > button {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 2.75rem;
+    min-height: 2.75rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: var(--accent);
+    color: #fff;
+    cursor: pointer;
+}
+.store-chat-compose > button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.store-chat-handoff {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.55rem 0.8rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+.store-chat-handoff a {
+    color: var(--accent-dark);
+    font-weight: 700;
+    text-align: right;
+}
+.store-chat-status {
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0.45rem 0.8rem;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+.store-chat-launcher {
+    display: grid;
+    flex: 0 0 auto;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff !important;
+    box-shadow: 0 4px 8px -2px oklch(0.2 0.03 260 / 0.32);
+    cursor: pointer;
+    pointer-events: auto;
+    transition:
+        background-color 150ms ease-out,
+        transform 150ms ease-out;
+}
+.store-chat-launcher:hover {
+    background: var(--accent-dark);
+    transform: translateY(-2px);
 }
 .store-totals .store-free-hint {
     margin-top: 0.4rem;
@@ -1177,21 +1480,82 @@
         gap: 2rem;
     }
 }
+/* Tablets: the cart keeps its icon and count; its name stays for screen readers. */
+@media (max-width: 960px) {
+    .store-header-inner {
+        gap: 1.75rem;
+    }
+    .store-nav {
+        gap: 1.4rem;
+    }
+    .store-cart-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
+/* Phones: brand, cart and account on one row; the store's pages as tabs beneath. */
+@media (max-width: 760px) {
+    .store-chat-launcher {
+        width: 3rem;
+        height: 3rem;
+    }
+    .store-chat-widget {
+        right: max(0.75rem, env(safe-area-inset-right));
+        bottom: max(0.75rem, env(safe-area-inset-bottom));
+    }
+    .store-chat-panel {
+        width: min(24rem, calc(100vw - 1.5rem));
+        height: min(34rem, calc(100dvh - 5.75rem));
+    }
+    .store-footer-inner {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    .store-contact-link strong {
+        overflow-wrap: anywhere;
+    }
+    .store-header-inner {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas: 'brand tools' 'nav nav';
+        align-items: center;
+        gap: 0 0.5rem;
+        min-height: 0;
+    }
+    .store-brand {
+        grid-area: brand;
+        min-height: 3.5rem;
+    }
+    .store-tools {
+        grid-area: tools;
+    }
+    .store-nav {
+        grid-area: nav;
+        align-self: stretch;
+        min-height: 2.9rem;
+        gap: 1.5rem;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+}
+@media (max-width: 400px) {
+    .store-account-login,
+    .store-account-name {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+        white-space: nowrap;
+    }
+}
 @media (max-width: 640px) {
     .store-container {
         width: min(100% - 1.25rem, 1160px);
-    }
-    .store-header-inner {
-        align-items: flex-start;
-        padding-block: 1rem;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    .store-header nav {
-        gap: 0 0.9rem;
-    }
-    .store-header nav a {
-        font-size: 0.875rem;
     }
     .store-main {
         padding-block: 1.8rem 3.5rem;

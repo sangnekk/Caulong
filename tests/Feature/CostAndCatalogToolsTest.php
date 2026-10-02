@@ -9,6 +9,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -189,6 +190,30 @@ class CostAndCatalogToolsTest extends TestCase
         $this->artisan('shop:demo-sales', ['--clear' => true])->assertSuccessful();
         $this->assertSame(0, Order::where('is_demo', true)->count());
         $this->assertTrue($real->fresh()->exists);
+    }
+
+    public function test_a_local_machine_shows_demo_data_by_default_and_gives_demo_customers_accounts(): void
+    {
+        $accounts = User::where('email', 'like', '%@'.DemoData::EMAIL_DOMAIN);
+        $this->artisan('shop:demo-sales', ['--months' => 2])->assertSuccessful();
+        $this->assertSame(0, (clone $accounts)->count(), 'no demo accounts outside a local machine');
+        $this->actingAs($this->admin)->get('/admin')->assertInertia(fn (Assert $page) => $page->where('demo', false)->where('stats.orders_open', 0));
+
+        $this->app['env'] = 'local';
+        $this->artisan('shop:demo-sales', ['--months' => 2])->assertSuccessful();
+        $count = Order::where('is_demo', true)->count();
+        $linked = Order::whereIn('user_id', (clone $accounts)->select('id'));
+        $this->assertGreaterThan(0, (clone $accounts)->count());
+        $this->assertGreaterThan(0, (clone $linked)->count());
+        $this->assertTrue((clone $linked)->where('is_demo', false)->doesntExist(), 'demo accounts only hold demo orders');
+
+        $this->get('/admin')->assertInertia(fn (Assert $page) => $page->where('demo', true)->where('demoDefault', true));
+        $this->get('/admin/orders')->assertInertia(fn (Assert $page) => $page->where('orders.total', $count)->where('filters.demo', true));
+        $this->get('/admin/orders?demo=0')->assertInertia(fn (Assert $page) => $page->where('orders.total', 0));
+        $this->get('/admin/reports?demo=0')->assertInertia(fn (Assert $page) => $page->where('filters.demo', false)->where('totals.placed', 0));
+
+        $this->artisan('shop:demo-sales', ['--clear' => true])->assertSuccessful();
+        $this->assertSame(0, (clone $accounts)->count());
     }
 
     public function test_store_lists_what_can_be_bought_first_and_filters_by_price_and_stock(): void

@@ -35,19 +35,27 @@ class AdvisorController extends Controller
 
         if ($submitted) {
             $matchingVariants = fn ($query) => $query->where('is_active', true)
-                ->where('stock', '>', 0)->where('price', '<=', $filters['budget']);
-
-            $recommendations = Product::query()
+                ->where('price', '<=', $filters['budget']);
+            $availableVariants = fn ($query) => $matchingVariants($query)->where('stock', '>', 0);
+            $productQuery = Product::query()
                 ->where('is_active', true)
                 ->when($filters['style'], fn ($query, $style) => $query->where('play_style', $style))
-                ->when($filters['level'], fn ($query, $level) => $query->whereIn('skill_level', [$level, 'all']))
-                ->whereHas('variants', $matchingVariants)
-                ->with(['brand', 'category', 'variants' => $matchingVariants])
-                ->withMin(['variants as matching_price' => $matchingVariants], 'price')
-                ->orderBy('matching_price')->orderBy('id')
-                ->limit(3)->get()
-                ->map(fn (Product $product) => (new ProductResource($product))->resolve($request))
-                ->all();
+                ->when($filters['level'], fn ($query, $level) => $query->whereIn('skill_level', [$level, 'all']));
+            $findRecommendations = function ($variantFilter) use ($productQuery, $request): array {
+                return (clone $productQuery)
+                    ->whereHas('variants', $variantFilter)
+                    ->with(['brand', 'category', 'variants' => $variantFilter])
+                    ->withMin(['variants as matching_price' => $variantFilter], 'price')
+                    ->orderBy('matching_price')->orderBy('id')
+                    ->limit(3)->get()
+                    ->map(fn (Product $product) => (new ProductResource($product))->resolve($request))
+                    ->all();
+            };
+
+            $recommendations = $findRecommendations($availableVariants);
+            if ($recommendations === []) {
+                $recommendations = $findRecommendations($matchingVariants);
+            }
         }
 
         return Inertia::render('shop/advisor', compact('recommendations', 'filters'));

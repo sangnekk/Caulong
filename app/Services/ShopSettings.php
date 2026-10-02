@@ -14,7 +14,7 @@ class ShopSettings
     /** @var array<string, string>|null */
     private ?array $saved = null;
 
-    /** @return array{shipping_fee: int, free_shipping_threshold: int, hotline: string, contact_email: string} */
+    /** @return array{shipping_fee: int, free_shipping_threshold: int, hotline: string, contact_email: string, contact_address: string, contact_chat_url: string} */
     public function all(): array
     {
         return [
@@ -22,6 +22,8 @@ class ShopSettings
             'free_shipping_threshold' => $this->freeShippingThreshold(),
             'hotline' => $this->string('hotline'),
             'contact_email' => $this->string('contact_email'),
+            'contact_address' => $this->string('contact_address'),
+            'contact_chat_url' => $this->string('contact_chat_url'),
         ];
     }
 
@@ -35,7 +37,7 @@ class ShopSettings
         return (int) ($this->saved()['free_shipping_threshold'] ?? config('shop.free_shipping_threshold'));
     }
 
-    /** @param  array{shipping_fee: int, free_shipping_threshold: int, hotline: ?string, contact_email: ?string}  $values */
+    /** @param  array{shipping_fee: int, free_shipping_threshold: int, hotline: ?string, contact_email: ?string, contact_address: ?string, contact_chat_url: ?string}  $values */
     public function save(array $values): void
     {
         foreach ($values as $key => $value) {

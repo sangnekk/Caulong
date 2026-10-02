@@ -74,6 +74,22 @@ class AdvisorTest extends TestCase
             ->where('recommendations.2.id', $third->id));
     }
 
+    public function test_returns_matching_sold_out_products_when_no_matches_are_in_stock(): void
+    {
+        $soldOut = $this->product('sold-out-attack', [
+            'play_style' => 'attack', 'skill_level' => 'intermediate',
+        ], ['price' => 500000, 'stock' => 0]);
+        $this->product('over-budget-attack', [
+            'play_style' => 'attack', 'skill_level' => 'intermediate',
+        ], ['price' => 700000, 'stock' => 0]);
+
+        $this->get('/advisor?budget=600000&style=attack&level=intermediate')
+            ->assertOk()->assertInertia(fn (Assert $page) => $page->component('shop/advisor')
+                ->has('recommendations', 1)
+                ->where('recommendations.0.id', $soldOut->id)
+                ->where('recommendations.0.variants.0.stock', 0));
+    }
+
     public function test_zero_budget_is_submitted_and_empty_result_is_valid(): void
     {
         $this->product('not-free');

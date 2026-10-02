@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class ReportController extends Controller
             'demo' => ['nullable', 'boolean'],
         ]);
         $period = $validated['period'] ?? '30d';
-        $demo = (bool) ($validated['demo'] ?? false);
+        $demo = (bool) ($validated['demo'] ?? DemoData::shownByDefault());
         $zone = (string) config('shop.timezone');
         $now = CarbonImmutable::now($zone);
         $monthly = $period === '12m';
@@ -49,6 +50,7 @@ class ReportController extends Controller
 
         return Inertia::render('admin/reports', [
             'filters' => ['period' => $period, 'demo' => $demo],
+            'demoDefault' => DemoData::shownByDefault(),
             'range' => ['from' => $start->toDateString(), 'to' => $now->toDateString(), 'monthly' => $monthly],
             'totals' => $current,
             'previous' => $before,
@@ -69,7 +71,8 @@ class ReportController extends Controller
             'byStyle' => $this->breakdown($orders, $start, $now, 'style'),
             'stock' => $this->stock($demo),
             'customers' => [
-                'new' => User::where('is_admin', false)->whereBetween('created_at', $this->utc($start, $now))->count(),
+                'new' => User::where('is_admin', false)->whereBetween('created_at', $this->utc($start, $now))
+                    ->when(! $demo, fn ($query) => DemoData::withoutDemoCustomers($query))->count(),
                 'buyers' => $orders()->whereBetween('created_at', $this->utc($start, $now))->where('status', '!=', 'cancelled')
                     ->distinct()->count('phone'),
             ],

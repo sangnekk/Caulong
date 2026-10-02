@@ -3,6 +3,10 @@ import {
     ChevronDown,
     LayoutDashboard,
     LogOut,
+    Mail,
+    MapPin,
+    MessageCircle,
+    Phone,
     ReceiptText,
     ShoppingBag,
     UserRound,
@@ -15,6 +19,7 @@ import {
     type PropsWithChildren,
 } from 'react';
 import BrandMark from '@/components/brand-mark';
+import ShopSupportChat from '@/components/shop-support-chat';
 import { vnd, type ShopSharedProps, type Totals } from '@/types/commerce';
 import '../../css/shop.css';
 
@@ -112,23 +117,94 @@ export function OrderTotals({
     );
 }
 
-/** Hotline and email from the admin settings; nothing renders until the owner fills them in. */
-export function ShopContact() {
+/** Admin-configured contact links with an optional empty state for the footer. */
+export function ShopContact({
+    showEmptyState = false,
+}: {
+    showEmptyState?: boolean;
+}) {
     const contact = usePage<ShopSharedProps>().props.shop?.contact;
-    if (!contact?.hotline && !contact?.email) return null;
+    const hasContact = !!(
+        contact?.hotline ||
+        contact?.email ||
+        contact?.address ||
+        contact?.chat_url
+    );
+    if (!hasContact && !showEmptyState) return null;
     return (
-        <p className="store-contact">
-            Cần hỗ trợ?{' '}
-            {contact.hotline && (
-                <a href={'tel:' + contact.hotline.replace(/[^0-9+]/g, '')}>
-                    Gọi {contact.hotline}
-                </a>
+        <section className="store-contact" aria-label="Chăm sóc khách hàng">
+            <h2>Chăm sóc khách hàng</h2>
+            {hasContact ? (
+                <>
+                    <p>
+                        Liên hệ shop để được tư vấn sản phẩm hoặc hỗ trợ đơn
+                        hàng.
+                    </p>
+                    <div className="store-contact-actions">
+                        {contact.address && (
+                            <a
+                                className="store-contact-link"
+                                href={
+                                    'https://www.google.com/maps/search/?api=1&query=' +
+                                    encodeURIComponent(contact.address)
+                                }
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <MapPin size={19} aria-hidden="true" />
+                                <span>
+                                    <span>Địa chỉ</span>
+                                    <strong>{contact.address}</strong>
+                                </span>
+                            </a>
+                        )}
+                        {contact.hotline && (
+                            <a
+                                className="store-contact-link"
+                                href={
+                                    'tel:' +
+                                    contact.hotline.replace(/[^0-9+]/g, '')
+                                }
+                            >
+                                <Phone size={19} aria-hidden="true" />
+                                <span>
+                                    <span>Gọi tổng đài</span>
+                                    <strong>{contact.hotline}</strong>
+                                </span>
+                            </a>
+                        )}
+                        {contact.chat_url && (
+                            <a
+                                className="store-contact-link"
+                                href={contact.chat_url}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                <MessageCircle size={19} aria-hidden="true" />
+                                <span>
+                                    <span>Chat hỗ trợ</span>
+                                    <strong>Chat với shop qua Zalo</strong>
+                                </span>
+                            </a>
+                        )}
+                        {contact.email && (
+                            <a
+                                className="store-contact-link"
+                                href={'mailto:' + contact.email}
+                            >
+                                <Mail size={19} aria-hidden="true" />
+                                <span>
+                                    <span>Gửi email</span>
+                                    <strong>{contact.email}</strong>
+                                </span>
+                            </a>
+                        )}
+                    </div>
+                </>
+            ) : (
+                <p>Thông tin liên hệ hỗ trợ đang được cập nhật.</p>
             )}
-            {contact.hotline && contact.email && ' · '}
-            {contact.email && (
-                <a href={'mailto:' + contact.email}>{contact.email}</a>
-            )}
-        </p>
+        </section>
     );
 }
 
@@ -177,8 +253,8 @@ function AccountMenu({ user, isAdmin }: { user: Viewer; isAdmin: boolean }) {
     if (!user)
         return (
             <Link href="/login" className="store-account-link">
-                <UserRound size={18} aria-hidden="true" />
-                Đăng nhập
+                <UserRound size={20} aria-hidden="true" />
+                <span className="store-account-login">Đăng nhập</span>
             </Link>
         );
 
@@ -259,6 +335,8 @@ export default function ShopLayout({ children }: PropsWithChildren) {
         ShopSharedProps & { auth: { user: Viewer } }
     >();
     const path = url.split('?')[0];
+    const current = (active: boolean) => (active ? 'page' : undefined);
+    const cartCount = props.shop?.cart_count ?? 0;
     return (
         <div className="storefront" lang="vi">
             <a href="#store-main" className="store-skip">
@@ -277,37 +355,49 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                             Shop <strong>Cầu Lông</strong>
                         </span>
                     </Link>
-                    <nav aria-label="Điều hướng cửa hàng">
-                        <Link href="/" prefetch="hover" viewTransition>
-                            Khám phá
-                        </Link>
+                    <nav className="store-nav" aria-label="Điều hướng cửa hàng">
                         <Link
                             href="/products"
                             prefetch="hover"
-                            aria-current={
-                                path.startsWith('/products')
-                                    ? 'page'
-                                    : undefined
-                            }
+                            aria-current={current(path.startsWith('/products'))}
                         >
                             Cửa hàng
                         </Link>
-                        <Link href="/advisor" prefetch="hover">
+                        <Link
+                            href="/advisor"
+                            prefetch="hover"
+                            aria-current={current(path === '/advisor')}
+                        >
                             Gợi ý chọn vợt
                         </Link>
+                        <Link href="/" prefetch="hover" viewTransition>
+                            Tìm hiểu vợt
+                        </Link>
+                    </nav>
+                    <div className="store-tools">
                         <Link
                             href="/cart"
                             className="store-cart-link"
-                            aria-current={path === '/cart' ? 'page' : undefined}
+                            aria-label={
+                                cartCount > 0
+                                    ? `Giỏ hàng, ${cartCount} sản phẩm`
+                                    : 'Giỏ hàng'
+                            }
+                            aria-current={current(path === '/cart')}
                         >
-                            <ShoppingBag size={19} aria-hidden="true" /> Giỏ
-                            hàng <span>{props.shop?.cart_count ?? 0}</span>
+                            <ShoppingBag size={20} aria-hidden="true" />
+                            <span className="store-cart-label">Giỏ hàng</span>
+                            {cartCount > 0 && (
+                                <span className="store-cart-count">
+                                    {cartCount}
+                                </span>
+                            )}
                         </Link>
                         <AccountMenu
                             user={props.auth?.user ?? null}
                             isAdmin={!!props.shop?.is_admin}
                         />
-                    </nav>
+                    </div>
                 </div>
             </header>
             <main
@@ -328,16 +418,19 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                 {children}
             </main>
             <footer className="store-footer">
-                <div className="store-container">
-                    <strong>Shop Cầu Lông</strong>
-                    <p>
-                        Chọn vợt theo nhu cầu. Kiểm tra phiên bản, giá và số
-                        lượng trước khi đặt.
-                    </p>
-                    <ShopContact />
-                    <Link href="/products">Tiếp tục xem sản phẩm</Link>
+                <div className="store-container store-footer-inner store-footer-with-contact">
+                    <div className="store-footer-about">
+                        <strong>Shop Cầu Lông</strong>
+                        <p>
+                            Chọn vợt theo nhu cầu. Kiểm tra phiên bản, giá và số
+                            lượng trước khi đặt.
+                        </p>
+                        <Link href="/products">Tiếp tục xem sản phẩm</Link>
+                    </div>
+                    <ShopContact showEmptyState />
                 </div>
             </footer>
+            <ShopSupportChat />
         </div>
     );
 }

@@ -9,21 +9,24 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\CatalogImporter;
+use App\Support\DemoData;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(CatalogImporter $importer): Response
+    public function __invoke(Request $request, CatalogImporter $importer): Response
     {
-        // Demo orders and products are labelled everywhere; they never count as work or money.
-        $orders = fn () => Order::where('is_demo', false);
-        $products = fn () => Product::where('is_demo', false);
+        $demo = (bool) ($request->validate(['demo' => ['nullable', 'boolean']])['demo'] ?? DemoData::shownByDefault());
+        // Demo orders and products are labelled everywhere; they only count when the demo switch is on.
+        $orders = fn () => Order::query()->when(! $demo, fn ($query) => $query->where('is_demo', false));
+        $products = fn () => Product::query()->when(! $demo, fn ($query) => $query->where('is_demo', false));
         // Only what customers can buy, and only 1–5 left: sold-out items are their own task.
         $lowStock = ProductVariant::where('is_active', true)->whereBetween('stock', [1, 5])
-            ->whereHas('product', fn ($query) => $query->where('is_active', true)->where('is_demo', false));
+            ->whereHas('product', fn ($query) => $query->where('is_active', true)->when(! $demo, fn ($query) => $query->where('is_demo', false)));
         $sellable = fn ($query) => $query->where('is_active', true)->where('stock', '>', 0);
         // "Today" and "last 7 days" are shop days (Vietnam), the database is UTC.
         $today = CarbonImmutable::now((string) config('shop.timezone'))->startOfDay();
@@ -32,6 +35,8 @@ class DashboardController extends Controller
         $costed = OrderItem::whereIn('order_id', $kept($week)->select('id'))->whereNotNull('unit_cost');
 
         return Inertia::render('admin/dashboard', [
+            'demo' => $demo,
+            'demoDefault' => DemoData::shownByDefault(),
             'todo' => [
                 'pending_orders' => $orders()->where('status', 'pending')->count(),
                 'confirmed_orders' => $orders()->where('status', 'confirmed')->count(),
@@ -52,7 +57,8 @@ class DashboardController extends Controller
                 'orders_open' => $orders()->whereIn('status', ['pending', 'confirmed', 'shipped'])->count(),
                 'products_active' => $products()->where('is_active', true)->count(),
                 'products_in_stock' => $products()->where('is_active', true)->whereHas('variants', $sellable)->count(),
-                'customers' => User::where('is_admin', false)->count(),
+                'customers' => User::where('is_admin', false)
+                    ->when(! $demo, fn ($query) => DemoData::withoutDemoCustomers($query))->count(),
             ],
             'lowStock' => (clone $lowStock)->with('product:id,name')->orderBy('stock')->limit(6)
                 ->get(['id', 'product_id', 'sku', 'name', 'stock'])

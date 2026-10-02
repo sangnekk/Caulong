@@ -15,7 +15,8 @@ import AdminLayout from '@/layouts/admin-layout';
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 // Before createInertiaApp, so back/forward reaches this listener ahead of Inertia's.
-installHistoryTransitions();
+// Guarded: this module is also evaluated by the SSR module graph, where there is no window.
+if (typeof window !== 'undefined') installHistoryTransitions();
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

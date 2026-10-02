@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -25,9 +26,12 @@
                 background-color: {{ $page['component'] === 'welcome' ? 'oklch(0.145 0.032 262)' : 'oklch(1 0 0)' }};
             }
 
-            html.dark {
-                background-color: oklch(0.145 0 0);
-            }
+            {{-- Landing and store keep their own colour in dark mode; otherwise the store flashes dark before it renders. --}}
+            @unless ($page['component'] === 'welcome' || str_starts_with($page['component'], 'shop/'))
+                html.dark {
+                    background-color: oklch(0.145 0 0);
+                }
+            @endunless
         </style>
 
         <link rel="icon" href="/favicon.ico" sizes="any">
@@ -36,7 +40,8 @@
 
         @fonts
 
-        @if ($page['component'] === 'welcome' || str_starts_with($page['component'], 'shop/'))
+        {{-- Under the Vite dev server the CSS loads these from Vite instead, so a preload would go unused. --}}
+        @if (! Vite::isRunningHot() && ($page['component'] === 'welcome' || str_starts_with($page['component'], 'shop/')))
             {{-- Landing and store type: Archivo with the Vietnamese subset; italics only on the landing. --}}
             @foreach ($page['component'] === 'welcome' ? ['latin', 'vietnamese', 'italic-latin', 'italic-vietnamese'] : ['latin', 'vietnamese'] as $subset)
                 <link rel="preload" href="/fonts/archivo/archivo-v25-{{ $subset }}.woff2" as="font" type="font/woff2" crossorigin>

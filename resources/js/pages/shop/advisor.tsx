@@ -1,4 +1,5 @@
 import { Form, Head, Link } from '@inertiajs/react';
+import { useEffect, useRef, useState } from 'react';
 import '../../../css/advisor.css';
 
 type Style = 'attack' | 'speed' | 'balanced';
@@ -41,6 +42,13 @@ const money = (value: number) =>
         style: 'currency',
         currency: 'VND',
     }).format(value);
+const formatBudget = (value: number | string) => {
+    const digits = String(value)
+        .replace(/\D/g, '')
+        .slice(0, 10)
+        .replace(/^0+(?=\d)/, '');
+    return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
 
 export default function Advisor({
     recommendations,
@@ -49,14 +57,26 @@ export default function Advisor({
     recommendations: Recommendation[];
     filters: Filters;
 }) {
+    const [budgetInput, setBudgetInput] = useState(() =>
+        formatBudget(filters.budget ?? ''),
+    );
+    const budgetInputRef = useRef<HTMLInputElement>(null);
+    const hasAvailable = recommendations.some((product) =>
+        product.variants.some((variant) => variant.stock > 0),
+    );
+
+    useEffect(() => {
+        setBudgetInput(formatBudget(filters.budget ?? ''));
+    }, [filters.budget]);
+
     return (
         <div className="advisor-page">
             <Head title="Gợi ý chọn vợt" />
             <header className="advisor-intro">
                 <h1>Chọn vợt theo nhu cầu của bạn</h1>
                 <p>
-                    Đặt ngân sách, chọn lối chơi và trình độ để thu hẹp lựa chọn
-                    trong danh mục đang có hàng.
+                    Chọn ngân sách, lối chơi và trình độ. Ưu tiên vợt còn hàng;
+                    nếu chưa có, hiện các mẫu phù hợp đang hết hàng.
                 </p>
                 <p className="advisor-disclosure">
                     Gợi ý theo thông tin bạn chọn, chưa sử dụng AI
@@ -71,26 +91,67 @@ export default function Advisor({
                 >
                     {({ processing, errors }) => (
                         <>
-                            <h2>Thông tin của bạn</h2>
                             <div className="advisor-field">
                                 <label htmlFor="advisor-budget">
                                     Ngân sách tối đa (đồng)
                                 </label>
                                 <input
-                                    id="advisor-budget"
+                                    type="hidden"
                                     name="budget"
-                                    type="number"
+                                    value={budgetInput.replace(/\D/g, '')}
+                                />
+                                <input
+                                    ref={budgetInputRef}
+                                    id="advisor-budget"
+                                    type="text"
                                     inputMode="numeric"
-                                    min="0"
-                                    max="1000000000"
-                                    step="1"
+                                    pattern="[0-9.]*"
+                                    maxLength={13}
                                     required
-                                    defaultValue={filters.budget ?? ''}
+                                    placeholder="Ví dụ: 1.000.000"
+                                    value={budgetInput}
+                                    onChange={(event) => {
+                                        const inputValue = event.target.value;
+                                        const cursor =
+                                            event.target.selectionStart ??
+                                            inputValue.length;
+                                        const digitsBeforeCursor = inputValue
+                                            .slice(0, cursor)
+                                            .replace(/\D/g, '').length;
+                                        const formatted =
+                                            formatBudget(inputValue);
+                                        setBudgetInput(formatted);
+                                        requestAnimationFrame(() => {
+                                            const input =
+                                                budgetInputRef.current;
+                                            if (!input) return;
+                                            let nextCursor = 0;
+                                            let digitsAtCursor = 0;
+                                            while (
+                                                nextCursor < formatted.length &&
+                                                digitsAtCursor <
+                                                    digitsBeforeCursor
+                                            ) {
+                                                if (
+                                                    /\d/.test(
+                                                        formatted[nextCursor],
+                                                    )
+                                                ) {
+                                                    digitsAtCursor++;
+                                                }
+                                                nextCursor++;
+                                            }
+                                            input.setSelectionRange(
+                                                nextCursor,
+                                                nextCursor,
+                                            );
+                                        });
+                                    }}
                                     aria-invalid={!!errors.budget}
                                     aria-describedby="advisor-budget-hint advisor-budget-error"
                                 />
                                 <p id="advisor-budget-hint">
-                                    Giá một cây vợt, chưa gồm phí giao hàng.
+                                    Nhập tối đa 1.000.000.000 ₫.
                                 </p>
                                 <p
                                     id="advisor-budget-error"
@@ -170,7 +231,9 @@ export default function Advisor({
                         {filters.budget === null
                             ? 'Bắt đầu từ điều bạn cần'
                             : recommendations.length
-                              ? 'Các lựa chọn theo tiêu chí'
+                              ? hasAvailable
+                                  ? 'Các lựa chọn theo tiêu chí'
+                                  : 'Vợt khớp tiêu chí nhưng đang hết hàng'
                               : 'Chưa có vợt khớp tiêu chí'}
                     </h2>
                     {filters.budget === null ? (
@@ -179,20 +242,35 @@ export default function Advisor({
                             lối chơi và trình độ ở “Không giới hạn”.
                         </p>
                     ) : recommendations.length === 0 ? (
-                        <p>
-                            Thử tăng ngân sách hoặc bỏ giới hạn lối chơi, trình
-                            độ để tìm thêm lựa chọn đang có hàng.
-                        </p>
+                        <>
+                            <p>
+                                Chưa có vợt trong danh mục khớp đủ các tiêu chí.
+                                Thử tăng ngân sách hoặc bỏ bớt giới hạn để tìm
+                                thêm lựa chọn.
+                            </p>
+                            {(filters.style || filters.level) && (
+                                <Link
+                                    href={`/advisor?budget=${filters.budget}`}
+                                    className="advisor-broaden"
+                                >
+                                    Bỏ giới hạn lối chơi và trình độ
+                                </Link>
+                            )}
+                        </>
                     ) : (
                         <>
                             <p>
-                                Tối đa 3 mẫu, xếp theo giá phiên bản còn hàng
-                                thấp nhất trong ngân sách. Phân loại dựa trên
-                                thông tin danh mục, không phải đánh giá hiệu
-                                suất.
+                                {hasAvailable
+                                    ? 'Tối đa 3 mẫu, ưu tiên phiên bản còn hàng và xếp theo giá thấp nhất trong ngân sách.'
+                                    : 'Các mẫu dưới đây khớp tiêu chí nhưng phiên bản trong tầm giá hiện đã hết hàng.'}{' '}
+                                Phân loại dựa trên thông tin danh mục, không
+                                phải đánh giá hiệu suất.
                             </p>
                             <ul className="advisor-list">
                                 {recommendations.map((product) => {
+                                    const available = product.variants.some(
+                                        (variant) => variant.stock > 0,
+                                    );
                                     const price = Math.min(
                                         ...product.variants.map(
                                             (variant) => variant.price,
@@ -224,6 +302,11 @@ export default function Advisor({
                                                         Sản phẩm demo
                                                     </span>
                                                 )}
+                                                {!available && (
+                                                    <span className="advisor-stock">
+                                                        Tạm hết hàng
+                                                    </span>
+                                                )}
                                                 <h3>
                                                     <Link
                                                         href={
@@ -239,10 +322,13 @@ export default function Advisor({
                                                 </p>
                                                 <ul className="advisor-reasons">
                                                     <li>
-                                                        Có phiên bản còn hàng,
-                                                        giá không vượt{' '}
-                                                        {money(filters.budget!)}
-                                                        .
+                                                        {available
+                                                            ? 'Có phiên bản còn hàng, giá không vượt ' +
+                                                              money(
+                                                                  filters.budget!,
+                                                              ) +
+                                                              '.'
+                                                            : 'Phiên bản trong tầm giá hiện đã hết hàng.'}
                                                     </li>
                                                     <li>
                                                         Lối chơi trong danh mục:{' '}

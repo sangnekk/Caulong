@@ -7,6 +7,8 @@ type Settings = {
     free_shipping_threshold: number;
     hotline: string;
     contact_email: string;
+    contact_address: string;
+    contact_chat_url: string;
 };
 
 /** What a customer pays for delivery at a given cart value, under the settings being edited. */
@@ -141,9 +143,8 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
                 >
                     <h2 id="contact-title">Liên hệ</h2>
                     <p className="admin-lead">
-                        Hiện ở chân trang cửa hàng và trang theo dõi đơn, để
-                        khách gọi khi cần đổi địa chỉ hay hỏi về đơn. Để trống
-                        thì không hiện.
+                        Hiện ở chân trang cửa hàng. Địa chỉ mở bản đồ; khách có
+                        thể gọi tổng đài, gửi email hoặc chat qua Zalo.
                     </p>
                     <div className="admin-form-grid">
                         <Field
@@ -184,6 +185,49 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
                                     )
                                 }
                                 aria-invalid={!!form.errors.contact_email}
+                            />
+                        </Field>
+                        <Field
+                            name="contact_address"
+                            label="Địa chỉ cửa hàng"
+                            error={form.errors.contact_address}
+                        >
+                            <input
+                                id="contact_address"
+                                type="text"
+                                autoComplete="street-address"
+                                maxLength={255}
+                                placeholder="36 Thạch Lam, Tân Phú"
+                                value={data.contact_address}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'contact_address',
+                                        e.target.value,
+                                    )
+                                }
+                                aria-invalid={!!form.errors.contact_address}
+                            />
+                        </Field>
+                        <Field
+                            name="contact_chat_url"
+                            label="Liên kết chat Zalo"
+                            error={form.errors.contact_chat_url}
+                        >
+                            <input
+                                id="contact_chat_url"
+                                type="url"
+                                inputMode="url"
+                                autoComplete="url"
+                                maxLength={500}
+                                placeholder="https://zalo.me/0866815722"
+                                value={data.contact_chat_url}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'contact_chat_url',
+                                        e.target.value,
+                                    )
+                                }
+                                aria-invalid={!!form.errors.contact_chat_url}
                             />
                         </Field>
                     </div>

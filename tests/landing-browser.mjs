@@ -108,7 +108,7 @@ try {
         await evaluate(
             "[...document.querySelectorAll('.desktop-navigation a')].map(a=>a.textContent.trim())",
         ),
-        ['Cây vợt', 'Lối chơi', 'Tư vấn chọn vợt', 'Hỏi đáp'],
+        ['Cây vợt', 'Lối chơi', 'Gợi ý chọn vợt', 'Hỏi đáp'],
     );
     // The first chapter's own button walks into the parts; the nav brings the whole racket back.
     await evaluate("document.querySelector('.story-next').click()");

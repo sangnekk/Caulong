@@ -128,10 +128,11 @@ class AdminReportsTest extends TestCase
     {
         $this->actingAs($this->admin)->get('/admin/settings')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('admin/settings')
-            ->where('settings', ['shipping_fee' => 30000, 'free_shipping_threshold' => 1000000, 'hotline' => '', 'contact_email' => '']));
+            ->where('settings', ['shipping_fee' => 30000, 'free_shipping_threshold' => 1000000, 'hotline' => '', 'contact_email' => '', 'contact_address' => '', 'contact_chat_url' => '']));
 
         $this->put('/admin/settings', [
             'shipping_fee' => 25000, 'free_shipping_threshold' => 0, 'hotline' => '0901 234 567', 'contact_email' => 'lienhe@shop.vn',
+            'contact_address' => '36 Thạch Lam, Tân Phú', 'contact_chat_url' => 'https://zalo.me/0866815722',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->app->forgetScopedInstances();
@@ -140,16 +141,16 @@ class AdminReportsTest extends TestCase
         $this->assertSame(25000, $cart->shippingFee(5000000));
         $this->assertSame(0, $cart->shippingFee(0));
         $this->get('/products')->assertInertia(fn (Assert $page) => $page
-            ->where('shop.contact', ['hotline' => '0901 234 567', 'email' => 'lienhe@shop.vn'])
+            ->where('shop.contact', ['hotline' => '0901 234 567', 'email' => 'lienhe@shop.vn', 'address' => '36 Thạch Lam, Tân Phú', 'chat_url' => 'https://zalo.me/0866815722'])
             ->where('shop.free_shipping_from', 0));
 
-        $this->put('/admin/settings', ['shipping_fee' => 0, 'free_shipping_threshold' => 500000, 'hotline' => '', 'contact_email' => ''])
+        $this->put('/admin/settings', ['shipping_fee' => 0, 'free_shipping_threshold' => 500000, 'hotline' => '', 'contact_email' => '', 'contact_address' => '', 'contact_chat_url' => ''])
             ->assertSessionHasNoErrors();
         $this->app->forgetScopedInstances();
         $this->assertSame(0, app(CartService::class)->shippingFee(100000));
 
-        $this->put('/admin/settings', ['shipping_fee' => -1, 'free_shipping_threshold' => 'x', 'hotline' => 'gọi tôi', 'contact_email' => 'no'])
-            ->assertSessionHasErrors(['shipping_fee', 'free_shipping_threshold', 'hotline', 'contact_email']);
+        $this->put('/admin/settings', ['shipping_fee' => -1, 'free_shipping_threshold' => 'x', 'hotline' => 'gọi tôi', 'contact_email' => 'no', 'contact_address' => str_repeat('a', 256), 'contact_chat_url' => 'javascript:alert(1)'])
+            ->assertSessionHasErrors(['shipping_fee', 'free_shipping_threshold', 'hotline', 'contact_email', 'contact_address', 'contact_chat_url']);
     }
 
     public function test_bulk_actions_change_only_the_chosen_products(): void

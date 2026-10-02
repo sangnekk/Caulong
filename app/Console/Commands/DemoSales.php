@@ -4,11 +4,14 @@ namespace App\Console\Commands;
 
 use App\Models\Order;
 use App\Models\ProductVariant;
+use App\Models\User;
 use App\Services\CartService;
+use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Database\Seeders\DemoCatalogSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 /**
@@ -27,6 +30,14 @@ class DemoSales extends Command
 
     /** Marks the orders this command made, so it never touches other orders (demo or real). */
     public const TOKEN = 'demo-sales-';
+
+    /** Of the 160 demo customers, these first ones have an account (local machine only). */
+    private const REGISTERED = 40;
+
+    /** @var array<int, User> */
+    private array $accounts = [];
+
+    private ?string $password = null;
 
     public function handle(CartService $cart): int
     {
@@ -73,15 +84,45 @@ class DemoSales extends Command
             }
         });
 
-        $this->info('Đã tạo '.$made.' đơn mẫu trong '.$months.' tháng (doanh số mẫu '.number_format($sales, 0, ',', '.').' ₫).');
-        $this->line('Xem ở Quản trị → Báo cáo, bật “Tính cả đơn mẫu”. Xóa bằng: php artisan shop:demo-sales --clear');
+        $this->info('Đã tạo '.$made.' đơn mẫu trong '.$months.' tháng (doanh số mẫu '.number_format($sales, 0, ',', '.').' ₫)'
+            .($this->accounts ? ', '.count($this->accounts).' tài khoản khách mẫu' : '').'.');
+        $this->line((DemoData::shownByDefault()
+            ? 'Máy local: trang quản trị đã tính sẵn dữ liệu mẫu (có công tắc để tắt).'
+            : 'Xem ở Quản trị → Báo cáo, bật “Tính cả đơn mẫu”.').' Xóa bằng: php artisan shop:demo-sales --clear');
 
         return self::SUCCESS;
     }
 
     private function clear(): int
     {
-        return Order::where('is_demo', true)->where('checkout_token', 'like', self::TOKEN.'%')->delete();
+        $removed = Order::where('is_demo', true)->where('checkout_token', 'like', self::TOKEN.'%')->delete();
+        User::where('email', 'like', '%@'.DemoData::EMAIL_DOMAIN)->delete();
+
+        return $removed;
+    }
+
+    /**
+     * A registered demo customer, so Khách hàng and "tài khoản mới" have rows. Local only: in
+     * production they would sit among real accounts. The domain is reserved and the password random,
+     * so nobody can sign in or receive mail as them.
+     */
+    private function account(int $customer, CarbonImmutable $placed): ?User
+    {
+        if ($customer > self::REGISTERED || ! DemoData::shownByDefault()) {
+            return null;
+        }
+        $number = str_pad((string) $customer, 3, '0', STR_PAD_LEFT);
+        // Orders are made in date order, so the first one sets when the account was opened.
+        $joined = $placed->subHours(1 + $customer % 48)->utc();
+
+        return $this->accounts[$customer] ??= User::forceCreate([
+            'name' => 'Khách mẫu '.$number,
+            'email' => 'khach-mau-'.$number.'@'.DemoData::EMAIL_DOMAIN,
+            'password' => $this->password ??= Hash::make(Str::random(40)),
+            'email_verified_at' => $joined->addMinutes(10),
+            'created_at' => $joined,
+            'updated_at' => $joined,
+        ]);
     }
 
     /** Poisson draw: how many orders arrive on a day that averages $mean. */
@@ -122,6 +163,7 @@ class DemoSales extends Command
         $order = Order::create([
             'public_id' => (string) Str::uuid(),
             'checkout_token' => self::TOKEN.Str::uuid(),
+            'user_id' => $this->account($customer, $placed)?->id,
             'name' => 'Khách mẫu '.str_pad((string) $customer, 3, '0', STR_PAD_LEFT),
             'phone' => '0900'.str_pad((string) $customer, 6, '0', STR_PAD_LEFT),
             'address' => 'Địa chỉ mẫu số '.$customer.', TP. Hồ Chí Minh',

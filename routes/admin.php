@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\SupportChatController;
 use App\Http\Controllers\Admin\TaxonomyController;
 use App\Http\Middleware\EnsureAdmin;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,10 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->na
     Route::get('reports', ReportController::class)->name('reports');
     Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
     Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+    Route::get('support-chat', [SupportChatController::class, 'index'])->name('support-chat.index');
+    Route::post('support-chat/{conversation}/claim', [SupportChatController::class, 'claim'])->name('support-chat.claim');
+    Route::post('support-chat/{conversation}/reply', [SupportChatController::class, 'reply'])->name('support-chat.reply');
+    Route::post('support-chat/{conversation}/close', [SupportChatController::class, 'close'])->name('support-chat.close');
     Route::post('products/bulk', [ProductController::class, 'bulk'])->name('products.bulk');
     Route::patch('products/{product}/variants', [ProductController::class, 'quick'])->name('products.quick');
     Route::get('orders/export', [OrderController::class, 'export'])->name('orders.export');
