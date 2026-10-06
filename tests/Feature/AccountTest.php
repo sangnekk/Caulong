@@ -16,12 +16,6 @@ class AccountTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->withoutVite();
-    }
-
     private function order(?User $user, array $attributes = []): Order
     {
         $order = Order::create(array_merge([

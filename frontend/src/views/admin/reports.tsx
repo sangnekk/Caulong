@@ -1,4 +1,6 @@
-import { Head, Link, router } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, router } from '@/lib/page';
 import { ArrowDownRight, ArrowUpRight, Download } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import RevenueChart, { compact } from '@/components/revenue-chart';

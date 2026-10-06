@@ -15,12 +15,6 @@ class SupportChatTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->withoutVite();
-    }
-
     public function test_guest_message_and_auto_reply_are_persisted_in_the_guest_session(): void
     {
         $this->postJson('/support-chat/messages', ['message' => 'Phí giao hàng'])

@@ -1,4 +1,4 @@
-import { Form } from '@inertiajs/react';
+import { Form } from '@/lib/page';
 import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import AlertError from '@/components/alert-error';

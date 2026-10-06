@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { usePage } from '@/lib/page';
 import { ChevronsUpDown } from 'lucide-react';
 import {
     DropdownMenu,

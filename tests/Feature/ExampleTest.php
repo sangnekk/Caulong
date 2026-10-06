@@ -15,4 +15,9 @@ class ExampleTest extends TestCase
 
         $response->assertOk();
     }
+
+    public function test_session_renewal_answers_with_the_session_cookie(): void
+    {
+        $this->get(route('session.renew'))->assertNoContent()->assertCookie(config('session.cookie'));
+    }
 }

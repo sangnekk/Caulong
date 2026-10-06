@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link } from '@/lib/page';
 import { ArrowDown, ArrowRight, Pause, Play } from 'lucide-react';
 import {
     lazy,
@@ -13,7 +13,7 @@ import { courtView } from '@/lib/court-view';
 import { downloadRacketModel, onRacketDownload } from '@/lib/racket-download';
 import { racketLoad, useRacketLoad } from '@/lib/racket-load';
 import type { RacketScene } from '@/lib/racket-scene';
-import '../../css/racket-story.css';
+import '@/css/racket-story.css';
 
 const Viewer = lazy(() => import('@/components/racket-viewer'));
 const STATIC_QUERY = '(prefers-reduced-motion: reduce), (max-height: 550px)';

@@ -19,7 +19,6 @@ class AdminTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         if (! Route::has('admin.dashboard')) {
             Route::middleware('web')->group(base_path('routes/admin.php'));
         }

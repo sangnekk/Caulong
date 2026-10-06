@@ -1,6 +1,8 @@
-import { Form, Head, usePage } from '@inertiajs/react';
+'use client';
+
+import { Form, Head, usePage } from '@/lib/page';
 /* @chisel-email-verification */
-import { Link } from '@inertiajs/react';
+import { Link } from '@/lib/page';
 /* @end-chisel-email-verification */
 import ProfileController from '@/actions/App/Http/Controllers/Settings/ProfileController';
 import DeleteUser from '@/components/delete-user';

@@ -1,5 +1,7 @@
+'use client';
+
 // Components
-import { Form, Head } from '@inertiajs/react';
+import { Form, Head } from '@/lib/page';
 import { LoaderCircle } from 'lucide-react';
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';

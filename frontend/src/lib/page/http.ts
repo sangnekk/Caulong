@@ -54,14 +54,16 @@ function appendValue(target: FormData, key: string, value: unknown): void {
         Object.entries(value).forEach(([name, item]) =>
             appendValue(target, `${key}[${name}]`, item),
         );
-    } else {
+    } else if (typeof value === 'string' || typeof value === 'number') {
         target.append(key, String(value));
     }
 }
 
 export function objectToFormData(data: Record<string, unknown>): FormData {
     const form = new FormData();
-    Object.entries(data).forEach(([key, value]) => appendValue(form, key, value));
+    Object.entries(data).forEach(([key, value]) =>
+        appendValue(form, key, value),
+    );
     return form;
 }
 
@@ -75,7 +77,7 @@ function appendQuery(params: URLSearchParams, key: string, value: unknown) {
         );
     } else if (typeof value === 'boolean') {
         params.append(key, value ? '1' : '0');
-    } else {
+    } else if (typeof value === 'string' || typeof value === 'number') {
         params.append(key, String(value));
     }
 }
@@ -111,7 +113,12 @@ export function send(
     method: Method,
     url: string,
     data: RequestPayload | undefined,
-    { headers = {}, forceFormData = false, signal, expects = 'page' }: SendOptions = {},
+    {
+        headers = {},
+        forceFormData = false,
+        signal,
+        expects = 'page',
+    }: SendOptions = {},
 ): Promise<Response> {
     let verb = method.toUpperCase();
     let target = url;
@@ -119,7 +126,10 @@ export function send(
     const outgoing: Record<string, string> = {
         'X-Requested-With': 'XMLHttpRequest',
         ...(expects === 'page'
-            ? { 'X-Inertia': 'true', Accept: 'text/html, application/xhtml+xml' }
+            ? {
+                  'X-Inertia': 'true',
+                  Accept: 'text/html, application/xhtml+xml',
+              }
             : { Accept: 'application/json' }),
         ...headers,
     };

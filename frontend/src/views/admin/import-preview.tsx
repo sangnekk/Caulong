@@ -1,4 +1,6 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, useForm, usePage } from '@/lib/page';
 import { Errors, money } from './shared';
 
 type Issue = { line: number | null; message: string };

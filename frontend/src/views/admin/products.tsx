@@ -1,4 +1,6 @@
-import { Head, Link, router, useForm } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, router, useForm } from '@/lib/page';
 import {
     Check,
     ExternalLink,

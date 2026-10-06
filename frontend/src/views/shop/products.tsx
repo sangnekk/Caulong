@@ -1,4 +1,6 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, router, usePage } from '@/lib/page';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, MouseEvent } from 'react';

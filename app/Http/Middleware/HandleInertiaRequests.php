@@ -27,7 +27,8 @@ class HandleInertiaRequests extends Middleware
      */
     public function version(Request $request): ?string
     {
-        return parent::version($request);
+        // The Next.js front end builds its own assets; this server has none to keep in step with.
+        return null;
     }
 
     /**

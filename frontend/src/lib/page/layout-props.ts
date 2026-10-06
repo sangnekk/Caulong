@@ -25,11 +25,11 @@ function same(a: Props, b: Props): boolean {
 /** Props a page hands to its layout at render time, like Inertia's setLayoutProps. */
 export const layoutProps = {
     get: (): Props => props,
-    subscribe(listener: () => void): () => void {
+    subscribe: (listener: () => void): (() => void) => {
         listeners.add(listener);
         return () => listeners.delete(listener);
     },
-    reset(): void {
+    reset: (): void => {
         if (Object.keys(props).length === 0) return;
         props = {};
         notify();

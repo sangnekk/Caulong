@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
 
+// The Next.js front end renders pages on its own server, where the session cookie renewed
+// with each answer cannot reach the browser. The browser asks here now and then instead, so
+// the session of someone who keeps browsing (their sign-in, their cart) does not run out.
+Route::get('session', fn () => response()->noContent())->name('session.renew');
+
 // Fortify's home after verification or passkey sign-in: no page of its own, just the right place.
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('dashboard', fn (Request $request) => redirect()->to(SignedInResponse::home($request)))->name('dashboard');

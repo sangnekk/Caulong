@@ -2,6 +2,9 @@ import type { Auth } from '@/types/auth';
 
 export type Method = 'get' | 'post' | 'put' | 'patch' | 'delete';
 
+/** A Wayfinder route with its method (`store()`). */
+export type UrlMethodPair = { url: string; method: Method };
+
 /** A Wayfinder route (`store()`), or a plain URL. */
 export type Href = string | { url: string; method?: Method | Method[] };
 

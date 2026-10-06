@@ -1,4 +1,6 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, useForm, usePage } from '@/lib/page';
 import { Minus, Phone, Plus } from 'lucide-react';
 import { DemoBadge, FormErrors, ProductImage } from '@/layouts/shop-layout';
 import {

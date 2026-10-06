@@ -1,4 +1,4 @@
-import { useHttp } from '@inertiajs/react';
+import { useHttp } from '@/lib/page';
 import { useCallback, useState } from 'react';
 import { qrCode, recoveryCodes, secretKey } from '@/routes/two-factor';
 

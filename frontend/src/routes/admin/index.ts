@@ -1,5 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 import settings from './settings'
+import supportChat from './support-chat'
 import products from './products'
 import orders from './orders'
 import taxonomies from './taxonomies'
@@ -167,6 +168,7 @@ const admin = {
     dashboard: Object.assign(dashboard, dashboard),
 reports: Object.assign(reports, reports),
 settings: Object.assign(settings, settings),
+supportChat: Object.assign(supportChat, supportChat),
 products: Object.assign(products, products),
 orders: Object.assign(orders, orders),
 taxonomies: Object.assign(taxonomies, taxonomies),

@@ -1,4 +1,6 @@
-import { Link, usePage } from '@inertiajs/react';
+'use client';
+
+import { Link, usePage } from '@/lib/page';
 import AppLogoIcon from '@/components/app-logo-icon';
 import { home } from '@/routes';
 import type { AuthLayoutProps } from '@/types';

@@ -17,6 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        // The Next.js front end (frontend/) runs beside this app and asks on the visitor's
+        // behalf: its X-Forwarded-* headers carry the address the visitor really uses, so
+        // redirects and generated URLs point back at the site, not at this server.
+        $middleware->trustProxies(at: ['127.0.0.1', '::1']);
+
         $middleware->web(append: [
             HandleAppearance::class,
             HandleInertiaRequests::class,

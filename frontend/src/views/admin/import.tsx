@@ -1,4 +1,6 @@
-import { Head, router, useForm } from '@inertiajs/react';
+'use client';
+
+import { Head, router, useForm } from '@/lib/page';
 import { useState } from 'react';
 import { Errors, Field } from './shared';
 

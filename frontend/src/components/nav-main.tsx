@@ -1,4 +1,4 @@
-import { Link } from '@inertiajs/react';
+import { Link } from '@/lib/page';
 import {
     SidebarGroup,
     SidebarGroupLabel,

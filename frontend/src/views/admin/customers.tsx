@@ -1,4 +1,6 @@
-import { Head, Link, router } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, router } from '@/lib/page';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';

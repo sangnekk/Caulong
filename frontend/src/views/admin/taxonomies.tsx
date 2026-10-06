@@ -1,4 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, useForm } from '@/lib/page';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Errors, Field, PageHeader } from './shared';

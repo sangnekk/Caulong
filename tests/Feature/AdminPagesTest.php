@@ -20,7 +20,6 @@ class AdminPagesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         $this->admin = User::factory()->create(['is_admin' => true]);
     }
 

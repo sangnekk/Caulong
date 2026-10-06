@@ -273,7 +273,7 @@ export async function createRacketScene(
             (screenY * half) / zoom - focus.y,
             -focus.z,
         );
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV !== 'production') {
             // Runnable focus check: scrub every chapter/rescale viewport in development.
             camera.updateMatrixWorld();
             focus.add(presentation.position).project(camera);

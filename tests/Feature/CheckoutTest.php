@@ -21,7 +21,6 @@ class CheckoutTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         if (! Route::has('checkout.store')) {
             Route::middleware('web')->group(base_path('routes/checkout.php'));
         }

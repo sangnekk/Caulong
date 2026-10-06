@@ -77,7 +77,5 @@ export function PageRoot({
         <View key={key} {...page.props} />,
     );
 
-    return (
-        <PageContext.Provider value={page}>{content}</PageContext.Provider>
-    );
+    return <PageContext.Provider value={page}>{content}</PageContext.Provider>;
 }

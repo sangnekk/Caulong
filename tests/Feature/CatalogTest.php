@@ -23,7 +23,6 @@ class CatalogTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         // Worker tests remain runnable before parent wires the shared route file.
         if (! Route::has('products.index')) {
             Route::middleware('web')->group(base_path('routes/catalog.php'));

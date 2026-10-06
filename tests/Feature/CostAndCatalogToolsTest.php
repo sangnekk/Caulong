@@ -29,7 +29,6 @@ class CostAndCatalogToolsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         $this->admin = User::factory()->create(['is_admin' => true]);
         if (! Route::has('checkout.store')) {
             Route::middleware('web')->group(base_path('routes/checkout.php'));

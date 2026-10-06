@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router } from '@/lib/page';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
 import type { FlashToast } from '@/types/ui';

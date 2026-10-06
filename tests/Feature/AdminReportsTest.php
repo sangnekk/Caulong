@@ -24,7 +24,6 @@ class AdminReportsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         $this->admin = User::factory()->create(['is_admin' => true]);
         // 10:00 on 28/9 in the shop's time zone (03:00 UTC).
         $this->travelTo(CarbonImmutable::parse('2026-09-28 10:00', 'Asia/Ho_Chi_Minh'));

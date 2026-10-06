@@ -1,4 +1,6 @@
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, useForm, usePage } from '@/lib/page';
 import { DemoBadge, FormErrors, OrderTotals } from '@/layouts/shop-layout';
 import { vnd, type Cart } from '@/types/commerce';
 

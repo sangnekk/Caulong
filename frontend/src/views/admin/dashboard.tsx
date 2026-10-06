@@ -1,4 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+'use client';
+
+import { Head, Link } from '@/lib/page';
 import { ArrowRight, Check } from 'lucide-react';
 import { demoParam, money, OrderTable, PageHeader, query } from './shared';
 import type { Order } from './shared';

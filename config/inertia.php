@@ -16,10 +16,9 @@ return [
     */
 
     'ssr' => [
-        // Off: the landing intro renders client-only by design, and no SSR bundle ships.
+        // Off: the pages are rendered by the Next.js app in frontend/, not by an Inertia client.
         'enabled' => false,
         'url' => 'http://127.0.0.1:13714',
-        // 'bundle' => base_path('bootstrap/ssr/ssr.mjs'),
 
     ],
 
@@ -37,7 +36,7 @@ return [
     'pages' => [
 
         'paths' => [
-            resource_path('js/pages'),
+            base_path('frontend/src/views'),
         ],
 
         'extensions' => [

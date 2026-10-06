@@ -15,7 +15,6 @@ class AdvisorTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         Http::preventStrayRequests();
     }
 
@@ -85,9 +84,9 @@ class AdvisorTest extends TestCase
 
         $this->get('/advisor?budget=600000&style=attack&level=intermediate')
             ->assertOk()->assertInertia(fn (Assert $page) => $page->component('shop/advisor')
-                ->has('recommendations', 1)
-                ->where('recommendations.0.id', $soldOut->id)
-                ->where('recommendations.0.variants.0.stock', 0));
+            ->has('recommendations', 1)
+            ->where('recommendations.0.id', $soldOut->id)
+            ->where('recommendations.0.variants.0.stock', 0));
     }
 
     public function test_zero_budget_is_submitted_and_empty_result_is_valid(): void

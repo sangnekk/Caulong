@@ -1,4 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
+'use client';
+
+import { Form, Head } from '@/lib/page';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';

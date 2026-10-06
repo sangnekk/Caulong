@@ -1,4 +1,6 @@
-import { Form, Head } from '@inertiajs/react';
+'use client';
+
+import { Form, Head } from '@/lib/page';
 import { useRef } from 'react';
 import SecurityController from '@/actions/App/Http/Controllers/Settings/SecurityController';
 import Heading from '@/components/heading';
@@ -20,7 +22,7 @@ import ManageTwoFactor from '@/components/manage-two-factor';
 type Props = {
     passwordRules: string;
 } /* @chisel-passkeys */ & ManagePasskeysProps /* @end-chisel-passkeys */ /* @chisel-2fa */ &
-    ManageTwoFactorProps /* @end-chisel-2fa */;
+    ManageTwoFactorProps; /* @end-chisel-2fa */
 
 export default function Security(props: Props) {
     const passwordInput = useRef<HTMLInputElement>(null);

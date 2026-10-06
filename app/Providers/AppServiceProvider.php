@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Services\ShopSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
@@ -26,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // "php artisan dev" runs the Next.js app in frontend/ (the root "npm run dev") by name.
+        DevCommands::except('vite');
+        DevCommands::node('dev', 'next');
     }
 
     /**

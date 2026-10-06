@@ -1,14 +1,14 @@
 # Commerce implementation contract
 
-Laravel 13 / Inertia React 3; use existing dependencies, integer VND. UI Vietnamese, plain wording. No fabricated inventory/prices for real brands. Seed demo products explicitly is_demo=true (fictional names, existing generic poster) and label demo orders. Public / remains landing; /products is store. No payments/AI claimed live without configured provider.
+Laravel 13 answering Inertia page props; pages are React views in the Next.js app (frontend/); use existing dependencies, integer VND. UI Vietnamese, plain wording. No fabricated inventory/prices for real brands. Seed demo products explicitly is_demo=true (fictional names, existing generic poster) and label demo orders. Public / remains landing; /products is store. No payments/AI claimed live without configured provider.
 
 ## Ownership
 
 Catalog worker: migrations 2026_09_25_100000_create_catalog_tables.php; models Brand, Category, Product, ProductVariant; CatalogController; routes/catalog.php; DemoCatalogSeeder; catalog tests.
-Admin worker: migration 2026_09_25_100100_add_is_admin_to_users.php, User.php, EnsureAdmin middleware (class referenced directly in routes), app/Http/Controllers/Admin/_, routes/admin.php, resources/js/pages/admin/_, resources/js/layouts/admin-layout.tsx, resources/css/admin.css, app/Console/Commands/MakeAdmin.php, admin tests. NO other shared files.
+Admin worker: migration 2026_09_25_100100_add_is_admin_to_users.php, User.php, EnsureAdmin middleware (class referenced directly in routes), app/Http/Controllers/Admin/_, routes/admin.php, frontend/src/views/admin/_, frontend/src/layouts/admin-layout.tsx, frontend/src/css/admin.css, app/Console/Commands/MakeAdmin.php, admin tests. NO other shared files.
 Checkout worker: migration 2026_09_25_100200_create_order_tables.php; Order/OrderItem; CartController, CheckoutController; app/Services/CartService.php + OrderService.php; routes/checkout.php; config/shop.php; checkout tests. No frontend.
-Storefront worker: resources/js/pages/shop/* EXCEPT advisor.tsx, resources/js/layouts/shop-layout.tsx; resources/css/shop.css; resources/js/types/commerce.ts. No PHP or app.tsx. Own public product/cart/checkout/order UI, use plain paths from below.
-Parent: require routes in web.php, app.tsx layout mapping, shared props, landing links, advisor backend/UI and integration tests/docs.
+Storefront worker: frontend/src/views/shop/* EXCEPT advisor.tsx, frontend/src/layouts/shop-layout.tsx; frontend/src/css/shop.css; frontend/src/types/commerce.ts. No PHP or route files. Own public product/cart/checkout/order UI, use plain paths from below.
+Parent: require routes in web.php, frontend/src/app route files (page + layout), shared props, landing links, advisor backend/UI and integration tests/docs.
 
 ## Catalog schema
 

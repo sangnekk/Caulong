@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { router } from '@/lib/page';
 import { KeyRound } from 'lucide-react';
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
 import Heading from '@/components/heading';

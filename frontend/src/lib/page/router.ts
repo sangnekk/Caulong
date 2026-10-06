@@ -1,5 +1,7 @@
 import { toast } from 'sonner';
 import { REDIRECT_HEADER, mergeQuery, send } from './http';
+import { keepSessionAlive } from './session';
+import { transitionTypes } from './transition';
 import type {
     Errors,
     Href,
@@ -19,9 +21,10 @@ import { hrefMethod, hrefUrl } from './types';
  * becomes a Next.js navigation or refresh. A visit ends when the page it led to renders.
  */
 
+type NavigateOptions = { scroll?: boolean; transitionTypes?: string[] };
 type Navigator = {
-    push(href: string, options?: { scroll?: boolean }): void;
-    replace(href: string, options?: { scroll?: boolean }): void;
+    push(href: string, options?: NavigateOptions): void;
+    replace(href: string, options?: NavigateOptions): void;
     refresh(): void;
 };
 
@@ -80,6 +83,8 @@ export function pageRendered(page: Page): void {
         emit('flash', { flash: page.flash, page });
     }
     finished?.resolve(page);
+    // Between visits, never during one: its answer must not cross a sign-in or sign-out.
+    if (!activeRequest) keepSessionAlive();
 }
 
 function currentUrl(): string {
@@ -123,14 +128,26 @@ function navigate(
             resolve(null);
         }, 20000);
         const href = url.pathname + url.search + url.hash;
+        const options = {
+            scroll: !preserveScroll,
+            transitionTypes: transitionTypes(
+                window.location.pathname,
+                url.pathname,
+            ),
+        };
         if (refresh) navigator!.refresh();
-        else if (replace) navigator!.replace(href, { scroll: !preserveScroll });
-        else navigator!.push(href, { scroll: !preserveScroll });
+        else if (replace) navigator!.replace(href, options);
+        else navigator!.push(href, options);
     });
 }
 
 /** Link clicks: Next.js navigates; this only tracks the visit for events and page state. */
-export function trackNavigation(options: VisitOptions = {}): void {
+export function trackNavigation(
+    target: string,
+    options: VisitOptions = {},
+): void {
+    const url = new URL(target, window.location.href);
+    if (url.origin !== window.location.origin) return;
     navigation?.resolve(null);
     window.clearTimeout(navigationTimer);
     emit('start', { visit: options });
@@ -140,6 +157,12 @@ export function trackNavigation(options: VisitOptions = {}): void {
         options.onFinish?.();
         emit('finish', { visit: options });
     };
+    // Another #fragment of the page on screen: the browser scrolls, nothing renders.
+    if (url.hash && url.pathname + url.search === currentUrl()) {
+        navigation = null;
+        done(currentPage);
+        return;
+    }
     navigation = {
         preserveState: options.preserveState === true,
         preserveScroll: options.preserveScroll ?? false,
@@ -200,7 +223,8 @@ async function visit(href: Href, options: VisitOptions = {}): Promise<void> {
             target = mergeQuery(url, options.data);
         } else {
             const headers = { ...options.headers };
-            if (options.errorBag) headers['X-Inertia-Error-Bag'] = options.errorBag;
+            if (options.errorBag)
+                headers['X-Inertia-Error-Bag'] = options.errorBag;
             const response = await send(method, url, options.data, {
                 headers,
                 forceFormData: options.forceFormData,
@@ -262,25 +286,49 @@ async function visit(href: Href, options: VisitOptions = {}): Promise<void> {
 type Data = RequestPayload | undefined;
 type Options = Omit<VisitOptions, 'method' | 'data'>;
 
+/** As with Inertia, starting a visit returns nothing: its callbacks and events report on it. */
 export const router = {
-    visit,
-    get: (url: Href, data?: Data, options: Options = {}) =>
-        visit(url, { ...options, method: 'get', data }),
-    post: (url: Href, data?: Data, options: Options = {}) =>
-        visit(url, { preserveState: true, ...options, method: 'post', data }),
-    put: (url: Href, data?: Data, options: Options = {}) =>
-        visit(url, { preserveState: true, ...options, method: 'put', data }),
-    patch: (url: Href, data?: Data, options: Options = {}) =>
-        visit(url, { preserveState: true, ...options, method: 'patch', data }),
-    delete: (url: Href, options: VisitOptions = {}) =>
-        visit(url, { preserveState: true, ...options, method: 'delete' }),
-    reload: (options: VisitOptions = {}) =>
-        visit(currentUrl(), {
+    visit: (url: Href, options: VisitOptions = {}): void => {
+        void visit(url, options);
+    },
+    get: (url: Href, data?: Data, options: Options = {}): void => {
+        void visit(url, { ...options, method: 'get', data });
+    },
+    post: (url: Href, data?: Data, options: Options = {}): void => {
+        void visit(url, {
+            preserveState: true,
+            ...options,
+            method: 'post',
+            data,
+        });
+    },
+    put: (url: Href, data?: Data, options: Options = {}): void => {
+        void visit(url, {
+            preserveState: true,
+            ...options,
+            method: 'put',
+            data,
+        });
+    },
+    patch: (url: Href, data?: Data, options: Options = {}): void => {
+        void visit(url, {
+            preserveState: true,
+            ...options,
+            method: 'patch',
+            data,
+        });
+    },
+    delete: (url: Href, options: VisitOptions = {}): void => {
+        void visit(url, { preserveState: true, ...options, method: 'delete' });
+    },
+    reload: (options: VisitOptions = {}): void => {
+        void visit(currentUrl(), {
             preserveState: true,
             preserveScroll: true,
             ...options,
             method: 'get',
-        }),
+        });
+    },
     /** Cancels the request of the visit in flight, if any. */
     cancel: () => activeRequest?.abort(),
     /** Inertia's prefetch cache; Next.js keeps its own, so there is nothing to clear. */

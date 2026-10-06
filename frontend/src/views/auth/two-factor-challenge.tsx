@@ -1,4 +1,6 @@
-import { Form, Head, setLayoutProps } from '@inertiajs/react';
+'use client';
+
+import { Form, Head, setLayoutProps } from '@/lib/page';
 import { REGEXP_ONLY_DIGITS } from 'input-otp';
 import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';

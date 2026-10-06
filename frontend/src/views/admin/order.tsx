@@ -1,4 +1,6 @@
-import { Head, Link, useForm } from '@inertiajs/react';
+'use client';
+
+import { Head, Link, useForm } from '@/lib/page';
 import { Copy, Phone } from 'lucide-react';
 import { useState } from 'react';
 import {

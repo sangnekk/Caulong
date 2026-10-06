@@ -14,7 +14,6 @@ class LocalAccountsTest extends TestCase
 
     public function test_local_login_page_lists_ready_accounts_that_actually_sign_in(): void
     {
-        $this->withoutVite();
         $this->app['env'] = 'local';
 
         $this->get(route('login'))->assertOk()->assertInertia(fn (Assert $page) => $page
@@ -41,7 +40,6 @@ class LocalAccountsTest extends TestCase
 
     public function test_outside_local_nothing_is_created_or_shown(): void
     {
-        $this->withoutVite();
         foreach (['production', 'testing'] as $environment) {
             $this->app['env'] = $environment;
             $this->get(route('login'))->assertOk()->assertInertia(fn (Assert $page) => $page->where('localAccounts', []));

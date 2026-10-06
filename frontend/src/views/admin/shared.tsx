@@ -1,4 +1,6 @@
-import { Link } from '@inertiajs/react';
+'use client';
+
+import { Link } from '@/lib/page';
 import { ChevronLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 

@@ -1,4 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
+'use client';
+
+import { Head, Link } from '@/lib/page';
 import { ArrowRight, ArrowUpRight, Menu, Plus, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import BrandMark from '@/components/brand-mark';
@@ -8,7 +10,7 @@ import LandingLoader, {
 import type { RevealMode } from '@/components/landing-loader';
 import RacketStory from '@/components/racket-story';
 import { halfCourtView } from '@/lib/court-view';
-import '../../css/landing.css';
+import '@/css/landing.css';
 
 // ponytail: gợi ý theo vị trí trên sân; thay bằng SKU từ Laravel khi có dữ liệu thật.
 const styles = [

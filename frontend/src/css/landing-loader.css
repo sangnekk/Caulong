@@ -8,6 +8,12 @@
     color: var(--paper, oklch(1 0 0));
     font-family: var(--display, inherit);
 }
+/* The page behind the intro does not scroll. A rule rather than an inline style on <body>:
+   a script that saves that style and puts it back later (the Next.js dev overlay does, when
+   opened during the intro and closed after it) would leave the page locked for good. */
+html:has(.landing-loader) body {
+    overflow: hidden;
+}
 .landing-loader__drawing {
     position: absolute;
     top: 0;

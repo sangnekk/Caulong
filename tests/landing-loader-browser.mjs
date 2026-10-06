@@ -1,4 +1,5 @@
-// Run after `npm run build` and `php artisan serve`, with Chrome --remote-debugging-port=9222.
+// Run against a build of the shop (php artisan serve; npm run build, then npm run start),
+// with Chrome --remote-debugging-port=9222.
 // Native Node WebSocket + CDP only; no browser-test dependency.
 //
 // Contract under test: every FULL document load plays the intro. It strings a drawing of the
@@ -9,7 +10,7 @@
 // landing-store-navigation.mjs.
 import assert from 'node:assert/strict';
 
-const base = process.env.LANDING_URL || 'http://127.0.0.1:8000';
+const base = process.env.LANDING_URL || 'http://localhost:3000';
 const CEILING_MS = 10000;
 const STRINGS = 44;
 
@@ -17,7 +18,7 @@ const targets = await (await fetch('http://127.0.0.1:9222/json/list')).json();
 const target = targets.find((item) => item.type === 'page');
 assert(
     target,
-    'Start Chrome with --remote-debugging-port=9222 and php artisan serve first',
+    'Start Chrome with --remote-debugging-port=9222 and the shop first',
 );
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((resolve, reject) => {
@@ -118,7 +119,7 @@ async function waitForHeld(timeout = 8000) {
 const loader = "document.querySelector('.landing-loader')";
 const gone = (timeout) => waitFor('!' + loader, timeout, 50);
 const present = () => evaluate('!!' + loader);
-const overflow = () => evaluate('document.body.style.overflow');
+const overflow = () => evaluate('getComputedStyle(document.body).overflow');
 const strung = () =>
     evaluate(
         "document.querySelectorAll('.racket-blueprint__strings line[data-strung]').length",
@@ -189,7 +190,7 @@ try {
             live: status ? status.getAttribute('aria-live') : null,
             focused: document.activeElement === skip,
             position: getComputedStyle(el).position,
-            bodyOverflow: document.body.style.overflow,
+            bodyOverflow: getComputedStyle(document.body).overflow,
             fakePercent: /\\d+\\s*%/.test(el.textContent),
             strings: document.querySelectorAll('.racket-blueprint__strings line').length,
             count: document.querySelector('.landing-loader__count').textContent,
@@ -247,7 +248,7 @@ try {
         ),
         'done',
     );
-    assert.equal(await overflow(), '', 'exact inline overflow restored');
+    assert.equal(await overflow(), 'visible', 'page scrolls again');
     assert.equal(
         await evaluate("document.querySelectorAll('canvas').length"),
         1,
@@ -255,7 +256,7 @@ try {
     );
 
     // 2b. Reload while reading the footer: the intro still plays on the first screen, not
-    //     over the footer (Inertia restores the old scroll position after the first render).
+    //     over the footer (the old scroll position is restored after the first render).
     await evaluate('window.scrollTo(0, document.body.scrollHeight)');
     await waitFor('scrollY > 2000');
     await open(false);
@@ -284,7 +285,7 @@ try {
             Math.round(ceilingElapsed) +
             'ms)',
     );
-    assert.equal(await overflow(), '', 'body restored after ceiling');
+    assert.equal(await overflow(), 'visible', 'page scrolls after ceiling');
     const slow = await evaluate(`({
         meter: !!document.querySelector('.story-next .stringing-meter'),
         disabled: document.querySelector('.story-next').disabled,
@@ -310,13 +311,29 @@ try {
         (await evaluate('performance.now()')) - t4 < 4000,
         'Escape does not wait for the model',
     );
-    assert.equal(await overflow(), '', 'body restored after Escape');
+    assert.equal(await overflow(), 'visible', 'page scrolls after Escape');
 
     // 5. Skip button leaves at once.
     await open();
     await waitForHeld();
     await skipIntro();
-    assert.equal(await overflow(), '', 'body restored after skip');
+    assert.equal(await overflow(), 'visible', 'page scrolls after skip');
+
+    // 5b. A script that saves <body>'s inline overflow during the intro and puts it back
+    //     afterwards (the Next.js dev overlay, opened to read an error) must not leave the
+    //     page locked.
+    await open();
+    await waitForHeld();
+    await evaluate(
+        "window.__savedOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'",
+    );
+    await skipIntro();
+    await evaluate('document.body.style.overflow = window.__savedOverflow');
+    assert.equal(
+        await overflow(),
+        'visible',
+        'page scrolls after a foreign lock is put back',
+    );
 
     // 6. Replays on a true reload and on a fresh navigation.
     await open(false);
@@ -342,7 +359,7 @@ try {
     );
     assert.ok(Date.now() - t7 < 3000, 'reduced motion does not hold the page');
     assert.equal(await present(), false);
-    assert.equal(await overflow(), '', 'body restored in reduced motion');
+    assert.equal(await overflow(), 'visible', 'page scrolls in reduced motion');
     assert.equal(
         await evaluate("!!document.querySelector('.racket-story.is-reading')"),
         true,
@@ -355,7 +372,7 @@ try {
 
     assert.deepEqual(errors, []);
     console.log(
-        'PASS: intro on every full document, a11y + focus lock, strings only on real bytes, 3D ready at handover (no second loader), 10s ceiling with in-place progress, Escape, skip, replay, reduced motion without 3D download.',
+        'PASS: intro on every full document, a11y + focus lock, strings only on real bytes, 3D ready at handover (no second loader), 10s ceiling with in-place progress, Escape, skip, foreign scroll lock, replay, reduced motion without 3D download.',
     );
 } finally {
     await releaseModel();

@@ -9,7 +9,7 @@ import RacketBlueprint, {
 import { racketLoad } from '@/lib/racket-load';
 import type { RacketAffine } from '@/lib/racket-load';
 
-import '../../css/landing-loader.css';
+import '@/css/landing-loader.css';
 
 // A document reload creates a fresh module; an Inertia visit keeps this flag. A link to a
 // section (#hoi-dap) goes straight there instead.
@@ -129,16 +129,14 @@ export default function LandingLoader({
         const reduced = reducedMotion();
         const landing =
             root.current?.closest<HTMLElement>('.badminton-landing');
-        const body = document.body;
-        const previousOverflow = body.style.overflow;
         // The intro is staged on the story's first screen: hold the page there until it hands
         // over, whatever restores a scroll position in the meantime (browser, Inertia, anchor).
+        // Scrolling itself is off for as long as this overlay is in the page (landing-loader.css).
         const pin = () => {
             if (window.scrollY || window.scrollX) window.scrollTo(0, 0);
         };
         pin();
         window.addEventListener('scroll', pin);
-        body.style.overflow = 'hidden';
         skip.current?.focus();
 
         let cancelled = false;
@@ -172,7 +170,6 @@ export default function LandingLoader({
 
         const finish = () => {
             if (cancelled) return;
-            body.style.overflow = previousOverflow;
             setOpen(false);
             done.current = true;
             callbacks.current.onDone?.();
@@ -283,7 +280,6 @@ export default function LandingLoader({
             window.removeEventListener('resize', onResize);
             window.removeEventListener('scroll', pin);
             document.removeEventListener('keydown', onKeyDown);
-            body.style.overflow = previousOverflow;
         };
     }, [open]);
 

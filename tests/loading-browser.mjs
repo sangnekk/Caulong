@@ -1,7 +1,8 @@
-// Run after npm run build and php artisan serve, with Chrome --remote-debugging-port=9222.
+// Run against a build of the shop (php artisan serve; npm run build, then npm run start),
+// with Chrome --remote-debugging-port=9222.
 // Uses Node's native WebSocket; no browser-test dependency.
 import assert from 'node:assert/strict';
-const base = process.env.LANDING_URL || 'http://127.0.0.1:8000';
+const base = process.env.LANDING_URL || 'http://localhost:3000';
 const targets = await (await fetch('http://127.0.0.1:9222/json/list')).json();
 const target = targets.find((item) => item.type === 'page');
 assert(target, 'Start Chrome with --remote-debugging-port=9222 first');

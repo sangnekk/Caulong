@@ -1,4 +1,4 @@
-import { usePage } from '@inertiajs/react';
+import { usePage } from '@/lib/page';
 import { Compass, LayoutGrid, ShoppingBag } from 'lucide-react';
 import type { NavItem } from '@/types';
 import type { ShopSharedProps } from '@/types/commerce';

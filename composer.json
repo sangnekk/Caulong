@@ -47,6 +47,7 @@
             "@php artisan key:generate",
             "@php artisan migrate --force",
             "npm install",
+            "npm --prefix frontend install",
             "npm run build"
         ],
         "dev": [

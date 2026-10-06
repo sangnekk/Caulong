@@ -1,10 +1,11 @@
-// Run after npm run build and php artisan serve, with Chrome --remote-debugging-port=9222.
+// Run against a build of the shop (php artisan serve; npm run build, then npm run start),
+// with Chrome --remote-debugging-port=9222.
 // Uses Node's native WebSocket; no browser-test dependency.
 //
-// Contract: the landing intro plays on every full document load, but an Inertia SPA
-// round-trip (landing -> /products -> /) must keep the same document and never replay it.
+// Contract: the landing intro plays on every full document load, but a round trip inside
+// the app (landing -> /products -> /) must keep the same document and never replay it.
 import assert from 'node:assert/strict';
-const base = process.env.LANDING_URL || 'http://127.0.0.1:8000';
+const base = process.env.LANDING_URL || 'http://localhost:3000';
 const targets = await (await fetch('http://127.0.0.1:9222/json/list')).json();
 const target = targets.find((item) => item.type === 'page');
 assert(target, 'Start Chrome with --remote-debugging-port=9222 first');
@@ -52,7 +53,7 @@ async function evaluate(expression) {
     return result.result.value;
 }
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-// Node-side polling: tolerates the execution-context swap an Inertia nav triggers.
+// Node-side polling: tolerates an execution-context swap during a navigation.
 async function waitFor(expression, timeout = 20000, interval = 50) {
     const deadline = Date.now() + timeout;
     for (;;) {
@@ -114,14 +115,13 @@ try {
             const transition = start(update);
             transition.ready.then(() => window.__transitions.push({
                 types: [...(transition.types ?? [])],
-                hero: getComputedStyle(document.documentElement).viewTransitionName !== 'none'
-                    && [...document.querySelectorAll('.store-image')].some((el) => getComputedStyle(el).viewTransitionName === 'product-hero'),
+                hero: [...document.querySelectorAll('.store-image')].some((el) => getComputedStyle(el).viewTransitionName === 'product-hero'),
             })).catch((error) => window.__transitions.push({ error: String(error) }));
             return transition;
         };
     })()`);
 
-    // Landing -> storefront is Inertia: document identity and nav count must not change.
+    // Landing -> storefront stays in the app: document identity and nav count must not change.
     await waitFor("!!document.querySelector('.header-cta')");
     await evaluate("document.querySelector('.header-cta').click()");
     await waitFor(
@@ -146,15 +146,11 @@ try {
         { types: ['page'], hero: true },
         'Card photo morphs into the product photo',
     );
-    // Back button: the same fade-in, and the photo shrinks back into its card.
+    // Back button: Next.js puts the list back at once, so the browser can restore the
+    // scroll position; no transition runs.
     await evaluate('history.back()');
     await waitFor(
-        "location.pathname === '/products' && window.__transitions.length === 3",
-    );
-    assert.deepEqual(
-        await evaluate('window.__transitions[2]'),
-        { types: ['page'], hero: true },
-        'Back to the list is animated too',
+        "location.pathname === '/products' && !!document.querySelector('.store-product-card')",
     );
     assert.equal(
         await evaluate('window.__navProbe'),
@@ -166,7 +162,7 @@ try {
         count,
     );
 
-    // Storefront -> landing is Inertia and must not replay the intro.
+    // Storefront -> landing stays in the app and must not replay the intro.
     await evaluate(
         'document.querySelector(\'.store-header nav a[href="/"]\').click()',
     );
@@ -239,7 +235,7 @@ try {
 
     assert.deepEqual(errors, [], 'No browser runtime exceptions');
     console.log(
-        'PASS: intro on full load, store button pinned through the landing, one-step fade-in transitions (leave-landing, page), card photo morph, seamless SPA nav, no intro replay, filtered CTA, mobile menu.',
+        'PASS: intro on full load, store button pinned through the landing, one-step fade-in transitions (leave-landing, page), card photo morph, back to the list, seamless SPA nav, no intro replay, filtered CTA, mobile menu.',
     );
 } finally {
     ws.close();

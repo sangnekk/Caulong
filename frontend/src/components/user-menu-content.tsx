@@ -1,4 +1,4 @@
-import { Link, router } from '@inertiajs/react';
+import { Link, router } from '@/lib/page';
 import { LogOut, Settings } from 'lucide-react';
 import {
     DropdownMenuGroup,
