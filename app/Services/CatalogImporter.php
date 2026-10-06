@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,14 +22,15 @@ use Throwable;
  * @phpstan-type Row array{line: int, values: array<string, string>}
  * @phpstan-type Issue array{line: int|null, message: string}
  * @phpstan-type File array{rows: list<Row>, errors: list<Issue>, warnings: list<Issue>}
- * @phpstan-type Options array{publish: bool, update_stock: bool}
+ * @phpstan-type Options array{publish: bool, update_stock: bool, drop_missing?: bool}
  * @phpstan-type Current array{id: int, name: string, price: int, stock: int, is_active: bool}
  * @phpstan-type PlannedVariant array{line: int, sku: string, name: string, price: int, cost_price: int|null, stock: int, is_active: bool, current: Current|null, action: string}
- * @phpstan-type PlannedProduct array{line: int, slug: string, id: int|null, name: string, brand: string|null, category: string|null, attributes: array<string, string>, specs: array<string, string>, is_active: bool, action: string, variants: list<PlannedVariant>}
- * @phpstan-type Summary array{rows: int, products_new: int, products_updated: int, variants_new: int, variants_updated: int, brands_new: list<string>, categories_new: list<string>, images: int}
+ * @phpstan-type Dropped array{id: int, sku: string, name: string, stock: int, action: string}
+ * @phpstan-type PlannedProduct array{line: int, slug: string, id: int|null, name: string, brand: string|null, category: string|null, attributes: array<string, string>, specs: array<string, string>, is_active: bool, action: string, variants: list<PlannedVariant>, dropped: list<Dropped>}
+ * @phpstan-type Summary array{rows: int, products_new: int, products_updated: int, variants_new: int, variants_updated: int, variants_deleted: int, variants_hidden: int, brands_new: list<string>, categories_new: list<string>, images: int}
  * @phpstan-type Plan array{summary: Summary, products: list<PlannedProduct>, errors: list<Issue>, warnings: list<Issue>, fingerprint: string}
  * @phpstan-type Group array{line: int, name: string, fields: array<string, string>, variants: list<array{line: int, sku: string, name: string, price: int, cost: int|null, stock: int, is_active: bool}>}
- * @phpstan-type Counts array{products_new: int, products_updated: int, variants_new: int, variants_updated: int}
+ * @phpstan-type Counts array{products_new: int, products_updated: int, variants_new: int, variants_updated: int, variants_deleted: int, variants_hidden: int}
  */
 class CatalogImporter
 {
@@ -173,6 +175,13 @@ class CatalogImporter
 
         $products = Product::with(['brand:id,name', 'category:id,name'])->whereIn('slug', array_keys($groups) ?: [''])->get()->keyBy('slug');
         $variants = ProductVariant::with('product:id,name')->whereIn('sku', $this->skus($groups) ?: [''])->get()->keyBy('sku');
+        // On request, SKUs the file no longer lists for its products go: a full catalog file
+        // then replaces a product's variants instead of only adding to them.
+        $unlisted = ($options['drop_missing'] ?? false)
+            ? ProductVariant::whereIn('product_id', $products->where('is_demo', false)->modelKeys() ?: [0])
+                ->whereNotIn('sku', $this->skus($groups))->orderBy('id')->get()
+            : (new ProductVariant)->newCollection();
+        $ordered = $unlisted->isEmpty() ? [] : OrderItem::whereIn('variant_id', $unlisted->modelKeys())->distinct()->pluck('variant_id')->all();
         $brands = Brand::all();
         $categories = Category::all();
 
@@ -279,10 +288,19 @@ class CatalogImporter
                 'is_active' => $existing ? $existing->is_active : $options['publish'],
                 'action' => ! $existing ? 'create' : ($changed ? 'update' : 'unchanged'),
                 'variants' => $rows,
+                // A variant someone ordered, or with stock the shop counted, is hidden, never deleted.
+                'dropped' => array_values($unlisted->where('product_id', $existing?->id)->map(fn (ProductVariant $variant) => [
+                    'id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'name' => $variant->name,
+                    'stock' => $variant->stock,
+                    'action' => ! in_array($variant->id, $ordered, true) && $variant->stock === 0 ? 'delete' : ($variant->is_active ? 'hide' : 'unchanged'),
+                ])->all()),
             ];
         }
 
         $allVariants = collect($planned)->flatMap(fn ($product) => $product['variants']);
+        $allDropped = collect($planned)->flatMap(fn ($product) => $product['dropped']);
 
         return [
             'summary' => [
@@ -291,6 +309,8 @@ class CatalogImporter
                 'products_updated' => collect($planned)->where('action', 'update')->count(),
                 'variants_new' => $allVariants->where('action', 'create')->count(),
                 'variants_updated' => $allVariants->where('action', 'update')->count(),
+                'variants_deleted' => $allDropped->where('action', 'delete')->count(),
+                'variants_hidden' => $allDropped->where('action', 'hide')->count(),
                 'brands_new' => $newBrands,
                 'categories_new' => $newCategories,
                 'images' => $imageCount,
@@ -303,6 +323,7 @@ class CatalogImporter
                 $options,
                 $products->map(fn (Product $product) => [$product->id, $product->updated_at?->toJSON()])->all(),
                 $variants->map(fn (ProductVariant $variant) => [$variant->id, $variant->product_id, $variant->price, $variant->stock, $variant->is_active, $variant->updated_at?->toJSON()])->all(),
+                $unlisted->map(fn (ProductVariant $variant) => [$variant->id, $variant->stock, $variant->is_active, in_array($variant->id, $ordered, true)])->all(),
                 $brands->pluck('id')->all(),
                 $categories->pluck('id')->all(),
             ], JSON_THROW_ON_ERROR)),
@@ -322,8 +343,10 @@ class CatalogImporter
                 // Lock what the plan reads, variants in id order like checkout, then plan again.
                 $ignored = [];
                 $groups = $this->group($file['rows'], $ignored);
-                Product::whereIn('slug', array_keys($groups) ?: [''])->orderBy('id')->lockForUpdate()->get();
-                ProductVariant::whereIn('sku', $this->skus($groups) ?: [''])->orderBy('id')->lockForUpdate()->get();
+                $listed = Product::whereIn('slug', array_keys($groups) ?: [''])->orderBy('id')->lockForUpdate()->get();
+                ProductVariant::whereIn('sku', $this->skus($groups) ?: [''])
+                    ->when($options['drop_missing'] ?? false, fn (Builder $query) => $query->orWhereIn('product_id', $listed->modelKeys() ?: [0]))
+                    ->orderBy('id')->lockForUpdate()->get();
                 $plan = $this->plan($file, $images, $options);
                 if ($plan['errors']) {
                     throw ValidationException::withMessages(['import' => 'File còn lỗi. Sửa theo danh sách rồi tải lên lại.']);
@@ -374,6 +397,9 @@ class CatalogImporter
                         $row = $variant['current'] ? ProductVariant::findOrFail($variant['current']['id']) : new ProductVariant(['product_id' => $product->id, 'sku' => $variant['sku']]);
                         $row->fill(['name' => $variant['name'], 'price' => $variant['price'], 'cost_price' => $variant['cost_price'], 'stock' => $variant['stock'], 'is_active' => $variant['is_active']])->save();
                     }
+                    $dropped = collect($item['dropped']);
+                    ProductVariant::whereKey($dropped->where('action', 'delete')->pluck('id'))->delete();
+                    ProductVariant::whereKey($dropped->where('action', 'hide')->pluck('id'))->update(['is_active' => false]);
                 }
 
                 $summary = $plan['summary'];
@@ -383,6 +409,8 @@ class CatalogImporter
                     'products_updated' => $summary['products_updated'],
                     'variants_new' => $summary['variants_new'],
                     'variants_updated' => $summary['variants_updated'],
+                    'variants_deleted' => $summary['variants_deleted'],
+                    'variants_hidden' => $summary['variants_hidden'],
                 ];
             });
         } catch (Throwable $exception) {

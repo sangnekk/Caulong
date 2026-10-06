@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Brand;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
@@ -10,6 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Testing\TestResponse;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -24,7 +26,6 @@ class CatalogImportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         Storage::fake('local');
         Storage::fake('public');
         if (! Route::has('admin.imports.index')) {
@@ -281,6 +282,49 @@ class CatalogImportTest extends TestCase
         $this->assertTrue($product->is_active);
         $this->assertSame(1, Brand::count(), 'brand matched case-insensitively, not duplicated');
         Storage::disk('public')->assertExists($product->image_path);
+    }
+
+    public function test_drop_missing_replaces_a_products_skus_but_only_hides_what_was_ordered_or_counted(): void
+    {
+        $directory = sys_get_temp_dir().'/shop-import-'.uniqid();
+        mkdir($directory);
+        $import = function (array $rows, array $options = []) use ($directory) {
+            file_put_contents($directory.'/hang.csv', $this->csv($rows));
+
+            return $this->artisan('shop:import-catalog', ['file' => $directory.'/hang.csv', '--force' => true, ...$options]);
+        };
+        $import($this->rows(), ['--publish' => true])->assertSuccessful();
+        $racket = Product::where('slug', 'vot-tia-chop-300')->firstOrFail();
+        // A variant somebody ordered, one with stock on the shelf (tc300-4u, 12) and one with neither.
+        ProductVariant::where('sku', 'tc300-3u')->update(['stock' => 0]);
+        $order = Order::create([
+            'public_id' => (string) Str::uuid(), 'checkout_token' => (string) Str::uuid(), 'name' => 'Khách', 'phone' => '0901234567',
+            'address' => '12 Nguyễn Huệ', 'subtotal' => 1340000, 'shipping_fee' => 0, 'total' => 1340000,
+        ]);
+        $order->items()->create([
+            'variant_id' => ProductVariant::where('sku', 'tc300-3u')->value('id'), 'product_name' => $racket->name, 'variant_name' => '3U / G5',
+            'sku' => 'tc300-3u', 'unit_price' => 1340000, 'quantity' => 1, 'line_total' => 1340000,
+        ]);
+        ProductVariant::create(['product_id' => $racket->id, 'sku' => 'tc300-cu', 'name' => 'Có bảo hành', 'price' => 1290000, 'stock' => 0]);
+        $colours = ['Vợt Tia Chớp 300;;;;;;;;Xanh;TC300-XANH;1.290.000;0', 'Vợt Tia Chớp 300;;;;;;;;Đỏ;TC300-DO;1.290.000;0'];
+
+        // Without the option an import only adds: every earlier SKU stays as it was.
+        $import($colours)->assertSuccessful();
+        $this->assertSame(5, $racket->variants()->where('is_active', true)->count());
+
+        $import($colours, ['--drop-missing' => true, '--dry-run' => true])
+            ->expectsOutputToContain('xóa 1, ẩn 2')->assertSuccessful();
+        $this->assertSame(5, $racket->variants()->where('is_active', true)->count(), 'a dry run writes nothing');
+
+        $import($colours, ['--drop-missing' => true])->expectsOutputToContain('Đã xóa 1 SKU')->assertSuccessful();
+        $this->assertSame(['tc300-do', 'tc300-xanh'], $racket->variants()->where('is_active', true)->orderBy('sku')->pluck('sku')->all());
+        $this->assertSame(['tc300-3u', 'tc300-4u'], $racket->variants()->where('is_active', false)->orderBy('sku')->pluck('sku')->all());
+        $this->assertDatabaseMissing('product_variants', ['sku' => 'tc300-cu']);
+        $this->assertSame(12, ProductVariant::where('sku', 'tc300-4u')->value('stock'), 'a hidden variant keeps its count');
+        $this->assertDatabaseHas('product_variants', ['sku' => 'gs-5u', 'is_active' => true]);
+
+        // Running it again finds nothing left to do.
+        $import($colours, ['--drop-missing' => true])->expectsOutputToContain('Đã xóa 0 SKU không còn trong file, ẩn 0.')->assertSuccessful();
     }
 
     private function png(): string

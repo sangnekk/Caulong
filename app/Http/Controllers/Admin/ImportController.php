@@ -157,7 +157,9 @@ class ImportController extends Controller
         foreach ($disk->directories('imports') as $directory) {
             $marker = $directory.'/options.json';
             if (! $disk->exists($marker) || $disk->lastModified($marker) < now()->subDay()->getTimestamp()) {
-                $disk->deleteDirectory($directory);
+                // Housekeeping: a folder that cannot go yet (on Windows, a file in it is still
+                // open) must not fail the upload being made now. The next upload tries again.
+                rescue(fn () => $disk->deleteDirectory($directory), report: false);
             }
         }
     }

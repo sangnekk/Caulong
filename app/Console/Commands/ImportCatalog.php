@@ -16,6 +16,7 @@ class ImportCatalog extends Command
         {--images= : Thư mục hoặc tệp .zip chứa ảnh được nhắc trong cột anh}
         {--publish : Mở bán ngay sản phẩm mới (mặc định: ẩn để kiểm tra)}
         {--keep-stock : Không đổi tồn kho của SKU đã có}
+        {--drop-missing : Bỏ SKU của sản phẩm trong file mà file không còn liệt kê (đã có đơn hoặc còn tồn kho thì chỉ ẩn)}
         {--dry-run : Chỉ kiểm tra, không ghi gì}
         {--retire-demo : Ẩn sản phẩm demo sau khi nhập thành công}
         {--force : Bỏ qua xác nhận}';
@@ -41,7 +42,7 @@ class ImportCatalog extends Command
                 return self::FAILURE;
             }
         }
-        $options = ['publish' => (bool) $this->option('publish'), 'update_stock' => ! $this->option('keep-stock')];
+        $options = ['publish' => (bool) $this->option('publish'), 'update_stock' => ! $this->option('keep-stock'), 'drop_missing' => (bool) $this->option('drop-missing')];
         $plan = $importer->plan($file, $images, $options);
 
         foreach ($plan['warnings'] as $warning) {
@@ -55,6 +56,9 @@ class ImportCatalog extends Command
             $summary['products_new'], $summary['products_updated'], $summary['variants_new'], $summary['variants_updated'],
             implode(', ', $summary['brands_new']) ?: '—', implode(', ', $summary['categories_new']) ?: '—', $summary['images'],
         ]]);
+        if ($options['drop_missing']) {
+            $this->line(sprintf('SKU không còn trong file: xóa %d, ẩn %d (đã có đơn hoặc còn tồn kho).', $summary['variants_deleted'], $summary['variants_hidden']));
+        }
         if ($plan['errors']) {
             $this->error('File còn lỗi, chưa nhập gì.');
 
@@ -80,6 +84,9 @@ class ImportCatalog extends Command
         }
         $this->info(sprintf('Đã nhập %d sản phẩm mới, %d cập nhật, %d SKU mới, %d SKU cập nhật.',
             $result['products_new'], $result['products_updated'], $result['variants_new'], $result['variants_updated']));
+        if ($options['drop_missing']) {
+            $this->info(sprintf('Đã xóa %d SKU không còn trong file, ẩn %d.', $result['variants_deleted'], $result['variants_hidden']));
+        }
         if ($result['products_new'] && ! $options['publish']) {
             $this->line('Sản phẩm mới đang ẩn. Kiểm tra ở /admin/products rồi bật “Đang bán”.');
         }

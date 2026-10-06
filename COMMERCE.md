@@ -26,7 +26,10 @@ Admin → **Nhập hàng** (`/admin/imports`): tải file mẫu, điền hàng c
 php artisan shop:import-catalog hang.csv --images=thu-muc-anh --dry-run   # chỉ kiểm tra
 php artisan shop:import-catalog hang.csv --images=thu-muc-anh            # nhập, sản phẩm mới ẩn
 php artisan shop:import-catalog hang.csv --publish --retire-demo         # mở bán ngay và ẩn demo
+php artisan shop:import-catalog hang.csv --drop-missing --dry-run        # xem SKU nào sẽ bị bỏ
 ```
+
+`--drop-missing` (chỉ có ở lệnh, không có trên trang admin) dành cho file liệt kê **đủ mọi SKU** của từng sản phẩm trong file: SKU của các sản phẩm đó mà file không còn nhắc tới sẽ bị xóa; SKU đã có đơn hoặc còn tồn kho thì chỉ bị ẩn, giữ nguyên số lượng. Sản phẩm không có trong file không bị đụng tới. Đừng dùng với file chỉ cập nhật vài SKU.
 
 Khi hàng thật đã sẵn sàng: nút **Ẩn sản phẩm demo** ở trang Nhập hàng (hoặc `--retire-demo`) ẩn toàn bộ sản phẩm demo; không xóa vì đơn demo cũ còn tham chiếu.
 
@@ -34,22 +37,29 @@ Khi hàng thật đã sẵn sàng: nút **Ẩn sản phẩm demo** ở trang Nh�
 
 ## Dữ liệu vợt từ VNB (đã được VNB cho phép)
 
-`scripts/vnb-catalog.mjs` đọc danh mục vợt cầu lông theo từng hãng trên shopvnb.com (tên, mô tả, thông số, phiên bản màu, giá, ảnh chính) và ghi CSV đúng định dạng nhập hàng. Chạy lần lượt từng request, có nghỉ giữa các lần, không gọi `/ajax/` (robots.txt), lưu cache từng sản phẩm để chạy lại chỉ lấy phần mới (`--refresh` để đọc lại hết).
+`scripts/vnb-catalog.mjs` đọc danh mục vợt cầu lông theo từng hãng trên shopvnb.com (tên, mô tả, thông số, phiên bản, giá, ảnh chính) và ghi CSV đúng định dạng nhập hàng. Chạy lần lượt từng request, có nghỉ giữa các lần, không gọi `/ajax/` (robots.txt), lưu cache từng sản phẩm để chạy lại chỉ lấy phần mới (`--refresh` để đọc lại hết).
 
 ```sh
 node scripts/vnb-catalog.mjs                      # → storage/app/private/vnb (không commit)
 php artisan shop:import-catalog storage/app/private/vnb/vnb-vot-cau-long-01.csv --images=storage/app/private/vnb/anh --force
 # lặp cho -02, -03…; mỗi file tối đa 1.800 dòng
+# khi script đổi cách chia phiên bản (hoặc VNB bỏ bớt lựa chọn), thêm --keep-stock --drop-missing để bỏ SKU cũ
+node tests/vnb-catalog.mjs                        # kiểm tra phần đọc trang và dựng dòng CSV, không cần mạng
 ```
+
+Script gồm ba phần: `scripts/vnb/html.mjs` đọc HTML thành cây (không dùng thư viện ngoài), `scripts/vnb/product.mjs` đọc một trang sản phẩm thành dữ liệu thô lưu vào cache, `scripts/vnb/rows.mjs` suy ra mô tả, lối chơi và các dòng CSV từ cache. Sửa cách suy diễn vì vậy không phải tải lại trang.
 
 - Tồn kho luôn là 0 và sản phẩm mới ở trạng thái ẩn: VNB không công bố số lượng, shop tự nhập (file có cột `ton_kho` khớp SKU, hoặc sửa từng sản phẩm), rồi **Mở bán sản phẩm có tồn kho**.
 - Cập nhật giá sau này: chạy lại script rồi nhập với `--keep-stock` để không ghi đè số lượng shop đã nhập.
-- SKU: sản phẩm một phiên bản dùng mã VNB (vd. `vnb029165`); sản phẩm nhiều màu dùng `vnb{mã sản phẩm}-{mã màu}`, ổn định giữa các lần chạy. Sản phẩm có cả nhóm màu và size chỉ lấy nhóm đầu làm phiên bản; size ghi trong thông số trọng lượng.
-- VNB có hai kiểu trang: trang mới có bảng thông số và bài viết; trang cũ chỉ có tab “Mô tả sản phẩm” gồm các dòng “Thông số : giá trị” (chữ có dấu nhiều khi viết bằng mã HTML như `C&acirc;n`). Trang cũ được lưu nguyên các dòng chữ trong cache và đọc lúc dựng CSV, nên sửa cách đọc không phải tải lại. Cache đọc trước khi có cách đọc trang cũ (không có thông số lẫn mô tả) được tự tải lại một lần.
-- Lối chơi lấy từ trường “phong cách chơi” của VNB; thiếu thì suy từ điểm cân bằng: chữ “nặng đầu/nhẹ đầu/cân bằng” hoặc “head heavy/head light/even”, hoặc số mm trên khung 675 mm (từ 295 là nặng đầu, từ 285 trở xuống là nhẹ đầu, khoảng như 285-290 lấy giữa). Trang cũ không có cả hai thì dùng lối chơi chính trang đó ghi trong bài (“phù hợp lối chơi công thủ toàn diện”), chỉ khi mọi câu như vậy thống nhất. Trình độ chỉ lấy từ thông số “trình độ chơi”, không đoán. Mô tả trống thì ghi lại chính bảng thông số, không viết thêm. Hãng “Không” lấy theo tên hãng xuất hiện trong tên vợt.
+- Cache mỗi sản phẩm (`products/*.json`) ghi đúng những gì trang nêu: tên, mã, hãng, tình trạng còn/hết hàng, giá bán và giá niêm yết, mọi ảnh trong gallery, mọi nhóm tùy chọn (phiên bản, màu kèm ảnh, giá từng lựa chọn), các size và size nào đang hết, bảng thông số, các dòng của bài mô tả. CSV hiện chỉ dùng một phần (importer nhận một ảnh và một nhóm phiên bản cho mỗi sản phẩm); phần còn lại để sẵn cho sau này.
+- Trang gộp nhiều sản phẩm có các nhóm lựa chọn: **phiên bản** (có/không bảo hành, thường khác giá), **màu** và size. Giá của từng tổ hợp chỉ có qua `/ajax/` nên không đọc, vì vậy chỉ một nhóm thành SKU của shop: nhóm **màu**, tên ghép với phiên bản khi trang chỉ có một phiên bản (vd. “Hồng Tím - Có bảo hành”, giống cách VNB đặt tên). Riêng trang cho chọn giữa nhiều phiên bản thì phiên bản là SKU (chúng mang chênh lệch giá) và màu không được tách; script in số trang như vậy khi chạy xong. Lựa chọn trang ghi giá 0 thì bỏ. Size chỉ ghi trong thông số trọng lượng.
+- SKU: sản phẩm một phiên bản dùng mã VNB (vd. `vnb029165`). Trang gộp dùng `{mã trang}-{mã lựa chọn}` (vd. `vnb030143-7314`): mã trang và mã lựa chọn không đổi giữa các lần chạy. Bản script đầu tiên ghép SKU từ `id` trong form của trang, tức sản phẩm con trang đang chọn sẵn, mà VNB có thể đổi bất cứ lúc nào; các SKU đã tạo kiểu đó được ghi lại trong cache (`skus`) và giữ nguyên khi đọc lại trang, để SKU đã nhập vào shop vẫn khớp. Vì vậy **đừng xóa thư mục cache `products/`** nếu shop đã nhập hàng từ đó: mất cache thì các SKU kiểu cũ đổi sang kiểu mới và lần nhập sau phải dùng `--drop-missing` để bỏ bản cũ.
+- Bài mô tả được đọc thành từng dòng chữ như người xem thấy: thẻ trong dòng (in đậm, liên kết, `span`) không tách chữ, chú thích ảnh căn giữa và nút “Xem thêm” bị bỏ. Tiêu đề mục là các dòng đánh số (“1. Giới thiệu…”, “2. Thông số…”); thẻ tiêu đề HTML không dùng được vì nhiều trang đặt cả nội dung trong thẻ đó. Mô tả là mục 1; trang không đánh số thì lấy mọi dòng. Dòng “Thông số : giá trị” bổ sung cho bảng thông số, bảng được ưu tiên. Chữ có dấu viết bằng mã HTML (`C&acirc;n`) được ghép lại thành chữ thường.
+- Cache của bản script trước vẫn đọc được; riêng các trang có cả nhóm phiên bản lẫn màu được tự đọc lại một lần vì bản trước chỉ lưu nhóm đầu. Muốn mô tả sạch hơn (bản trước chèn dấu cách vào giữa chữ ở chỗ có thẻ, vd. “c ó”, “ShopVNB .”) và có đủ dữ liệu mới trong cache thì chạy một lần với `--refresh`.
+- Lối chơi lấy từ trường “phong cách chơi” của VNB; thiếu thì suy từ điểm cân bằng: chữ “nặng đầu/nhẹ đầu/cân bằng” hoặc “head heavy/head light/even”, hoặc số mm trên khung 675 mm (từ 295 là nặng đầu, từ 285 trở xuống là nhẹ đầu, khoảng như 285-290 lấy giữa). Không có cả hai thì dùng lối chơi chính bài mô tả ghi (“phù hợp lối chơi công thủ toàn diện”), chỉ khi mọi câu như vậy thống nhất. Trình độ chỉ lấy từ thông số “trình độ chơi”, không đoán. Mô tả trống thì ghi lại chính bảng thông số, không viết thêm. Hãng “Không” lấy theo tên hãng xuất hiện trong tên vợt.
 - Bỏ qua, ghi lý do trong `bo-qua.txt`: sản phẩm “liên hệ” (không có giá), combo kèm quà, món không phải vợt, và vợt không có bất kỳ thông tin lối chơi nào (không đoán). Shop có thể tự thêm các vợt này sau.
 - Mã VNB trùng giữa hai trang: dùng mã trang (`vnb{id}`); cùng một trang xuất hiện hai lần thì chỉ giữ một.
-- `--relist` đọc lại danh sách danh mục (mặc định dùng `links.json` đã lưu); `--reverse` cho lượt chạy thứ hai đọc từ cuối danh sách để chạy song song trên cùng cache.
+- `--relist` đọc lại danh sách danh mục (mặc định dùng `links.json` đã lưu; `--refresh` cũng đọc lại danh sách); `--reverse` cho lượt chạy thứ hai đọc từ cuối danh sách để chạy song song trên cùng cache.
 
 Chỉ nhập hàng, giá, tồn kho và ảnh shop có quyền dùng. Không lấy dữ liệu từ website cửa hàng khác: ảnh và mô tả của họ có bản quyền, còn giá/tồn kho của họ không phải của shop, đưa lên sẽ nhận đơn COD cho hàng shop không có.
 
