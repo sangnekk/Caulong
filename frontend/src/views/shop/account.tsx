@@ -3,7 +3,14 @@
 import { Head, Link, router, useForm } from '@/lib/page';
 import { LogOut } from 'lucide-react';
 import { useState } from 'react';
-import { shortOrderCode, vnd } from '@/types/commerce';
+import { ProductImage } from '@/layouts/shop-layout';
+import {
+    couponTerms,
+    shortOrderCode,
+    vnd,
+    type AccountCoupon,
+    type WishlistItem,
+} from '@/types/commerce';
 
 type AccountOrder = {
     public_id: string;
@@ -39,6 +46,13 @@ function describe(items: AccountOrder['items']) {
         : first + ' và ' + (items.length - 1) + ' sản phẩm khác';
 }
 
+const couponStates: Record<AccountCoupon['state'], [string, string]> = {
+    usable: ['Dùng được', 'success'],
+    scheduled: ['Chưa tới ngày', 'info'],
+    used: ['Đã dùng', ''],
+    expired: ['Hết hạn', ''],
+};
+
 function FieldError({ message }: { message?: string }) {
     return message ? <p className="store-field-error">{message}</p> : null;
 }
@@ -46,6 +60,8 @@ function FieldError({ message }: { message?: string }) {
 export default function Account({
     account,
     orders,
+    wishlist,
+    coupons,
     totals,
 }: {
     account: {
@@ -56,6 +72,9 @@ export default function Account({
         joined: string;
     };
     orders: Page<AccountOrder>;
+    wishlist: WishlistItem[];
+    /** Made for this customer or for their group; nobody else's. */
+    coupons: AccountCoupon[];
     totals: { orders: number; open: number };
 }) {
     const profile = useForm({ name: account.name, email: account.email });
@@ -66,13 +85,22 @@ export default function Account({
     });
     const [signingOut, setSigningOut] = useState(false);
     const [resent, setResent] = useState(false);
+    const [removing, setRemoving] = useState<string | null>(null);
+    const unsave = (slug: string) => {
+        setRemoving(slug);
+        router.delete('/wishlist/' + slug, {
+            preserveScroll: true,
+            onFinish: () => setRemoving(null),
+        });
+    };
     const signOut = () => {
         setSigningOut(true);
         router.post('/logout', {}, { onFinish: () => setSigningOut(false) });
     };
 
     return (
-        <>
+        // Everything here is the customer's own: masked in Clarity recordings.
+        <div data-clarity-mask="true">
             <Head title="Tài khoản của tôi" />
             <header className="store-page-heading">
                 <div>
@@ -130,117 +158,237 @@ export default function Account({
             )}
 
             <div className="store-account-page">
-                <section aria-labelledby="don-hang" id="orders">
-                    <h2 id="don-hang">Đơn hàng của tôi</h2>
-                    {orders.data.length ? (
-                        <>
-                            <ol className="store-account-orders">
-                                {orders.data.map((order) => {
-                                    const [label, tone] = statuses[
-                                        order.status
-                                    ] ?? [order.status, ''];
+                <div className="store-account-main">
+                    <section aria-labelledby="don-hang" id="orders">
+                        <h2 id="don-hang">Đơn hàng của tôi</h2>
+                        {orders.data.length ? (
+                            <>
+                                <ol className="store-account-orders">
+                                    {orders.data.map((order) => {
+                                        const [label, tone] = statuses[
+                                            order.status
+                                        ] ?? [order.status, ''];
+                                        return (
+                                            <li
+                                                key={order.public_id}
+                                                className="store-account-order"
+                                            >
+                                                <div>
+                                                    <h3>
+                                                        Đơn{' '}
+                                                        {shortOrderCode(
+                                                            order.public_id,
+                                                        )}
+                                                        <span
+                                                            className="store-status"
+                                                            data-tone={tone}
+                                                        >
+                                                            {label}
+                                                        </span>
+                                                        {order.is_demo && (
+                                                            <span className="store-status">
+                                                                Đơn mẫu
+                                                            </span>
+                                                        )}
+                                                    </h3>
+                                                    <p>
+                                                        {describe(order.items)}
+                                                    </p>
+                                                    <p>
+                                                        Đặt ngày{' '}
+                                                        {new Date(
+                                                            order.created_at,
+                                                        ).toLocaleDateString(
+                                                            'vi-VN',
+                                                        )}{' '}
+                                                        ·{' '}
+                                                        {order.payment_status ===
+                                                        'paid'
+                                                            ? 'Đã thanh toán'
+                                                            : 'Thanh toán khi nhận hàng'}
+                                                    </p>
+                                                </div>
+                                                <div className="store-account-order-total">
+                                                    {vnd(order.total)}
+                                                    <br />
+                                                    <Link
+                                                        href={
+                                                            '/orders/' +
+                                                            order.public_id
+                                                        }
+                                                    >
+                                                        Xem chi tiết
+                                                        <span className="store-sr-only">
+                                                            {' '}
+                                                            đơn{' '}
+                                                            {shortOrderCode(
+                                                                order.public_id,
+                                                            )}
+                                                        </span>
+                                                    </Link>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ol>
+                                {orders.last_page > 1 && (
+                                    <nav
+                                        className="store-pagination"
+                                        aria-label="Trang đơn hàng"
+                                    >
+                                        {orders.prev_page_url && (
+                                            <Link
+                                                href={orders.prev_page_url}
+                                                preserveScroll
+                                            >
+                                                Đơn mới hơn
+                                            </Link>
+                                        )}
+                                        <span>
+                                            Trang {orders.current_page}/
+                                            {orders.last_page}
+                                        </span>
+                                        {orders.next_page_url && (
+                                            <Link
+                                                href={orders.next_page_url}
+                                                preserveScroll
+                                            >
+                                                Đơn cũ hơn
+                                            </Link>
+                                        )}
+                                    </nav>
+                                )}
+                            </>
+                        ) : (
+                            <div className="store-account-empty">
+                                <p>
+                                    Bạn chưa có đơn hàng nào. Đơn đặt khi đã
+                                    đăng nhập sẽ hiện ở đây để bạn theo dõi
+                                    trạng thái giao hàng.
+                                </p>
+                                <Link href="/products" className="store-button">
+                                    Xem vợt cầu lông
+                                </Link>
+                            </div>
+                        )}
+                    </section>
+
+                    {coupons.length > 0 && (
+                        <section aria-labelledby="ma-giam-gia">
+                            <h2 id="ma-giam-gia">Mã giảm giá của tôi</h2>
+                            <ul className="store-coupons">
+                                {coupons.map((coupon) => {
+                                    const [label, tone] =
+                                        couponStates[coupon.state];
                                     return (
                                         <li
-                                            key={order.public_id}
-                                            className="store-account-order"
+                                            key={coupon.code}
+                                            data-usable={
+                                                coupon.state === 'usable'
+                                            }
                                         >
                                             <div>
                                                 <h3>
-                                                    Đơn{' '}
-                                                    {shortOrderCode(
-                                                        order.public_id,
-                                                    )}
+                                                    <code>{coupon.code}</code>
                                                     <span
                                                         className="store-status"
                                                         data-tone={tone}
                                                     >
                                                         {label}
                                                     </span>
-                                                    {order.is_demo && (
-                                                        <span className="store-status">
-                                                            Đơn mẫu
-                                                        </span>
-                                                    )}
                                                 </h3>
-                                                <p>{describe(order.items)}</p>
+                                                <p>{coupon.name}</p>
                                                 <p>
-                                                    Đặt ngày{' '}
-                                                    {new Date(
-                                                        order.created_at,
-                                                    ).toLocaleDateString(
-                                                        'vi-VN',
-                                                    )}{' '}
-                                                    ·{' '}
-                                                    {order.payment_status ===
-                                                    'paid'
-                                                        ? 'Đã thanh toán'
-                                                        : 'Thanh toán khi nhận hàng'}
+                                                    {couponTerms(coupon)}
+                                                    {coupon.state ===
+                                                        'scheduled' &&
+                                                        coupon.starts_at &&
+                                                        ' · từ ngày ' +
+                                                            new Date(
+                                                                coupon.starts_at,
+                                                            ).toLocaleDateString(
+                                                                'vi-VN',
+                                                            )}
+                                                    {coupon.expires_at &&
+                                                        ' · đến hết ' +
+                                                            new Date(
+                                                                coupon.expires_at,
+                                                            ).toLocaleDateString(
+                                                                'vi-VN',
+                                                            )}
                                                 </p>
-                                            </div>
-                                            <div className="store-account-order-total">
-                                                {vnd(order.total)}
-                                                <br />
-                                                <Link
-                                                    href={
-                                                        '/orders/' +
-                                                        order.public_id
-                                                    }
-                                                >
-                                                    Xem chi tiết
-                                                    <span className="store-sr-only">
-                                                        {' '}
-                                                        đơn{' '}
-                                                        {shortOrderCode(
-                                                            order.public_id,
-                                                        )}
-                                                    </span>
-                                                </Link>
                                             </div>
                                         </li>
                                     );
                                 })}
-                            </ol>
-                            {orders.last_page > 1 && (
-                                <nav
-                                    className="store-pagination"
-                                    aria-label="Trang đơn hàng"
-                                >
-                                    {orders.prev_page_url && (
-                                        <Link
-                                            href={orders.prev_page_url}
-                                            preserveScroll
-                                        >
-                                            Đơn mới hơn
-                                        </Link>
-                                    )}
-                                    <span>
-                                        Trang {orders.current_page}/
-                                        {orders.last_page}
-                                    </span>
-                                    {orders.next_page_url && (
-                                        <Link
-                                            href={orders.next_page_url}
-                                            preserveScroll
-                                        >
-                                            Đơn cũ hơn
-                                        </Link>
-                                    )}
-                                </nav>
-                            )}
-                        </>
-                    ) : (
-                        <div className="store-account-empty">
-                            <p>
-                                Bạn chưa có đơn hàng nào. Đơn đặt khi đã đăng
-                                nhập sẽ hiện ở đây để bạn theo dõi trạng thái
-                                giao hàng.
+                            </ul>
+                            <p className="store-hint">
+                                Nhập mã ở giỏ hàng khi đã đăng nhập bằng tài
+                                khoản này.
                             </p>
-                            <Link href="/products" className="store-button">
-                                Xem vợt cầu lông
-                            </Link>
-                        </div>
+                        </section>
                     )}
-                </section>
+
+                    <section aria-labelledby="yeu-thich">
+                        <h2 id="yeu-thich">Sản phẩm yêu thích</h2>
+                        {wishlist.length ? (
+                            <ul className="store-wishlist">
+                                {wishlist.map((item) => (
+                                    <li key={item.id}>
+                                        <ProductImage
+                                            src={item.image_url}
+                                            name={item.name}
+                                        />
+                                        <div>
+                                            {item.on_sale ? (
+                                                <Link
+                                                    href={
+                                                        '/products/' + item.slug
+                                                    }
+                                                >
+                                                    {item.name}
+                                                </Link>
+                                            ) : (
+                                                <span>{item.name}</span>
+                                            )}
+                                            <p>
+                                                {!item.on_sale
+                                                    ? 'Cửa hàng đã ngừng bán'
+                                                    : (item.price === null
+                                                          ? 'Chưa có giá'
+                                                          : 'Từ ' +
+                                                            vnd(item.price)) +
+                                                      ' · ' +
+                                                      (item.in_stock
+                                                          ? 'Còn hàng'
+                                                          : 'Hết hàng')}
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="store-remove"
+                                            disabled={removing !== null}
+                                            onClick={() => unsave(item.slug)}
+                                        >
+                                            Bỏ lưu
+                                            <span className="store-sr-only">
+                                                {' '}
+                                                {item.name}
+                                            </span>
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div className="store-account-empty">
+                                <p>
+                                    Chưa lưu sản phẩm nào. Bấm “Lưu vào yêu
+                                    thích” ở trang sản phẩm để xem lại ở đây.
+                                </p>
+                            </div>
+                        )}
+                    </section>
+                </div>
 
                 <aside
                     className="store-account-side"
@@ -438,6 +586,6 @@ export default function Account({
                     </section>
                 </aside>
             </div>
-        </>
+        </div>
     );
 }

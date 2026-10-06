@@ -21,6 +21,7 @@ import {
     type PropsWithChildren,
 } from 'react';
 import BrandMark from '@/components/brand-mark';
+import ShopAnalytics, { AnalyticsChoice } from '@/components/shop-analytics';
 import ShopSupportChat from '@/components/shop-support-chat';
 import { vnd, type ShopSharedProps, type Totals } from '@/types/commerce';
 import '@/css/shop.css';
@@ -80,12 +81,19 @@ export function FormErrors({
     ) : null;
 }
 
-/** Money lines of a cart or order. `hint` adds how much more earns free delivery (cart only). */
+/**
+ * Money lines of a cart or order. `discount` (with the coupon's code) is what a coupon takes
+ * off; `hint` adds how much more earns free delivery (cart only).
+ */
 export function OrderTotals({
     totals,
+    discount = 0,
+    couponCode,
     hint = false,
 }: {
     totals: Totals;
+    discount?: number;
+    couponCode?: string | null;
     hint?: boolean;
 }) {
     const freeFrom =
@@ -97,6 +105,12 @@ export function OrderTotals({
                 <dt>Tiền hàng</dt>
                 <dd>{vnd(totals.subtotal)}</dd>
             </div>
+            {discount > 0 && (
+                <div className="store-discount-line">
+                    <dt>Giảm giá{couponCode && ' (mã ' + couponCode + ')'}</dt>
+                    <dd>−{vnd(discount)}</dd>
+                </div>
+            )}
             <div>
                 <dt>Phí giao hàng</dt>
                 <dd>
@@ -270,7 +284,8 @@ function AccountMenu({ user, isAdmin }: { user: Viewer; isAdmin: boolean }) {
         .toUpperCase();
 
     return (
-        <div className="store-account" ref={wrapper}>
+        // The customer's name and email: masked in Clarity recordings.
+        <div className="store-account" ref={wrapper} data-clarity-mask="true">
             <button
                 ref={button}
                 type="button"
@@ -428,11 +443,13 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                             lượng trước khi đặt.
                         </p>
                         <Link href="/products">Tiếp tục xem sản phẩm</Link>
+                        <AnalyticsChoice />
                     </div>
                     <ShopContact showEmptyState />
                 </div>
             </footer>
             <ShopSupportChat />
+            <ShopAnalytics />
         </div>
     );
 }

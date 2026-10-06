@@ -9,6 +9,7 @@ import LandingLoader, {
 } from '@/components/landing-loader';
 import type { RevealMode } from '@/components/landing-loader';
 import RacketStory from '@/components/racket-story';
+import ShopAnalytics from '@/components/shop-analytics';
 import { halfCourtView } from '@/lib/court-view';
 import '@/css/landing.css';
 
@@ -182,6 +183,8 @@ export default function Welcome() {
                 />
                 <meta name="theme-color" content="#0d1424" />
             </Head>
+            {/* Honours a yes given in the store; the question itself is asked there. */}
+            <ShopAnalytics ask={false} />
             <a className="skip-link" href="#main">
                 Bỏ qua điều hướng
             </a>

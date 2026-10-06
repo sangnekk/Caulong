@@ -6,6 +6,7 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property CarbonInterface|null $confirmed_at
@@ -23,7 +24,7 @@ class Order extends Model
     protected function casts(): array
     {
         return [
-            'subtotal' => 'integer', 'shipping_fee' => 'integer', 'total' => 'integer', 'is_demo' => 'boolean',
+            'subtotal' => 'integer', 'shipping_fee' => 'integer', 'discount_total' => 'integer', 'total' => 'integer', 'is_demo' => 'boolean',
             'confirmed_at' => 'datetime', 'shipped_at' => 'datetime', 'delivered_at' => 'datetime',
             'cancelled_at' => 'datetime', 'paid_at' => 'datetime',
         ];
@@ -39,5 +40,15 @@ class Order extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * The coupon use this order counts as, while the order stands.
+     *
+     * @return HasOne<CouponRedemption, $this>
+     */
+    public function redemption(): HasOne
+    {
+        return $this->hasOne(CouponRedemption::class);
     }
 }

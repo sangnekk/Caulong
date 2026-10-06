@@ -591,6 +591,44 @@
     border: 1px solid var(--line);
     background: oklch(0.975 0.005 262);
 }
+.admin-form-section h3 {
+    margin: 1.1rem 0 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 650;
+}
+/* A product's further photos, each with its "remove" tick. */
+.admin-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 0 0 0.9rem;
+    padding: 0;
+    list-style: none;
+}
+.admin-gallery li {
+    display: grid;
+    gap: 0.3rem;
+    font-size: 0.84rem;
+}
+.admin-gallery img {
+    display: block;
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: oklch(0.975 0.005 262);
+}
+.admin-gallery li[data-removed='true'] img {
+    opacity: 0.35;
+}
+.admin-gallery label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: 1.75rem;
+    cursor: pointer;
+}
 .admin-variants {
     display: grid;
     gap: 0.9rem;
@@ -1503,6 +1541,18 @@
         border-left: 0;
     }
 }
+/* Four figures in one row (the customer page). */
+@media (min-width: 761px) {
+    .admin-metrics[data-layout='4'] {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .admin-metrics[data-layout='4'] > div {
+        border-left: 1px solid var(--line);
+    }
+    .admin-metrics[data-layout='4'] > div:first-child {
+        border-left: 0;
+    }
+}
 .admin-facts dd small {
     display: block;
     color: var(--ink-3);
@@ -2214,6 +2264,147 @@
     .admin-chat-thread {
         min-height: 14rem;
         max-height: 48vh;
+    }
+}
+
+/* ───── Coupon form ───── */
+.admin-fieldset {
+    margin: 0.7rem 0;
+    padding: 0;
+    border: 0;
+}
+.admin-fieldset legend,
+.admin-picker > label {
+    display: block;
+    padding: 0;
+    margin-bottom: 0.35rem;
+    font-weight: 650;
+}
+.admin-picker {
+    margin: 0.7rem 0;
+    max-width: 36rem;
+}
+.admin-picker-results,
+.admin-picker-chosen {
+    list-style: none;
+    margin: 0.5rem 0 0;
+    padding: 0;
+}
+.admin-picker-results {
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+}
+.admin-picker-results li + li {
+    border-top: 1px solid var(--line);
+}
+.commerce-admin .admin-picker-results button {
+    width: 100%;
+    justify-content: flex-start;
+    text-align: left;
+    border-radius: 0;
+}
+.admin-picker-chosen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+.admin-picker-chosen li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.1rem 0.15rem 0.1rem 0.7rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--panel);
+    font-size: 0.9rem;
+}
+.commerce-admin .admin-picker-chosen button {
+    min-height: 0;
+    padding: 0.3rem;
+    border-radius: 999px;
+}
+
+/* ───── Customer page and reviews ───── */
+.admin-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.admin-timeline li {
+    display: grid;
+    grid-template-columns: 8.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+    padding: 0.5rem 0 0.5rem 0.85rem;
+    border-left: 2px solid var(--line);
+    font-size: 0.92rem;
+}
+/* What is on record (orders, the account, reviews) stands out from browsing. */
+.admin-timeline li[data-kind='order'] {
+    border-left-color: var(--accent);
+}
+.admin-timeline li[data-kind='account'] {
+    border-left-color: var(--success);
+}
+.admin-timeline time {
+    color: var(--ink-3);
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+}
+.admin-timeline span {
+    overflow-wrap: anywhere;
+}
+.admin-timeline-more {
+    margin: 0.9rem 0 0;
+}
+.admin-list-note {
+    margin: 0.9rem 0 0;
+    color: var(--ink-2);
+    font-size: 0.9rem;
+}
+.admin-reviews {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-width: 52rem;
+}
+.admin-review-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.86rem;
+}
+.admin-stars {
+    color: var(--warning);
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+}
+.admin-stars span {
+    color: var(--line-strong);
+}
+.admin-review-about {
+    margin: 0.5rem 0 0;
+    font-weight: 600;
+}
+.admin-review-body {
+    margin: 0.4rem 0 0;
+    max-width: 70ch;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.admin-reviews .admin-muted {
+    margin: 0.4rem 0 0;
+}
+.admin-review-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.8rem 0 0;
+}
+@media (max-width: 640px) {
+    .admin-timeline li {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.1rem;
     }
 }
 @media (prefers-reduced-motion: reduce) {

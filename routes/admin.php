@@ -1,11 +1,13 @@
 <?php
 
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SupportChatController;
 use App\Http\Controllers\Admin\TaxonomyController;
@@ -27,6 +29,16 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->na
     Route::resource('products', ProductController::class)->except(['show', 'destroy']);
     Route::get('taxonomies', [TaxonomyController::class, 'index'])->name('taxonomies.index');
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('customers/{user}', [CustomerController::class, 'show'])->whereNumber('user')->name('customers.show');
+    Route::get('coupons', [CouponController::class, 'index'])->name('coupons.index');
+    Route::get('coupons/create', [CouponController::class, 'create'])->name('coupons.create');
+    Route::get('coupons/products', [CouponController::class, 'products'])->middleware('throttle:60,1')->name('coupons.products');
+    Route::post('coupons', [CouponController::class, 'store'])->name('coupons.store');
+    Route::get('coupons/{coupon}/edit', [CouponController::class, 'edit'])->whereNumber('coupon')->name('coupons.edit');
+    Route::put('coupons/{coupon}', [CouponController::class, 'update'])->whereNumber('coupon')->name('coupons.update');
+    Route::delete('coupons/{coupon}', [CouponController::class, 'destroy'])->whereNumber('coupon')->name('coupons.destroy');
+    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+    Route::patch('reviews/{review}', [ReviewController::class, 'update'])->whereNumber('review')->name('reviews.update');
     Route::post('brands', [TaxonomyController::class, 'brand'])->name('brands.store');
     Route::post('categories', [TaxonomyController::class, 'category'])->name('categories.store');
     Route::get('imports', [ImportController::class, 'index'])->name('imports.index');

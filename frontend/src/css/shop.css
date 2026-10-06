@@ -245,6 +245,80 @@
     font-weight: 650;
     letter-spacing: -0.01em;
 }
+.store-account-main {
+    display: grid;
+    gap: 2.75rem;
+    min-width: 0;
+}
+.store-coupons {
+    list-style: none;
+    margin: 0 0 0.6rem;
+    padding: 0;
+    border-top: 1px solid var(--line);
+}
+.store-coupons li {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--line);
+}
+.store-coupons li[data-usable='false'] {
+    color: var(--muted);
+}
+.store-coupons h3 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3rem 0.6rem;
+    margin: 0;
+    font-size: 1rem;
+}
+.store-coupons code {
+    font:
+        650 1rem/1.4 ui-monospace,
+        'SFMono-Regular',
+        Menlo,
+        Consolas,
+        monospace;
+    letter-spacing: 0.04em;
+}
+.store-coupons p {
+    margin: 0.15rem 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+.store-wishlist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+}
+.store-wishlist li {
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--line);
+}
+.store-wishlist .store-image {
+    margin: 0;
+}
+.store-wishlist .store-image figcaption {
+    display: none;
+}
+.store-wishlist a,
+.store-wishlist div > span {
+    font-weight: 600;
+    text-decoration: none;
+}
+.store-wishlist a:hover {
+    color: var(--accent);
+    text-decoration: underline;
+}
+.store-wishlist p {
+    margin: 0.15rem 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
 .store-account-orders {
     list-style: none;
     margin: 0;
@@ -696,7 +770,7 @@
     .store-product-card:hover .store-image img {
         scale: 1.035;
     }
-    .store-product-card:hover h2 a {
+    .store-product-card:hover .store-card-title a {
         color: var(--accent);
         text-decoration: underline;
     }
@@ -757,15 +831,15 @@
     font-size: 0.75rem;
     font-weight: 600;
 }
-.store-product-card h2 {
+.store-card-title {
     font-size: 1.08rem;
     line-height: 1.3;
     margin: 0.35rem 0;
 }
-.store-product-card h2 a {
+.store-card-title a {
     text-decoration: none;
 }
-.store-product-card h2 a:hover {
+.store-card-title a:hover {
     text-decoration: underline;
 }
 .store-product-card > p {
@@ -780,8 +854,44 @@
     margin-top: 0.65rem;
     font-size: 0.9rem;
 }
+.store-product-price > :last-child {
+    flex-shrink: 0;
+}
+.store-card-price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.1rem 0.45rem;
+    min-width: 0;
+}
+.store-card-price del,
+.store-detail-price del {
+    color: var(--muted);
+    font-weight: 400;
+}
+.store-card-price del {
+    font-size: 0.82rem;
+}
+/* How far below the list price: the one warm note beside a price. */
+.store-discount {
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.25rem;
+    background: oklch(0.95 0.045 25);
+    color: oklch(0.42 0.16 25);
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.store-card-price .store-discount {
+    font-size: 0.72rem;
+}
 .store-stock {
     color: oklch(0.38 0.12 145);
+    font-weight: 600;
+}
+.store-low {
+    color: oklch(0.45 0.12 60);
     font-weight: 600;
 }
 .store-out {
@@ -855,11 +965,104 @@
     gap: 3.5rem;
     align-items: start;
 }
-.store-product-detail > .store-image {
+/* Product photos: one large, the others as thumbnails beneath. */
+.store-gallery {
+    min-width: 0;
+}
+.store-gallery-stage {
+    position: relative;
+    border-radius: 0.75rem;
+    /* Up and down stays the page's scroll; a sideways drag turns the photo. */
+    touch-action: pan-y;
+}
+.store-gallery-stage > .store-image {
     /* The card photo that was clicked morphs into this one. */
     view-transition-name: product-hero;
     background: var(--surface);
     border-radius: 0.75rem;
+}
+.store-gallery-turn {
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--ink);
+    cursor: pointer;
+    opacity: 0;
+    transition:
+        opacity 150ms ease-out,
+        border-color 150ms ease-out;
+}
+.store-gallery-turn[data-turn='previous'] {
+    left: 0.6rem;
+}
+.store-gallery-turn[data-turn='next'] {
+    right: 0.6rem;
+}
+.store-gallery-turn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.store-gallery-stage:hover .store-gallery-turn,
+.store-gallery-turn:focus-visible {
+    opacity: 1;
+}
+/* No hover to reveal them on a touch screen. */
+@media (hover: none) {
+    .store-gallery-turn {
+        opacity: 1;
+    }
+}
+.store-gallery-count {
+    position: absolute;
+    right: 0.6rem;
+    bottom: 0.6rem;
+    padding: 0.1rem 0.5rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+.store-gallery-thumbs {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0.75rem 0 0;
+    padding: 0.2rem;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+.store-gallery-thumbs button {
+    display: block;
+    width: 4.25rem;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 0.5rem;
+    background: var(--surface);
+    overflow: hidden;
+    cursor: pointer;
+}
+.store-gallery-thumbs button:hover {
+    border-color: var(--accent);
+}
+.store-gallery-thumbs button[aria-current='true'] {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+}
+.store-gallery-thumbs img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    mix-blend-mode: multiply;
 }
 .store-product-info h1 {
     font-size: clamp(2rem, 4vw, 3.2rem);
@@ -869,9 +1072,27 @@
     text-wrap: balance;
 }
 .store-detail-price {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.3rem 0.75rem;
     font-size: 1.7rem;
+    margin: 1.3rem 0 0.35rem;
+}
+.store-detail-price strong {
     font-weight: 700;
-    margin: 1.3rem 0;
+}
+.store-detail-price del {
+    font-size: 1.05rem;
+}
+/* Whether it can be bought now, and how many real orders took it. */
+.store-detail-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem 1rem;
+    margin: 0 0 1.3rem;
+    color: var(--muted);
+    font-size: 0.92rem;
 }
 .store-notice {
     padding: 0.75rem 1rem;
@@ -1028,6 +1249,259 @@
 .store-specs dd {
     margin: 0;
     text-align: right;
+}
+/* Saving a product for later: a quiet button under the buy form. */
+.store-wish {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 1rem;
+    padding: 0.4rem 0;
+    border: 0;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+.store-wish:hover:not(:disabled) {
+    text-decoration: underline;
+}
+.store-wish:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.store-wish[aria-pressed='true'] svg {
+    fill: currentColor;
+}
+/* Reviews: stars are drawn twice, grey underneath and gold on top to the rating's width. */
+.store-stars {
+    position: relative;
+    display: inline-block;
+    font-size: 1rem;
+    line-height: 1;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    color: oklch(0.86 0.015 260);
+}
+.store-stars::before {
+    content: '★★★★★';
+}
+.store-stars > span {
+    position: absolute;
+    inset: 0 auto 0 0;
+    overflow: hidden;
+    color: oklch(0.72 0.15 75);
+}
+.store-stars > span::before {
+    content: '★★★★★';
+}
+.store-detail-rating {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.35rem 0 0;
+    font-size: 0.92rem;
+}
+.store-reviews {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+    scroll-margin-top: 1rem;
+}
+.store-reviews > header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1.25rem;
+}
+.store-reviews h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    letter-spacing: -0.01em;
+}
+.store-reviews-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 0;
+}
+.store-reviews-summary strong {
+    font-size: 1.35rem;
+    font-variant-numeric: tabular-nums;
+}
+.store-reviews-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 3rem;
+    align-items: start;
+}
+.store-reviews-body > p {
+    margin: 0;
+}
+.store-review-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.store-review-list li {
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--line);
+}
+.store-review-list li:first-child {
+    padding-top: 0;
+}
+.store-review-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.75rem;
+    margin: 0;
+}
+.store-review-meta time {
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+.store-review-text {
+    max-width: 65ch;
+    margin: 0.5rem 0 0;
+    white-space: pre-line;
+    overflow-wrap: anywhere;
+}
+.store-reviews-note {
+    padding: 1rem 1.15rem;
+    border-radius: 0.5rem;
+    background: var(--surface);
+    color: var(--muted);
+}
+.store-reviews-note a {
+    color: var(--accent);
+    font-weight: 600;
+}
+.store-review-form {
+    display: grid;
+    gap: 0.9rem;
+    padding: 1.25rem;
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+}
+.store-review-form h3,
+.store-review-form p {
+    margin: 0;
+}
+.store-review-form h3 {
+    font-size: 1.05rem;
+    font-weight: 650;
+}
+.store-review-form .store-button {
+    justify-self: start;
+}
+.store-rating {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.store-rating legend {
+    padding: 0;
+    margin-bottom: 0.3rem;
+    font-weight: 600;
+}
+.store-rating > div {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+.store-rating label {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.4rem;
+    font-size: 1.7rem;
+    line-height: 1;
+    color: oklch(0.82 0.015 260);
+    cursor: pointer;
+}
+.store-rating label[data-on='true'] {
+    color: oklch(0.72 0.15 75);
+}
+.store-rating input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+.store-rating label:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.store-rating > div > .store-muted {
+    margin-left: 0.6rem;
+    font-size: 0.92rem;
+}
+/* A titled row of product cards under a page: related products, recently viewed. */
+.store-strip {
+    margin-top: 3.5rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+}
+.store-strip > header {
+    margin-bottom: 1.25rem;
+}
+.store-strip h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    letter-spacing: -0.01em;
+}
+.store-strip > header p {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+    font-size: 0.92rem;
+}
+/* Four across; more than four scroll sideways. The padding (taken back by the margin) is
+   room for the cards' focus ring and hover area, which reach past the card. */
+.store-strip-track {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: calc((100% - 4.5rem) / 4);
+    gap: 1.5rem;
+    margin: -0.5rem;
+    padding: 0.5rem;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.5rem;
+    scrollbar-width: thin;
+}
+.store-strip-track > * {
+    scroll-snap-align: start;
+}
+.store-strip .store-card-title {
+    font-size: 1rem;
+}
+/* Stands in for a card that is on its way. */
+.store-card-placeholder span {
+    display: block;
+    height: 0.9rem;
+    border-radius: 0.3rem;
+    background: var(--surface);
+}
+.store-card-placeholder span:first-child {
+    height: auto;
+    aspect-ratio: 1/1.05;
+    border-radius: 0.6rem;
+}
+.store-card-placeholder span:nth-child(2) {
+    width: 80%;
+    margin-top: 0.9rem;
+}
+.store-card-placeholder span:nth-child(3) {
+    width: 45%;
+    margin-top: 0.5rem;
 }
 .store-two-column {
     display: grid;
@@ -1228,6 +1702,95 @@
 }
 .store-contact-link:hover strong {
     color: var(--accent-dark);
+}
+/* The coupon of a cart: a field to enter one, or the one entered with a way to remove it. */
+.store-coupon {
+    margin: 1rem 0;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+}
+.store-coupon label {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+}
+.store-coupon > div {
+    display: flex;
+    gap: 0.5rem;
+}
+.store-coupon input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    font: inherit;
+    text-transform: uppercase;
+}
+.store-coupon input:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+}
+.store-coupon .store-button {
+    padding-block: 0.6rem;
+    white-space: nowrap;
+}
+.store-coupon[data-state] {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.store-coupon[data-state] p {
+    margin: 0;
+}
+.store-coupon[data-state='off'] p {
+    color: oklch(0.45 0.14 27);
+}
+.store-coupon .store-remove {
+    padding: 0;
+    white-space: nowrap;
+}
+.store-totals .store-discount-line dd {
+    color: oklch(0.42 0.12 150);
+}
+/* The one question about Clarity: a card in the corner the chat button does not use. */
+.store-consent {
+    position: fixed;
+    left: max(1rem, env(safe-area-inset-left));
+    bottom: max(1rem, env(safe-area-inset-bottom));
+    z-index: 40;
+    width: min(27rem, calc(100vw - 2rem));
+    padding: 1rem 1.15rem;
+    border: 1px solid var(--line);
+    border-radius: 0.625rem;
+    background: #fff;
+    color: var(--ink);
+    box-shadow: 0 6px 8px -2px oklch(0.2 0.03 260 / 0.24);
+    font-size: 0.92rem;
+}
+.store-consent p {
+    margin: 0 0 0.85rem;
+}
+.store-consent > div {
+    display: flex;
+    gap: 0.6rem;
+}
+.store-consent .store-button {
+    padding-block: 0.5rem;
+}
+.store-consent-choice {
+    margin: 0.75rem 0 0;
+    font-size: 0.88rem;
+}
+.store-consent-choice button {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
 }
 .store-chat-widget {
     position: fixed;
@@ -1475,6 +2038,10 @@
     .store-product-detail {
         gap: 2rem;
     }
+    .store-strip-track {
+        grid-auto-columns: calc((100% - 2.4rem) / 3);
+        gap: 1.2rem;
+    }
     .store-account-page {
         grid-template-columns: 1fr;
         gap: 2rem;
@@ -1499,6 +2066,14 @@
 }
 /* Phones: brand, cart and account on one row; the store's pages as tabs beneath. */
 @media (max-width: 760px) {
+    .store-reviews-body {
+        grid-template-columns: 1fr;
+        gap: 1.75rem;
+    }
+    /* Above the chat button, which keeps its corner. */
+    .store-consent {
+        bottom: calc(max(0.75rem, env(safe-area-inset-bottom)) + 3.75rem);
+    }
     .store-chat-launcher {
         width: 3rem;
         height: 3rem;
@@ -1582,7 +2157,8 @@
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.4rem 0.8rem;
     }
-    .store-product-card h2 {
+    .store-card-title,
+    .store-strip .store-card-title {
         font-size: 0.95rem;
     }
     .store-product-price {
@@ -1594,8 +2170,20 @@
         grid-template-columns: 1fr;
         gap: 1.5rem;
     }
-    .store-product-detail > .store-image {
+    .store-gallery {
         max-width: 30rem;
+    }
+    .store-gallery-thumbs button {
+        width: 3.6rem;
+    }
+    .store-strip {
+        margin-top: 2.5rem;
+        padding-top: 1.5rem;
+    }
+    /* Two cards and the edge of a third: there is more to the side. */
+    .store-strip-track {
+        grid-auto-columns: 44%;
+        gap: 0.8rem;
     }
     .store-add-row {
         align-items: stretch;

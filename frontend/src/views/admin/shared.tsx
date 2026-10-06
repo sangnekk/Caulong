@@ -10,6 +10,7 @@ export type Variant = {
     sku: string;
     name: string;
     price: number;
+    compare_at_price?: number | null;
     cost_price?: number | null;
     stock: number;
     is_active: boolean;
@@ -20,6 +21,8 @@ export type Product = {
     slug: string;
     description: string;
     image_url: string;
+    /** Photos besides the main one (the product form only). */
+    images?: { id: number; url: string | null }[];
     brand_id: number | null;
     category_id: number | null;
     brand?: Taxonomy | null;
@@ -45,6 +48,9 @@ export type Order = {
     payment_method: string;
     subtotal: number;
     shipping_fee: number;
+    /** What a coupon took off; total = subtotal - discount_total + shipping_fee. */
+    discount_total?: number;
+    coupon_code?: string | null;
     total: number;
     is_demo: boolean;
     created_at: string;
@@ -159,6 +165,95 @@ export function PaymentStatus({ status }: { status: string }) {
         </span>
     ) : (
         <span className="admin-badge">Chưa thu</span>
+    );
+}
+
+/** Customer groups (App\Services\CustomerSegmentation), in the order a customer moves through them. */
+export const segments: Record<string, [string, string | undefined]> = {
+    new: ['Mới', 'info'],
+    potential: ['Tiềm năng', 'accent'],
+    active: ['Đang mua', 'success'],
+    vip: ['VIP', 'warning'],
+    inactive: ['Không hoạt động', undefined],
+    lost: ['Đã mất', 'danger'],
+};
+
+export function SegmentBadge({ segment }: { segment: string | null }) {
+    if (!segment) return null;
+    const [label, tone] = segments[segment] ?? [segment, undefined];
+    return (
+        <span className="admin-badge" data-tone={tone}>
+            {label}
+        </span>
+    );
+}
+
+export type CouponTerms = {
+    type: 'percent' | 'fixed';
+    value: number;
+    max_discount: number | null;
+    min_order: number;
+};
+/** What a coupon takes off, in a line: "Giảm 10%, tối đa 100.000 ₫ · đơn từ 500.000 ₫". */
+export const couponTerms = (coupon: CouponTerms) =>
+    (coupon.type === 'percent'
+        ? 'Giảm ' +
+          coupon.value +
+          '%' +
+          (coupon.max_discount ? ', tối đa ' + money(coupon.max_discount) : '')
+        : 'Giảm ' + money(coupon.value)) +
+    (coupon.min_order > 0 ? ' · đơn từ ' + money(coupon.min_order) : '');
+
+export type CouponStateName =
+    | 'active'
+    | 'scheduled'
+    | 'expired'
+    | 'used_up'
+    | 'off';
+const couponStates: Record<CouponStateName, [string, string | undefined]> = {
+    active: ['Đang chạy', 'success'],
+    scheduled: ['Sắp chạy', 'info'],
+    expired: ['Hết hạn', undefined],
+    used_up: ['Hết lượt', undefined],
+    off: ['Đã tắt', 'danger'],
+};
+
+export function CouponState({ state }: { state: CouponStateName }) {
+    const [label, tone] = couponStates[state] ?? [state, undefined];
+    return (
+        <span className="admin-badge" data-tone={tone}>
+            {label}
+        </span>
+    );
+}
+
+export type ReviewState = 'pending' | 'published' | 'hidden';
+const reviewStates: Record<ReviewState, [string, string | undefined]> = {
+    pending: ['Chờ duyệt', 'warning'],
+    published: ['Đang hiện', 'success'],
+    hidden: ['Đã ẩn', undefined],
+};
+
+export function ReviewStatus({ status }: { status: ReviewState }) {
+    const [label, tone] = reviewStates[status] ?? [status, undefined];
+    return (
+        <span className="admin-badge" data-tone={tone}>
+            {label}
+        </span>
+    );
+}
+
+/** A rating out of five, read out as one phrase. */
+export function Stars({ rating }: { rating: number }) {
+    return (
+        <span
+            className="admin-stars"
+            role="img"
+            aria-label={rating + ' trên 5 sao'}
+        >
+            {'★'.repeat(rating)}
+            <span>{'★'.repeat(5 - rating)}</span>
+        </span>
     );
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { Head, Link, useForm, usePage } from '@/lib/page';
+import { Head, Link, router, useForm, usePage } from '@/lib/page';
 import { useState } from 'react';
 import {
     DemoBadge,
@@ -8,6 +8,7 @@ import {
     OrderTotals,
     ProductImage,
 } from '@/layouts/shop-layout';
+import { mark } from '@/lib/analytics';
 import { vnd, type Cart as CartData, type CartItem } from '@/types/commerce';
 
 function CartRow({
@@ -108,8 +109,10 @@ function CartRow({
                             onChange(item.variant_id, true);
                             form.delete('/cart/items/' + item.variant_id, {
                                 preserveScroll: true,
-                                onSuccess: () =>
-                                    onChange(item.variant_id, false),
+                                onSuccess: () => {
+                                    mark('remove_from_cart');
+                                    onChange(item.variant_id, false);
+                                },
                                 onError: () =>
                                     onChange(
                                         item.variant_id,
@@ -130,8 +133,103 @@ function CartRow({
     );
 }
 
+/**
+ * The coupon of this cart: a field to enter one, or the one entered with what it does.
+ * A code that stopped applying stays named with the reason until the customer removes it.
+ */
+function CouponBox({ coupon }: { coupon: CartData['coupon'] }) {
+    const form = useForm({ code: '' });
+    const [removing, setRemoving] = useState(false);
+    const errors = form.errors as Record<string, string | undefined>;
+    const problem = errors.coupon ?? errors.code;
+
+    if (coupon)
+        return (
+            <div
+                className="store-coupon"
+                data-state={coupon.error ? 'off' : 'on'}
+            >
+                {coupon.error ? (
+                    <p role="status">
+                        Mã <strong>{coupon.code}</strong> chưa được tính:{' '}
+                        {coupon.error}
+                    </p>
+                ) : (
+                    <p role="status">
+                        Đang dùng mã <strong>{coupon.code}</strong>
+                        {coupon.name && ': ' + coupon.name}
+                    </p>
+                )}
+                <button
+                    type="button"
+                    className="store-remove"
+                    disabled={removing}
+                    onClick={() => {
+                        setRemoving(true);
+                        router.delete('/cart/coupon', {
+                            preserveScroll: true,
+                            onFinish: () => setRemoving(false),
+                        });
+                    }}
+                >
+                    Bỏ mã
+                </button>
+            </div>
+        );
+
+    return (
+        <form
+            className="store-coupon"
+            onSubmit={(event) => {
+                event.preventDefault();
+                form.post('/cart/coupon', {
+                    preserveScroll: true,
+                    onSuccess: () => {
+                        mark('coupon_applied');
+                        form.reset();
+                    },
+                });
+            }}
+        >
+            <label htmlFor="coupon-code">Mã giảm giá</label>
+            <div>
+                <input
+                    id="coupon-code"
+                    maxLength={40}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                    spellCheck={false}
+                    value={form.data.code}
+                    disabled={form.processing}
+                    aria-invalid={!!problem}
+                    aria-describedby={problem ? 'coupon-error' : undefined}
+                    onChange={(event) =>
+                        form.setData('code', event.target.value)
+                    }
+                />
+                <button
+                    className="store-button store-button-secondary"
+                    disabled={form.processing || !form.data.code.trim()}
+                >
+                    {form.processing ? 'Đang kiểm tra…' : 'Áp dụng'}
+                </button>
+            </div>
+            {problem && (
+                <p id="coupon-error" className="store-field-error" role="alert">
+                    {problem}
+                </p>
+            )}
+        </form>
+    );
+}
+
 export default function Cart({ cart }: { cart: CartData }) {
-    const { errors } = usePage().props;
+    // The coupon's own message shows next to its field, not in the list above the cart.
+    const errors = Object.fromEntries(
+        Object.entries(usePage().props.errors as Record<string, string>).filter(
+            ([field]) => field !== 'coupon' && field !== 'code',
+        ),
+    );
     const [changed, setChanged] = useState<number[]>([]);
     const unavailable = cart.items.some(
         (item) => item.is_available === false || item.stock < item.quantity,
@@ -182,10 +280,16 @@ export default function Cart({ cart }: { cart: CartData }) {
                     </section>
                     <aside className="store-summary">
                         <h2>Tóm tắt giỏ hàng</h2>
-                        <OrderTotals totals={cart} hint />
+                        <OrderTotals
+                            totals={cart}
+                            discount={cart.discount}
+                            couponCode={cart.coupon?.code}
+                            hint
+                        />
                         <p className="store-hint">
                             Phí giao hàng được tính cho giỏ hàng hiện tại.
                         </p>
+                        <CouponBox coupon={cart.coupon} />
                         {cart.items.some((item) => item.is_demo) && (
                             <p className="store-notice">
                                 Giỏ có dữ liệu mẫu. Đơn đặt sẽ được ghi là đơn

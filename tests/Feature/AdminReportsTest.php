@@ -74,7 +74,7 @@ class AdminReportsTest extends TestCase
             ->component('admin/reports')
             ->where('filters', ['period' => '30d', 'demo' => false])
             ->where('range', ['from' => '2026-08-30', 'to' => '2026-09-28', 'monthly' => false])
-            ->where('totals', ['sales' => 750000, 'collected' => 500000, 'orders' => 2, 'placed' => 3, 'cancelled' => 1, 'average' => 375000, 'items' => 3, 'goods' => 750000, 'costed' => 0, 'profit' => 0])
+            ->where('totals', ['sales' => 750000, 'collected' => 500000, 'orders' => 2, 'placed' => 3, 'cancelled' => 1, 'average' => 375000, 'items' => 3, 'goods' => 750000, 'discounts' => 0, 'costed' => 0, 'profit' => 0])
             ->where('previous.sales', 750000)
             ->where('previous.orders', 1)
             ->has('series', 30)
@@ -127,7 +127,11 @@ class AdminReportsTest extends TestCase
     {
         $this->actingAs($this->admin)->get('/admin/settings')->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('admin/settings')
-            ->where('settings', ['shipping_fee' => 30000, 'free_shipping_threshold' => 1000000, 'hotline' => '', 'contact_email' => '', 'contact_address' => '', 'contact_chat_url' => '']));
+            ->where('settings', [
+                'shipping_fee' => 30000, 'free_shipping_threshold' => 1000000, 'hotline' => '', 'contact_email' => '', 'contact_address' => '', 'contact_chat_url' => '',
+                // The customer groups' thresholds, covered in CustomerSegmentationTest.
+                'segment_vip_spend' => 10000000, 'segment_inactive_days' => 90, 'segment_lost_days' => 365, 'segment_new_days' => 30, 'segment_potential_events' => 5,
+            ]));
 
         $this->put('/admin/settings', [
             'shipping_fee' => 25000, 'free_shipping_threshold' => 0, 'hotline' => '0901 234 567', 'contact_email' => 'lienhe@shop.vn',

@@ -1,14 +1,15 @@
 // Crawls VNB's badminton racket catalog (used by Shop Cầu Lông with VNB's permission) into the
 // catalog importer's CSV format plus a folder of product photos.
 //
-//   node scripts/vnb-catalog.mjs [--out=storage/app/private/vnb] [--limit=N] [--brands=yonex,lining] [--refresh]
+//   node scripts/vnb-catalog.mjs [--out=storage/app/private/vnb] [--limit=N] [--brands=yonex,lining] [--refresh] [--upgrade]
 //   php artisan shop:import-catalog storage/app/private/vnb/vnb-vot-cau-long-01.csv --images=storage/app/private/vnb/anh
 //   (one command per numbered CSV)
 //
 // Polite by design: one request at a time with a pause, no /ajax/ (robots.txt), cached per
-// product so a rerun only fetches what is new (--refresh refetches). Stock is always 0: VNB
-// does not publish counts and the shop enters its own. To refresh prices later, rerun this
-// and import with --keep-stock so counts entered by the shop are not reset.
+// product so a rerun only fetches what is new (--refresh refetches every page; --upgrade only
+// those read before the script kept a page's whole gallery and its list price). Stock is
+// always 0: VNB does not publish counts and the shop enters its own. To refresh prices later,
+// rerun this and import with --keep-stock so counts entered by the shop are not reset.
 //
 // vnb/product.mjs reads a product page into the cache; vnb/rows.mjs turns the cache into rows.
 import {
@@ -21,7 +22,7 @@ import {
 } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { all, attr, parseHtml } from './vnb/html.mjs';
-import { readProduct } from './vnb/product.mjs';
+import { PARSER, readProduct } from './vnb/product.mjs';
 import {
     COLUMNS,
     csvLine,
@@ -37,6 +38,8 @@ import {
 const SITE = 'https://shopvnb.com/';
 const USER_AGENT = 'ShopCauLong-catalog-sync/1.0 (with permission from VNB)';
 const PAUSE_MS = 450;
+/** Photos kept per product besides its main one (the shop takes up to 12). */
+const GALLERY = 8;
 const args = Object.fromEntries(
     process.argv.slice(2).map((arg) => {
         const [key, value = 'true'] = arg.replace(/^--/, '').split('=');
@@ -154,30 +157,51 @@ async function load(href) {
         ((cached.parser ?? 1) >= 2 || cached.description) &&
         (cached.options ||
             (cached.groups ?? []).filter((group) => group !== 'Size').length <
-                2);
-    if (complete && !args.refresh) return cached;
+                2) &&
+        (!args.upgrade || (cached.parser ?? 1) >= PARSER);
+    if (complete && !args.refresh) {
+        // A page read before the script fetched galleries has its photos listed, not fetched.
+        if ((cached.images?.length ?? 0) > 1 && !cached.galleryFiles) {
+            await photos(cached);
+            await writeFile(file, JSON.stringify(cached, null, 1));
+        }
+        return cached;
+    }
     const html = await get(SITE + href);
     if (!html) return null;
     const product = readProduct(html, href);
     // Read again, a page keeps the SKUs it already has in the shop.
     const kept = cached ? keptSkus(cached) : {};
     if (Object.keys(kept).length) product.skus = kept;
-    await photo(product);
+    await photos(product);
     await writeFile(file, JSON.stringify(product, null, 1));
     return product;
 }
 
-/** The product's main photo in the photo folder; the importer takes one photo per product. */
-async function photo(product) {
-    const extension = product.image?.match(/\.(webp|jpe?g|png)$/i)?.[1];
-    if (!extension) return;
-    const name = product.slug + '.' + extension.toLowerCase();
-    const file = join(out, 'anh', name);
-    if (!(await exists(file))) {
-        const bytes = await get(product.image, 'bytes');
-        if (bytes) await writeFile(file, bytes);
+/**
+ * The product's photos in the photo folder: the main one named after the product, the others
+ * numbered after an underscore, which no VNB address has, so "x_2" is never another product.
+ */
+async function photos(product) {
+    const urls = product.images?.length ? product.images : [product.image];
+    product.galleryFiles = [];
+    for (const [index, url] of urls.slice(0, 1 + GALLERY).entries()) {
+        const extension = url?.match(/\.(webp|jpe?g|png)$/i)?.[1];
+        if (!extension) continue;
+        const name =
+            product.slug +
+            (index ? '_' + (index + 1) : '') +
+            '.' +
+            extension.toLowerCase();
+        const file = join(out, 'anh', name);
+        if (!(await exists(file))) {
+            const bytes = await get(url, 'bytes');
+            if (bytes) await writeFile(file, bytes);
+        }
+        if (!(await exists(file))) continue;
+        if (index) product.galleryFiles.push(name);
+        else product.imageFile = name;
     }
-    if (await exists(file)) product.imageFile = name;
 }
 
 await mkdir(join(out, 'products'), { recursive: true });

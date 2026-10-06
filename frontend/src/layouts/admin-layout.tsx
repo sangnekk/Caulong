@@ -13,8 +13,10 @@ import {
     Package,
     ReceiptText,
     Settings,
+    Star,
     Store,
     Tags,
+    TicketPercent,
     UserRound,
     Users,
     X,
@@ -22,6 +24,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import BrandMark from '@/components/brand-mark';
+import { useNoRecording } from '@/lib/analytics';
 import type { ShopSharedProps } from '@/types/commerce';
 import '@/css/admin.css';
 
@@ -38,6 +41,8 @@ const workNav = [
     { href: '/admin/imports', label: 'Nhập hàng', icon: FileUp },
     { href: '/admin/taxonomies', label: 'Hãng & danh mục', icon: Tags },
     { href: '/admin/customers', label: 'Khách hàng', icon: Users },
+    { href: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent },
+    { href: '/admin/reviews', label: 'Đánh giá', icon: Star },
     { href: '/admin/settings', label: 'Cài đặt', icon: Settings },
 ];
 
@@ -51,11 +56,13 @@ const initials = (name: string) =>
         .toUpperCase();
 
 export default function AdminLayout({ children }: PropsWithChildren) {
+    useNoRecording();
     const { url, props } = usePage<AdminPageProps>();
     const path = url.split('?')[0];
     const user = props.auth.user;
     const pending = props.shop?.pending_orders ?? 0;
     const pendingSupportChats = props.shop?.pending_support_chats ?? 0;
+    const pendingReviews = props.shop?.pending_reviews ?? 0;
     const [menuOpen, setMenuOpen] = useState(false);
     const [signingOut, setSigningOut] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);
@@ -170,6 +177,18 @@ export default function AdminLayout({ children }: PropsWithChildren) {
                                                 }
                                             >
                                                 {pendingSupportChats}
+                                            </span>
+                                        )}
+                                    {href === '/admin/reviews' &&
+                                        pendingReviews > 0 && (
+                                            <span
+                                                className="admin-nav-count"
+                                                aria-label={
+                                                    pendingReviews +
+                                                    ' đánh giá chờ duyệt'
+                                                }
+                                            >
+                                                {pendingReviews}
                                             </span>
                                         )}
                                 </Link>

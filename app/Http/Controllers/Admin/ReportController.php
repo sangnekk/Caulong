@@ -81,7 +81,7 @@ class ReportController extends Controller
 
     /**
      * @param  callable(): Builder<Order>  $orders
-     * @return array{sales: int, collected: int, orders: int, placed: int, cancelled: int, average: int, items: int, goods: int, costed: int, profit: int}
+     * @return array{sales: int, collected: int, orders: int, placed: int, cancelled: int, average: int, items: int, goods: int, discounts: int, costed: int, profit: int}
      */
     private function totals(callable $orders, CarbonImmutable $from, CarbonImmutable $to): array
     {
@@ -92,6 +92,9 @@ class ReportController extends Controller
         $keptCount = (clone $kept)->count();
         $lines = OrderItem::whereIn('order_id', (clone $kept)->select('id'));
         $costed = (clone $lines)->whereNotNull('unit_cost');
+        $goods = (int) (clone $lines)->sum('line_total');
+        $costedGoods = (int) (clone $costed)->sum('line_total');
+        $discounts = (int) (clone $kept)->sum('discount_total');
 
         return [
             'sales' => $sales,
@@ -102,9 +105,13 @@ class ReportController extends Controller
             'average' => $keptCount ? intdiv($sales, $keptCount) : 0,
             'items' => (int) (clone $lines)->sum('quantity'),
             // Goods only (no delivery fee): the base the margin is measured on.
-            'goods' => (int) (clone $lines)->sum('line_total'),
-            'costed' => (int) (clone $costed)->sum('line_total'),
-            'profit' => (int) (clone $costed)->sum(DB::raw('line_total - unit_cost * quantity')),
+            'goods' => $goods,
+            // What coupons took off: money the goods did not bring in.
+            'discounts' => $discounts,
+            'costed' => $costedGoods,
+            // A coupon takes from every line alike: the lines with a known cost carry their share of it.
+            'profit' => (int) (clone $costed)->sum(DB::raw('line_total - unit_cost * quantity'))
+                - ($goods > 0 ? intdiv($discounts * $costedGoods, $goods) : 0),
         ];
     }
 
@@ -124,15 +131,19 @@ class ReportController extends Controller
         }
         $range = $this->utc($from, $to);
         $rows = $orders()->where(fn ($query) => $query->whereBetween('created_at', $range)->orWhereBetween('paid_at', $range))
-            ->select(['id', 'status', 'total', 'created_at', 'paid_at'])
+            ->select(['id', 'status', 'subtotal', 'total', 'discount_total', 'created_at', 'paid_at'])
             ->addSelect(['profit' => OrderItem::query()->selectRaw(self::PROFIT)->whereColumn('order_items.order_id', 'orders.id')])
+            ->addSelect(['costed' => OrderItem::query()->selectRaw('sum(case when unit_cost is null then 0 else line_total end)')->whereColumn('order_items.order_id', 'orders.id')])
             ->get();
         foreach ($rows as $order) {
             $placed = $order->created_at?->setTimezone($zone)->format($format);
             if ($placed !== null && isset($points[$placed]) && $order->status !== 'cancelled') {
                 $points[$placed]['sales'] += $order->total;
                 $points[$placed]['orders']++;
-                $points[$placed]['profit'] += (int) $order->getAttribute('profit');
+                // Less the coupon's share that falls on the lines with a known cost.
+                $points[$placed]['profit'] += (int) $order->getAttribute('profit') - ($order->subtotal > 0
+                    ? intdiv((int) $order->discount_total * (int) $order->getAttribute('costed'), (int) $order->subtotal)
+                    : 0);
             }
             $paid = $order->paid_at?->setTimezone($zone)->format($format);
             if ($paid !== null && isset($points[$paid])) {

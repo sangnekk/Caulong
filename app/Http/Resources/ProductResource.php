@@ -18,6 +18,8 @@ class ProductResource extends JsonResource
             'slug' => $this->slug,
             'description' => $this->description,
             'image_url' => $this->image_url,
+            // Every photo, the main one first: only where the page loaded them (the product page).
+            'images' => $this->whenLoaded('images', fn () => $this->gallery_urls),
             'play_style' => $this->play_style,
             'skill_level' => $this->skill_level,
             'specs' => $this->specs,
@@ -25,7 +27,11 @@ class ProductResource extends JsonResource
             'is_featured' => $this->is_featured,
             'brand' => $this->brand?->only(['id', 'name', 'slug']),
             'category' => $this->category?->only(['id', 'name', 'slug']),
-            'variants' => $this->variants->where('is_active', true)->values()->map(fn ($variant) => $variant->only(['id', 'sku', 'name', 'price', 'stock', 'is_active']))->all(),
+            'variants' => $this->variants->where('is_active', true)->values()->map(fn ($variant) => [
+                ...$variant->only(['id', 'sku', 'name', 'price']),
+                'compare_at_price' => $variant->list_price,
+                ...$variant->only(['stock', 'is_active']),
+            ])->all(),
         ];
     }
 }

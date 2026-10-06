@@ -4,7 +4,16 @@ import { Head, Link, router } from '@/lib/page';
 import { Search } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { date, money, PageHeader, Pages, query, Tabs } from './shared';
+import {
+    date,
+    money,
+    PageHeader,
+    Pages,
+    query,
+    SegmentBadge,
+    segments as segmentNames,
+    Tabs,
+} from './shared';
 import type { Pagination } from './shared';
 
 type Customer = {
@@ -13,22 +22,26 @@ type Customer = {
     email: string;
     verified: boolean;
     is_admin: boolean;
+    segment: string | null;
     joined: string;
     orders: number;
     open_orders: number;
     collected: number;
     last_order_at: string | null;
 };
-type Filters = { q: string; role: string };
+type Filters = { q: string; role: string; segment: string };
 
 export default function Customers({
     customers,
     filters,
     counts,
+    segments,
 }: {
     customers: Pagination<Customer>;
     filters: Filters;
     counts: { all: number; admins: number };
+    /** Customers per group, as last worked out. */
+    segments: Record<string, number>;
 }) {
     const [q, setQ] = useState(filters.q);
     const submit = (event: FormEvent) => {
@@ -90,6 +103,30 @@ export default function Customers({
                         placeholder="Tên hoặc email"
                     />
                 </label>
+                <label>
+                    Nhóm khách
+                    <select
+                        value={filters.segment}
+                        onChange={(event) =>
+                            router.get(
+                                query('/admin/customers', {
+                                    ...filters,
+                                    q,
+                                    segment: event.target.value,
+                                }),
+                                {},
+                                { preserveState: true, preserveScroll: true },
+                            )
+                        }
+                    >
+                        <option value="">Mọi nhóm</option>
+                        {Object.entries(segmentNames).map(([key, [label]]) => (
+                            <option key={key} value={key}>
+                                {label} ({segments[key] ?? 0})
+                            </option>
+                        ))}
+                    </select>
+                </label>
                 <div className="admin-filter-actions">
                     <button type="submit">
                         <Search aria-hidden="true" />
@@ -127,6 +164,7 @@ export default function Customers({
                             <tr>
                                 <th scope="col">Tài khoản</th>
                                 <th scope="col">Trạng thái</th>
+                                <th scope="col">Nhóm</th>
                                 <th scope="col" className="admin-number">
                                     Đơn hàng
                                 </th>
@@ -141,7 +179,14 @@ export default function Customers({
                             {customers.data.map((customer) => (
                                 <tr key={customer.id}>
                                     <th scope="row">
-                                        {customer.name}
+                                        <Link
+                                            href={
+                                                '/admin/customers/' +
+                                                customer.id
+                                            }
+                                        >
+                                            {customer.name}
+                                        </Link>
                                         <small>
                                             <a
                                                 href={
@@ -176,6 +221,15 @@ export default function Customers({
                                             </span>
                                         )}
                                     </td>
+                                    <td>
+                                        {customer.segment ? (
+                                            <SegmentBadge
+                                                segment={customer.segment}
+                                            />
+                                        ) : (
+                                            '—'
+                                        )}
+                                    </td>
                                     <td className="admin-number">
                                         {customer.orders}
                                         {customer.open_orders > 0 && (
@@ -203,7 +257,7 @@ export default function Customers({
                 </div>
             ) : (
                 <div className="admin-empty">
-                    {filters.q || filters.role ? (
+                    {filters.q || filters.role || filters.segment ? (
                         <>
                             <strong>Không có tài khoản khớp.</strong>
                             Thử tìm bằng một phần email.

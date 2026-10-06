@@ -1,12 +1,14 @@
 'use client';
 
-import { Head, Link, useForm } from '@/lib/page';
+import { Head, Link, useForm, type Page } from '@/lib/page';
 import { ExternalLink, Plus } from 'lucide-react';
+import { useState } from 'react';
 import type { ChangeEvent, FormEvent } from 'react';
 import { Errors, Field, margin, money, PageHeader } from './shared';
 import type { Product, Taxonomy, Variant } from './shared';
 
-type FormVariant = Omit<Variant, 'cost_price'> & {
+type FormVariant = Omit<Variant, 'cost_price' | 'compare_at_price'> & {
+    compare_at_price: number | '';
     cost_price: number | '';
     expected_stock: number;
 };
@@ -24,7 +26,11 @@ type FormData = {
     specs: Record<string, string>;
     variants: FormVariant[];
     image: File | null;
+    gallery: File[];
+    remove_images: number[];
 };
+/** As the server allows (ProductImage::MAX_PER_PRODUCT). */
+const MAX_GALLERY = 12;
 const specLabels: Record<string, string> = {
     weight: 'Trọng lượng',
     balance: 'Điểm cân bằng',
@@ -37,6 +43,7 @@ const emptyVariant = (): FormVariant => ({
     sku: '',
     name: '',
     price: 0,
+    compare_at_price: '',
     cost_price: '',
     stock: 0,
     expected_stock: 0,
@@ -70,12 +77,15 @@ function initial(product: Product | null): FormData {
             sku: v.sku,
             name: v.name,
             price: v.price,
+            compare_at_price: v.compare_at_price ?? '',
             cost_price: v.cost_price ?? '',
             stock: v.stock,
             is_active: v.is_active,
             expected_stock: v.stock,
         })) ?? [emptyVariant()],
         image: null,
+        gallery: [],
+        remove_images: [],
     };
 }
 
@@ -89,6 +99,8 @@ export default function ProductForm({
     categories: Taxonomy[];
 }) {
     const form = useForm<FormData>(initial(product));
+    // Counts saves: the file inputs are made anew after each, so they come back empty.
+    const [saves, setSaves] = useState(0);
     const updateVariant = (
         index: number,
         key: keyof FormVariant,
@@ -105,14 +117,38 @@ export default function ProductForm({
         const url = product
             ? '/admin/products/' + product.id
             : '/admin/products';
-        const options = { forceFormData: true, preserveScroll: true };
-        if (product) {
-            form.transform((data) => ({ ...data, _method: 'put' }));
-            form.post(url, options);
-        } else form.post(url, options);
+        const options = {
+            forceFormData: true,
+            preserveScroll: true,
+            // Start again from what was saved: new versions now have ids, stock its new
+            // count, and the photos just sent are not sent a second time.
+            onSuccess: (page: Page<{ product?: Product | null }>) => {
+                const saved = initial(page.props.product ?? null);
+                form.setData(saved);
+                form.setDefaults(saved);
+                setSaves((count) => count + 1);
+            },
+        };
+        // A version not saved yet has no id to send (the server refuses 0).
+        form.transform((data) => ({
+            ...data,
+            variants: data.variants.map(({ id, ...variant }) =>
+                id ? { id, ...variant } : variant,
+            ),
+            ...(product ? { _method: 'put' } : {}),
+        }));
+        form.post(url, options);
     };
     const imageChange = (event: ChangeEvent<HTMLInputElement>) =>
         form.setData('image', event.target.files?.[0] ?? null);
+    const errors = form.errors as Record<string, string | undefined>;
+    const galleryError =
+        errors.gallery ??
+        Object.entries(errors).find(([name]) =>
+            name.startsWith('gallery.'),
+        )?.[1];
+    const kept =
+        (product?.images?.length ?? 0) - form.data.remove_images.length;
     return (
         <>
             <Head title={product ? 'Sửa ' + product.name : 'Thêm sản phẩm'} />
@@ -344,10 +380,11 @@ export default function ProductForm({
                     )}
                     <Field
                         name="image"
-                        label="Ảnh mới (không bắt buộc)"
+                        label="Ảnh chính mới (không bắt buộc)"
                         error={form.errors.image}
                     >
                         <input
+                            key={saves}
                             id="image"
                             type="file"
                             accept="image/jpeg,image/png,image/webp"
@@ -355,7 +392,80 @@ export default function ProductForm({
                             aria-describedby="image-help"
                         />
                         <small id="image-help">
+                            Hiện ở danh sách, giỏ hàng và đầu trang sản phẩm.
                             JPEG, PNG hoặc WebP, tối đa 5 MB.
+                        </small>
+                    </Field>
+                    <h3>Ảnh phụ</h3>
+                    {product?.images?.length ? (
+                        <ul className="admin-gallery">
+                            {product.images.map((image, index) => {
+                                const removed =
+                                    form.data.remove_images.includes(image.id);
+                                return (
+                                    <li key={image.id} data-removed={removed}>
+                                        <img
+                                            src={image.url ?? ''}
+                                            alt={'Ảnh phụ ' + (index + 1)}
+                                        />
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={removed}
+                                                onChange={(e) =>
+                                                    form.setData(
+                                                        'remove_images',
+                                                        e.target.checked
+                                                            ? [
+                                                                  ...form.data
+                                                                      .remove_images,
+                                                                  image.id,
+                                                              ]
+                                                            : form.data.remove_images.filter(
+                                                                  (id) =>
+                                                                      id !==
+                                                                      image.id,
+                                                              ),
+                                                    )
+                                                }
+                                            />{' '}
+                                            Xóa
+                                        </label>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    ) : (
+                        <p className="admin-muted">
+                            Chưa có ảnh phụ. Trang sản phẩm chỉ hiện ảnh chính.
+                        </p>
+                    )}
+                    <Field
+                        name="gallery"
+                        label="Thêm ảnh phụ"
+                        error={galleryError}
+                    >
+                        <input
+                            key={saves}
+                            id="gallery"
+                            type="file"
+                            multiple
+                            accept="image/jpeg,image/png,image/webp"
+                            onChange={(e) =>
+                                form.setData(
+                                    'gallery',
+                                    Array.from(e.target.files ?? []),
+                                )
+                            }
+                            aria-describedby="gallery-help"
+                            aria-invalid={!!galleryError}
+                        />
+                        <small id="gallery-help">
+                            Khách lướt xem sau ảnh chính. Tối đa {MAX_GALLERY}{' '}
+                            ảnh phụ mỗi sản phẩm (đang giữ {kept}
+                            {form.data.gallery.length > 0 &&
+                                ', thêm ' + form.data.gallery.length}
+                            ), mỗi ảnh tối đa 5 MB.
                         </small>
                     </Field>
                 </section>
@@ -483,6 +593,57 @@ export default function ProductForm({
                                             )
                                         }
                                     />
+                                </Field>
+                                <Field
+                                    name={'variant-' + index + '-list'}
+                                    label="Giá niêm yết (VND)"
+                                    error={
+                                        errors[
+                                            'variants.' +
+                                                index +
+                                                '.compare_at_price'
+                                        ]
+                                    }
+                                >
+                                    <input
+                                        id={'variant-' + index + '-list'}
+                                        type="number"
+                                        min="0"
+                                        max="1000000000"
+                                        step="1"
+                                        placeholder="Không bắt buộc"
+                                        value={variant.compare_at_price}
+                                        onChange={(e) =>
+                                            updateVariant(
+                                                index,
+                                                'compare_at_price',
+                                                e.target.value === ''
+                                                    ? ''
+                                                    : Number(e.target.value),
+                                            )
+                                        }
+                                        aria-describedby={
+                                            'variant-' + index + '-list-help'
+                                        }
+                                    />
+                                    <small
+                                        id={'variant-' + index + '-list-help'}
+                                    >
+                                        {variant.compare_at_price !== '' &&
+                                        variant.compare_at_price > variant.price
+                                            ? 'Khách thấy giảm ' +
+                                              Math.max(
+                                                  1,
+                                                  Math.round(
+                                                      (1 -
+                                                          variant.price /
+                                                              variant.compare_at_price) *
+                                                          100,
+                                                  ),
+                                              ) +
+                                              '% so với giá này.'
+                                            : 'Giá gạch ngang cạnh giá bán; phải cao hơn giá bán.'}
+                                    </small>
                                 </Field>
                                 <Field
                                     name={'variant-' + index + '-cost'}

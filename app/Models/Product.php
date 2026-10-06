@@ -25,9 +25,11 @@ use Illuminate\Support\Facades\Storage;
  * @property bool $is_featured
  * @property bool $is_demo
  * @property-read string $image_url
+ * @property-read non-empty-list<string> $gallery_urls
  * @property-read Brand|null $brand
  * @property-read Category|null $category
  * @property-read Collection<int, ProductVariant> $variants
+ * @property-read Collection<int, ProductImage> $images
  */
 class Product extends Model
 {
@@ -57,6 +59,22 @@ class Product extends Model
     }
 
     /**
+     * Further photos, in the order the shop gave them; the main one is image_path.
+     *
+     * @return HasMany<ProductImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('position')->orderBy('id');
+    }
+
+    /** @return HasMany<ProductReview, $this> */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    /**
      * @param  Builder<Product>  $query
      * @return Builder<Product>
      */
@@ -65,20 +83,34 @@ class Product extends Model
         return $query->where('is_active', true);
     }
 
+    /** The public URL of a photo stored on the public disk, or null when the path is not one. */
+    public static function publicImageUrl(?string $path): ?string
+    {
+        // ponytail: local image paths only; add a trusted CDN policy if needed.
+        if (! is_string($path) || ! preg_match('~\A[a-zA-Z0-9_-]+(?:[a-zA-Z0-9_./-]*[a-zA-Z0-9_-])?\.(?:png|jpe?g|webp|gif)\z~i', $path)
+            || in_array('..', explode('/', $path), true) || in_array('.', explode('/', $path), true)) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($path);
+    }
+
     /** @return Attribute<string, never> */
     protected function imageUrl(): Attribute
     {
-        return Attribute::get(function (): string {
-            $path = $this->image_path;
-            $fallback = '/models/hyper-core-poster.png';
+        return Attribute::get(fn (): string => self::publicImageUrl($this->image_path) ?? '/models/hyper-core-poster.png');
+    }
 
-            // ponytail: local image paths only; add a trusted CDN policy if needed.
-            if (! is_string($path) || ! preg_match('~\A[a-zA-Z0-9_-]+(?:[a-zA-Z0-9_./-]*[a-zA-Z0-9_-])?\.(?:png|jpe?g|webp|gif)\z~i', $path)
-                || in_array('..', explode('/', $path), true) || in_array('.', explode('/', $path), true)) {
-                return $fallback;
-            }
-
-            return Storage::disk('public')->url($path);
-        });
+    /**
+     * Every photo of the product, the main one first. Reads the `images` relation.
+     *
+     * @return Attribute<non-empty-list<string>, never>
+     */
+    protected function galleryUrls(): Attribute
+    {
+        return Attribute::get(fn (): array => array_values(array_unique([
+            $this->image_url,
+            ...$this->images->map(fn (ProductImage $image) => $image->url)->filter()->all(),
+        ])));
     }
 }

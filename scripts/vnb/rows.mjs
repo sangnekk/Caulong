@@ -17,9 +17,11 @@ export const COLUMNS = [
     'chat_lieu',
     'suc_cang_toi_da',
     'anh',
+    'anh_phu',
     'ten_phien_ban',
     'sku',
     'gia',
+    'gia_goc',
     'ton_kho',
     'dang_ban',
 ];
@@ -273,18 +275,26 @@ export const dropsColours = (product) => {
  * hành"), as VNB names them. Where the page does offer a choice of versions, those are the
  * SKUs instead: they carry the price difference. An option the page prices at nothing is not
  * for sale.
+ *
+ * The page states one list price ("Giá niêm yết"), that of the product it has selected: it
+ * goes to that SKU alone, and only where it is above the price.
  */
 function variants(product) {
     const { colours, versions } = optionGroups(product);
     const chosen =
         versions.find((group) => group.length > 1) ??
         (colours.length ? colours : versions[0]);
+    const listed = (price, selected) =>
+        selected && price === product.price && product.listPrice > price
+            ? product.listPrice
+            : '';
     if (!chosen)
         return [
             {
                 name: 'Tiêu chuẩn',
                 sku: (product.sku || 'vnb' + product.id).toLowerCase(),
                 price: product.price,
+                list: listed(product.price, true),
             },
         ].filter((variant) => variant.price);
     const fixed =
@@ -297,6 +307,7 @@ function variants(product) {
             name: [option.name, ...fixed].join(' - '),
             sku: product.skus[option.id] ?? code + '-' + option.id,
             price: option.price || product.price,
+            list: listed(option.price || product.price, option.selected),
         }))
         .filter((variant) => variant.price);
 }
@@ -370,6 +381,7 @@ export function rows(product) {
             'tension',
         ).slice(0, 200),
         anh: product.imageFile ?? '',
+        anh_phu: (product.galleryFiles ?? []).join(' | '),
     };
     return variants(product).map((variant, index) => ({
         ...(index === 0
@@ -378,6 +390,7 @@ export function rows(product) {
         ten_phien_ban: variant.name.slice(0, 120),
         sku: variant.sku,
         gia: variant.price,
+        gia_goc: variant.list,
         ton_kho: 0,
         dang_ban: 'có',
     }));

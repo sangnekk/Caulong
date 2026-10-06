@@ -4,17 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Settings\PasswordUpdateRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
+use App\Http\Resources\ProductCardResource;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\User;
+use App\Services\CouponService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
-/** The customer's own account: orders, details, password, sign-out. */
+/** The customer's own account: orders, saved products, details, password, sign-out. */
 class AccountController extends Controller
 {
-    public function show(Request $request): Response
+    public function show(Request $request, CouponService $coupons): Response
     {
         /** @var User $user */
         $user = $request->user();
@@ -39,6 +42,14 @@ class AccountController extends Controller
                 'joined' => $user->created_at,
             ],
             'orders' => $orders,
+            // Saved products, the latest first. One no longer sold stays listed so it can be removed.
+            'wishlist' => $user->wishlist()->with(['brand:id,name,slug', 'variants' => fn ($query) => $query->active()->orderBy('id')])->get()
+                ->map(fn (Product $product) => [
+                    ...(new ProductCardResource($product))->resolve($request),
+                    'on_sale' => $product->is_active && $product->variants->isNotEmpty(),
+                ])->all(),
+            // Coupons made for this customer or for their group; nobody else's.
+            'coupons' => $coupons->givenTo($user),
             'totals' => [
                 'orders' => $user->orders()->count(),
                 'open' => $user->orders()->whereIn('status', ['pending', 'confirmed', 'shipped'])->count(),

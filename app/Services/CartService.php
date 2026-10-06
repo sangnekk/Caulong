@@ -8,7 +8,10 @@ use Illuminate\Validation\ValidationException;
 
 class CartService
 {
-    public function __construct(private ShopSettings $settings) {}
+    /** Session key of the coupon code the customer entered for this cart. */
+    public const COUPON = 'cart_coupon';
+
+    public function __construct(private ShopSettings $settings, private CouponService $coupons) {}
 
     /** @return array<int, int> */
     public function quantities(Request $request): array
@@ -51,15 +54,21 @@ class CartService
         return $price * $quantity;
     }
 
-    /** @return array{items: list<array<string, mixed>>, subtotal: int, shipping_fee: int, total: int, count: int} */
+    /**
+     * The cart as the customer sees it. `discount` is what the entered coupon takes off right
+     * now; a code that no longer applies stays listed with the reason and takes off nothing.
+     *
+     * @return array{items: list<array<string, mixed>>, subtotal: int, shipping_fee: int, discount: int, coupon: array{code: string, name: string|null, error: string|null}|null, total: int, count: int}
+     */
     public function summary(Request $request): array
     {
         $cart = $this->quantities($request);
         if ($cart === []) {
-            return ['items' => [], 'subtotal' => 0, 'shipping_fee' => 0, 'total' => 0, 'count' => 0];
+            return ['items' => [], 'subtotal' => 0, 'shipping_fee' => 0, 'discount' => 0, 'coupon' => null, 'total' => 0, 'count' => 0];
         }
         $variants = ProductVariant::with('product')->whereIn('id', array_keys($cart))->get()->keyBy('id');
         $items = [];
+        $lines = [];
         $subtotal = 0;
         foreach ($cart as $id => $quantity) {
             $variant = $variants->get($id);
@@ -83,9 +92,30 @@ class CartService
                 'is_demo' => (bool) $product?->is_demo,
                 'is_available' => (bool) $available,
             ];
+            $lines[] = [
+                'product_id' => $product?->id, 'category_id' => $product?->category_id,
+                'line_total' => $lineTotal, 'is_demo' => (bool) $product?->is_demo,
+            ];
         }
         $shipping = $this->shippingFee($subtotal);
+        $discount = 0;
+        $coupon = null;
+        $code = $request->session()->get(self::COUPON);
+        if (is_string($code)) {
+            try {
+                $quote = $this->coupons->quote($code, $request->user(), $lines);
+                $discount = $quote['discount'];
+                $coupon = ['code' => $quote['coupon']->code, 'name' => $quote['coupon']->name, 'error' => null];
+            } catch (ValidationException $rejected) {
+                $coupon = ['code' => $code, 'name' => null, 'error' => $rejected->validator->errors()->first()];
+            }
+        }
 
-        return ['items' => $items, 'subtotal' => $subtotal, 'shipping_fee' => $shipping, 'total' => $subtotal + $shipping, 'count' => (int) array_sum($cart)];
+        return [
+            'items' => $items, 'subtotal' => $subtotal, 'shipping_fee' => $shipping,
+            'discount' => $discount, 'coupon' => $coupon,
+            // Delivery is charged on the goods before the coupon, so a coupon never brings a fee back.
+            'total' => $subtotal - $discount + $shipping, 'count' => (int) array_sum($cart),
+        ];
     }
 }

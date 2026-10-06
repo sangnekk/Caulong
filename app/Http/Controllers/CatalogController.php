@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ProductCardResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\User;
+use App\Services\RecommendationService;
+use App\Services\ReviewService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -106,13 +111,33 @@ class CatalogController extends Controller
         ]);
     }
 
-    public function show(Request $request, Product $product): Response
+    public function show(Request $request, Product $product, RecommendationService $recommendations, ReviewService $reviews): Response
     {
         abort_unless($product->is_active, 404);
-        $product->load(['brand', 'category', 'variants' => fn ($query) => $query->active()->orderBy('id')]);
+        $product->load(['brand', 'category', 'images', 'variants' => fn ($query) => $query->active()->orderBy('id')]);
+        $cards = fn (Collection $products): array => ProductCardResource::collection($products)->resolve($request);
+        // A product is suggested once on the page: what orders hold together comes first.
+        $together = $recommendations->boughtTogether($product);
+        $shown = array_values($together->map(fn (Product $product): int => $product->id)->all());
+        $related = $recommendations->related($product, except: $shown);
+        $similar = $recommendations->similar($product, except: $shown);
+        /** @var User|null $user */
+        $user = $request->user();
 
         return Inertia::render('shop/product', [
             'product' => (new ProductResource($product))->resolve($request),
+            // Units in real orders; the page says so only when there are some.
+            'sold' => $recommendations->soldCount($product),
+            'boughtTogether' => $cards($together),
+            'related' => $cards($related),
+            'similar' => $cards($similar),
+            // Published reviews only: the average and the latest ones.
+            'reviews' => [...$reviews->summary($product), 'items' => $reviews->published($product)],
+            // What a signed-in customer has saved and may write here; null for a guest.
+            'viewer' => $user ? [
+                'wishlisted' => $user->wishlist()->whereKey($product->id)->exists(),
+                'review' => $reviews->viewer($user, $product),
+            ] : null,
         ]);
     }
 }

@@ -1,7 +1,9 @@
 'use client';
 
 import { Head, Link, usePage } from '@/lib/page';
+import { useEffect } from 'react';
 import { DemoBadge, OrderTotals, ShopContact } from '@/layouts/shop-layout';
+import { mark } from '@/lib/analytics';
 import { shortOrderCode, vnd, type Order } from '@/types/commerce';
 
 const statusLabels: Record<string, string> = {
@@ -27,6 +29,9 @@ export default function OrderPage({
 }) {
     const signedIn = !!usePage<{ auth: { user: unknown } }>().props.auth?.user;
     const code = shortOrderCode(order.public_id);
+    useEffect(() => {
+        if (justPlaced) mark('order_placed');
+    }, [justPlaced]);
     return (
         <>
             <Head title={'Đơn hàng ' + code}>
@@ -56,7 +61,8 @@ export default function OrderPage({
                     dịch hàng thực tế.
                 </p>
             )}
-            <div className="store-two-column">
+            {/* Who the order goes to and where: masked in Clarity recordings. */}
+            <div className="store-two-column" data-clarity-mask="true">
                 <section>
                     <div className="store-notice">
                         <strong>
@@ -84,7 +90,11 @@ export default function OrderPage({
                             </li>
                         ))}
                     </ul>
-                    <OrderTotals totals={order} />
+                    <OrderTotals
+                        totals={order}
+                        discount={order.discount_total}
+                        couponCode={order.coupon_code}
+                    />
                 </section>
                 <aside className="store-summary">
                     <h2>Thông tin nhận hàng</h2>

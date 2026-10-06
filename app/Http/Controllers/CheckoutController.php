@@ -23,6 +23,8 @@ class CheckoutController extends Controller
             $request->session()->put('checkout_token', $token);
         }
         $request->session()->put('checkout_prices', array_column($summary['items'], 'price', 'variant_id'));
+        // What the page shows the coupon taking off; the order is refused if that has changed.
+        $request->session()->put('checkout_discount', $summary['discount']);
 
         return Inertia::render('shop/checkout', [
             'cart' => $summary,
@@ -74,7 +76,7 @@ class CheckoutController extends Controller
         abort_unless($ownsOrder || in_array($order->public_id, $request->session()->get('order_access', []), true), 404);
         $data = $order->only([
             'public_id', 'name', 'phone', 'address', 'email', 'notes', 'status',
-            'payment_status', 'payment_method', 'subtotal', 'shipping_fee', 'total', 'is_demo', 'created_at',
+            'payment_status', 'payment_method', 'subtotal', 'shipping_fee', 'discount_total', 'coupon_code', 'total', 'is_demo', 'created_at',
         ]);
         $data['items'] = $order->items->map(fn ($item) => $item->only(['product_name', 'variant_name', 'sku', 'unit_price', 'quantity', 'line_total']))->all();
 

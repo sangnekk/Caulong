@@ -2,7 +2,7 @@ import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFo
 import messages from './messages'
 /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
 export const context = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -17,7 +17,7 @@ context.definition = {
 
 /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
 context.url = (options?: RouteQueryOptions) => {
@@ -26,7 +26,7 @@ context.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
 context.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -35,7 +35,7 @@ context.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
 context.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -45,7 +45,7 @@ context.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
     const contextForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -55,7 +55,7 @@ context.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
         contextForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -64,7 +64,7 @@ context.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\SupportChatController::context
- * @see app/Http/Controllers/SupportChatController.php:18
+ * @see app/Http/Controllers/SupportChatController.php:19
  * @route '/support-chat/context'
  */
         contextForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

@@ -25,6 +25,12 @@ const guide: [string, string, string, string][] = [
         '950.000',
         'Giá shop nhập vào, chỉ admin thấy; dùng để tính lãi gộp. Để trống thì giữ giá nhập đang lưu.',
     ],
+    [
+        'gia_goc',
+        'Không',
+        '1.590.000',
+        'Giá niêm yết, hiện gạch ngang cạnh giá bán; phải cao hơn giá bán. Để trống thì giữ giá niêm yết đang lưu.',
+    ],
     ['ton_kho', 'Có', '12', 'Số lượng shop đang có.'],
     [
         'ten_phien_ban',
@@ -53,7 +59,13 @@ const guide: [string, string, string, string][] = [
         '4U · Nặng đầu · Cứng · Carbon · 28 lbs',
         'Thông số theo hãng công bố.',
     ],
-    ['anh', 'Không', 'tc300.jpg', 'Tên ảnh trong tệp ZIP gửi kèm.'],
+    ['anh', 'Không', 'tc300.jpg', 'Tên ảnh chính trong tệp ZIP gửi kèm.'],
+    [
+        'anh_phu',
+        'Không',
+        'tc300-2.jpg | tc300-3.jpg',
+        'Các ảnh khác của sản phẩm, cách nhau bằng dấu |, tối đa 12 ảnh. Có ghi thì thay bộ ảnh phụ đang lưu; để trống thì giữ nguyên.',
+    ],
     [
         'duong_dan',
         'Không',

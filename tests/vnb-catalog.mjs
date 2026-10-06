@@ -171,6 +171,7 @@ assert.deepEqual(one.lines, [
 const racket = understand(one);
 nameBrands([racket]);
 racket.imageFile = 'nitrix.webp';
+racket.galleryFiles = ['nitrix_2.webp', 'nitrix_3.webp'];
 // The introduction is the description; the table's balance point wins over the article's.
 assert.equal(
     racket.description,
@@ -194,13 +195,19 @@ assert.deepEqual(rows(racket), [
         chat_lieu: '',
         suc_cang_toi_da: '32 Lbs',
         anh: 'nitrix.webp',
+        anh_phu: 'nitrix_2.webp | nitrix_3.webp',
         ten_phien_ban: 'Tiêu chuẩn',
         sku: 'vnb029914',
         gia: 3799000,
+        // The page's list price, above what it charges.
+        gia_goc: 4558800,
         ton_kho: 0,
         dang_ban: 'có',
     },
 ]);
+// A list price that is no saving is not a list price.
+assert.equal(rows({ ...racket, listPrice: 3799000 })[0].gia_goc, '');
+assert.equal(rows({ ...racket, listPrice: undefined })[0].gia_goc, '');
 assert.equal(unpriced(racket), null);
 assert.equal(unwanted(racket), null);
 
@@ -365,9 +372,15 @@ assert.deepEqual(Object.keys(pairRows[1]), [
     'ten_phien_ban',
     'sku',
     'gia',
+    'gia_goc',
     'ton_kho',
     'dang_ban',
 ]);
+// The page's one list price belongs to the product it has selected, at the page's price.
+assert.deepEqual(
+    rows(understand({ ...pair, listPrice: 790000 })).map((row) => row.gia_goc),
+    [790000, ''],
+);
 
 // --- Products cached by earlier versions of the script -----------------------------------
 
@@ -524,7 +537,7 @@ assert.equal(
         gia: 5,
         ton_kho: 0,
     }),
-    '"Vợt ""A"", bản mới",,,,"dòng 1\ndòng 2",,,,,,,,,,a-1,5,0,',
+    '"Vợt ""A"", bản mới",,,,"dòng 1\ndòng 2",,,,,,,,,,,a-1,5,,0,',
 );
 
 console.log('vnb-catalog: ok');

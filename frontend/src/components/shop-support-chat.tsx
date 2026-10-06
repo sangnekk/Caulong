@@ -1,6 +1,7 @@
 import { Link, usePage } from '@/lib/page';
 import { MessageCircle, SendHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { mark } from '@/lib/analytics';
 import type { ShopSharedProps } from '@/types/commerce';
 
 type ChatMessage = {
@@ -118,6 +119,7 @@ export default function ShopSupportChat() {
         setDraft('');
         setSending(true);
         setError('');
+        const starting = !messages.length || conversationStatus === 'closed';
         void fetch('/support-chat/messages', {
             method: 'POST',
             credentials: 'same-origin',
@@ -143,6 +145,7 @@ export default function ShopSupportChat() {
                 const data = (await response.json()) as ChatResponse;
                 setMessages(data.messages);
                 setConversationStatus(data.status);
+                if (starting) mark('chat_started');
             })
             .catch(() => setError('Mất kết nối. Vui lòng thử gửi lại.'))
             .finally(() => setSending(false));
@@ -154,6 +157,8 @@ export default function ShopSupportChat() {
                 <section
                     id="store-support-chat"
                     className="store-chat-panel"
+                    // A conversation is private: Clarity never records what is in it.
+                    data-clarity-mask="true"
                     role="dialog"
                     aria-label="Chat hỗ trợ khách hàng"
                     aria-modal="false"

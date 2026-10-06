@@ -190,6 +190,16 @@ export default function OrderDetail({
                                 <dt>Tiền hàng</dt>
                                 <dd>{money(order.subtotal)}</dd>
                             </div>
+                            {(order.discount_total ?? 0) > 0 && (
+                                <div>
+                                    <dt>
+                                        Giảm giá
+                                        {order.coupon_code &&
+                                            ' (mã ' + order.coupon_code + ')'}
+                                    </dt>
+                                    <dd>−{money(order.discount_total ?? 0)}</dd>
+                                </div>
+                            )}
                             <div>
                                 <dt>Phí giao hàng</dt>
                                 <dd>
@@ -257,9 +267,17 @@ export default function OrderDetail({
                             )}
                             <dt>Tài khoản</dt>
                             <dd>
-                                {order.user
-                                    ? order.user.name + ' · ' + order.user.email
-                                    : 'Khách không đăng nhập'}
+                                {order.user ? (
+                                    <Link
+                                        href={
+                                            '/admin/customers/' + order.user.id
+                                        }
+                                    >
+                                        {order.user.name} · {order.user.email}
+                                    </Link>
+                                ) : (
+                                    'Khách không đăng nhập'
+                                )}
                             </dd>
                             {order.notes && (
                                 <>

@@ -6,6 +6,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -24,12 +25,12 @@ use Throwable;
  * @phpstan-type File array{rows: list<Row>, errors: list<Issue>, warnings: list<Issue>}
  * @phpstan-type Options array{publish: bool, update_stock: bool, drop_missing?: bool}
  * @phpstan-type Current array{id: int, name: string, price: int, stock: int, is_active: bool}
- * @phpstan-type PlannedVariant array{line: int, sku: string, name: string, price: int, cost_price: int|null, stock: int, is_active: bool, current: Current|null, action: string}
+ * @phpstan-type PlannedVariant array{line: int, sku: string, name: string, price: int, compare_at_price: int|null, cost_price: int|null, stock: int, is_active: bool, current: Current|null, action: string}
  * @phpstan-type Dropped array{id: int, sku: string, name: string, stock: int, action: string}
- * @phpstan-type PlannedProduct array{line: int, slug: string, id: int|null, name: string, brand: string|null, category: string|null, attributes: array<string, string>, specs: array<string, string>, is_active: bool, action: string, variants: list<PlannedVariant>, dropped: list<Dropped>}
+ * @phpstan-type PlannedProduct array{line: int, slug: string, id: int|null, name: string, brand: string|null, category: string|null, attributes: array<string, string>, specs: array<string, string>, gallery: list<string>, is_active: bool, action: string, variants: list<PlannedVariant>, dropped: list<Dropped>}
  * @phpstan-type Summary array{rows: int, products_new: int, products_updated: int, variants_new: int, variants_updated: int, variants_deleted: int, variants_hidden: int, brands_new: list<string>, categories_new: list<string>, images: int}
  * @phpstan-type Plan array{summary: Summary, products: list<PlannedProduct>, errors: list<Issue>, warnings: list<Issue>, fingerprint: string}
- * @phpstan-type Group array{line: int, name: string, fields: array<string, string>, variants: list<array{line: int, sku: string, name: string, price: int, cost: int|null, stock: int, is_active: bool}>}
+ * @phpstan-type Group array{line: int, name: string, fields: array<string, string>, variants: list<array{line: int, sku: string, name: string, price: int, list: int|null, cost: int|null, stock: int, is_active: bool}>}
  * @phpstan-type Counts array{products_new: int, products_updated: int, variants_new: int, variants_updated: int, variants_deleted: int, variants_hidden: int}
  */
 class CatalogImporter
@@ -51,9 +52,11 @@ class CatalogImporter
         'chat_lieu' => ['chat_lieu', 'material'],
         'suc_cang_toi_da' => ['suc_cang_toi_da', 'suc_cang', 'max_tension'],
         'anh' => ['anh', 'hinh_anh', 'image'],
+        'anh_phu' => ['anh_phu', 'anh_khac', 'gallery', 'images'],
         'ten_phien_ban' => ['ten_phien_ban', 'phien_ban', 'variant_name', 'variant'],
         'sku' => ['sku', 'ma_sku', 'ma_hang'],
         'gia' => ['gia', 'gia_ban', 'price'],
+        'gia_goc' => ['gia_goc', 'gia_niem_yet', 'list_price', 'compare_at_price'],
         'gia_nhap' => ['gia_nhap', 'gia_von', 'cost', 'cost_price'],
         'ton_kho' => ['ton_kho', 'so_luong', 'stock', 'quantity'],
         'dang_ban' => ['dang_ban', 'is_active', 'active'],
@@ -61,7 +64,7 @@ class CatalogImporter
 
     private const REQUIRED = ['ten_san_pham', 'sku', 'gia', 'ton_kho'];
 
-    private const PRODUCT_FIELDS = ['hang', 'danh_muc', 'mo_ta', 'loi_choi', 'trinh_do', 'trong_luong', 'diem_can_bang', 'do_cung', 'chat_lieu', 'suc_cang_toi_da', 'anh'];
+    private const PRODUCT_FIELDS = ['hang', 'danh_muc', 'mo_ta', 'loi_choi', 'trinh_do', 'trong_luong', 'diem_can_bang', 'do_cung', 'chat_lieu', 'suc_cang_toi_da', 'anh', 'anh_phu'];
 
     private const SPECS = ['trong_luong' => 'weight', 'diem_can_bang' => 'balance', 'do_cung' => 'stiffness', 'chat_lieu' => 'material', 'suc_cang_toi_da' => 'max_tension'];
 
@@ -173,7 +176,7 @@ class CatalogImporter
         $warnings = $file['warnings'];
         $groups = $this->group($file['rows'], $errors);
 
-        $products = Product::with(['brand:id,name', 'category:id,name'])->whereIn('slug', array_keys($groups) ?: [''])->get()->keyBy('slug');
+        $products = Product::with(['brand:id,name', 'category:id,name', 'images'])->whereIn('slug', array_keys($groups) ?: [''])->get()->keyBy('slug');
         $variants = ProductVariant::with('product:id,name')->whereIn('sku', $this->skus($groups) ?: [''])->get()->keyBy('sku');
         // On request, SKUs the file no longer lists for its products go: a full catalog file
         // then replaces a product's variants instead of only adding to them.
@@ -211,19 +214,22 @@ class CatalogImporter
                     $warnings[] = ['line' => $line, 'message' => '“'.$group['name'].'” chưa ghi trình độ, sẽ được gợi ý cho mọi trình độ.'];
                 }
             }
+            $main = $fields['anh'];
             if ($fields['anh'] !== '') {
                 $problem = $images ? $images->problem($fields['anh']) : 'Dòng có ảnh “'.$fields['anh'].'” nhưng chưa kèm tệp ZIP ảnh.';
                 $current = $existing?->image_path && Storage::disk('public')->exists($existing->image_path)
                     ? hash('sha256', (string) Storage::disk('public')->get($existing->image_path)) : null;
                 if ($problem !== null) {
                     $errors[] = ['line' => $line, 'message' => $problem];
-                } elseif ($images && $current !== null && hash_equals($current, hash('sha256', $images->read($fields['anh'])['bytes']))) {
+                } elseif ($images && $current !== null && hash_equals($current, $images->hash($fields['anh']))) {
                     // Same photo as last import: keep the stored file instead of copying it again.
                     $fields['anh'] = '';
                 } else {
                     $imageCount++;
                 }
             }
+            $gallery = $this->gallery($fields['anh_phu'], $main, $images, $existing, $line, $errors);
+            $imageCount += count($gallery['new']);
             $brand = $this->taxonomy($brands, $fields['hang']);
             if ($fields['hang'] !== '' && ! $brand && ! in_array($fields['hang'], $newBrands, true)) {
                 $newBrands[] = $fields['hang'];
@@ -243,17 +249,19 @@ class CatalogImporter
                 }
                 $stock = $current && ! $options['update_stock'] ? $current->stock : $variant['stock'];
                 $cost = $variant['cost'] ?? $current?->cost_price;
+                $list = $variant['list'] ?? $current?->compare_at_price;
                 $rows[] = [
                     'line' => $variant['line'],
                     'sku' => $variant['sku'],
                     'name' => $variant['name'],
                     'price' => $variant['price'],
+                    'compare_at_price' => $list,
                     'cost_price' => $cost,
                     'stock' => $stock,
                     'is_active' => $variant['is_active'],
                     'current' => $current ? ['id' => $current->id, 'name' => $current->name, 'price' => $current->price, 'stock' => $current->stock, 'is_active' => $current->is_active] : null,
                     'action' => ! $current ? 'create' : ($current->name === $variant['name'] && $current->price === $variant['price']
-                        && $current->cost_price === $cost && $current->stock === $stock && $current->is_active === $variant['is_active'] ? 'unchanged' : 'update'),
+                        && $current->compare_at_price === $list && $current->cost_price === $cost && $current->stock === $stock && $current->is_active === $variant['is_active'] ? 'unchanged' : 'update'),
                 ];
             }
 
@@ -274,6 +282,7 @@ class CatalogImporter
                 || ($brand?->id !== null && $brand->id !== $existing->brand_id) || ($fields['hang'] !== '' && ! $brand)
                 || ($category?->id !== null && $category->id !== $existing->category_id) || ($fields['danh_muc'] !== '' && ! $category)
                 || $fields['anh'] !== ''
+                || $gallery['names'] !== []
                 || array_diff_assoc($specs, $existing->specs ?? []) !== [];
 
             $planned[] = [
@@ -285,6 +294,8 @@ class CatalogImporter
                 'category' => $fields['danh_muc'] ?: $existing?->category?->name,
                 'attributes' => $attributes,
                 'specs' => $specs,
+                // The photos that become the product's gallery; empty leaves it as it is.
+                'gallery' => $gallery['names'],
                 'is_active' => $existing ? $existing->is_active : $options['publish'],
                 'action' => ! $existing ? 'create' : ($changed ? 'update' : 'unchanged'),
                 'variants' => $rows,
@@ -321,7 +332,7 @@ class CatalogImporter
             // Any order, stock edit or product edit after the preview changes this.
             'fingerprint' => hash('sha256', json_encode([
                 $options,
-                $products->map(fn (Product $product) => [$product->id, $product->updated_at?->toJSON()])->all(),
+                $products->map(fn (Product $product) => [$product->id, $product->updated_at?->toJSON(), $product->images->pluck('hash')->all()])->all(),
                 $variants->map(fn (ProductVariant $variant) => [$variant->id, $variant->product_id, $variant->price, $variant->stock, $variant->is_active, $variant->updated_at?->toJSON()])->all(),
                 $unlisted->map(fn (ProductVariant $variant) => [$variant->id, $variant->stock, $variant->is_active, in_array($variant->id, $ordered, true)])->all(),
                 $brands->pluck('id')->all(),
@@ -338,8 +349,9 @@ class CatalogImporter
     public function commit(array $file, ?ImportImages $images, array $options, string $fingerprint): array
     {
         $stored = [];
+        $replaced = [];
         try {
-            return DB::transaction(function () use ($file, $images, $options, $fingerprint, &$stored) {
+            $counts = DB::transaction(function () use ($file, $images, $options, $fingerprint, &$stored, &$replaced) {
                 // Lock what the plan reads, variants in id order like checkout, then plan again.
                 $ignored = [];
                 $groups = $this->group($file['rows'], $ignored);
@@ -390,12 +402,35 @@ class CatalogImporter
                         $product->image_path = $path;
                     }
                     $product->save();
+                    if ($item['gallery'] && $images) {
+                        // Photos already stored keep their file; the rest of the old gallery goes.
+                        $current = $product->images()->get()->keyBy('hash');
+                        $kept = [];
+                        foreach ($item['gallery'] as $position => $name) {
+                            $row = $current->get($images->hash($name));
+                            if ($row) {
+                                $row->update(['position' => $position + 1]);
+                            } else {
+                                $image = $images->read($name);
+                                $path = 'products/'.Str::random(40).'.'.$image['extension'];
+                                if (! Storage::disk('public')->put($path, $image['bytes'])) {
+                                    throw ValidationException::withMessages(['import' => 'Không lưu được ảnh “'.$name.'”.']);
+                                }
+                                $stored[] = $path;
+                                $row = $product->images()->create(['path' => $path, 'hash' => $images->hash($name), 'position' => $position + 1]);
+                            }
+                            $kept[] = $row->id;
+                        }
+                        $stale = $current->whereNotIn('id', $kept);
+                        array_push($replaced, ...$stale->pluck('path')->all());
+                        $product->images()->whereKey($stale->modelKeys())->delete();
+                    }
                     foreach ($item['variants'] as $variant) {
                         if ($variant['action'] === 'unchanged') {
                             continue;
                         }
                         $row = $variant['current'] ? ProductVariant::findOrFail($variant['current']['id']) : new ProductVariant(['product_id' => $product->id, 'sku' => $variant['sku']]);
-                        $row->fill(['name' => $variant['name'], 'price' => $variant['price'], 'cost_price' => $variant['cost_price'], 'stock' => $variant['stock'], 'is_active' => $variant['is_active']])->save();
+                        $row->fill(['name' => $variant['name'], 'price' => $variant['price'], 'compare_at_price' => $variant['compare_at_price'], 'cost_price' => $variant['cost_price'], 'stock' => $variant['stock'], 'is_active' => $variant['is_active']])->save();
                     }
                     $dropped = collect($item['dropped']);
                     ProductVariant::whereKey($dropped->where('action', 'delete')->pluck('id'))->delete();
@@ -414,10 +449,54 @@ class CatalogImporter
                 ];
             });
         } catch (Throwable $exception) {
-            // ponytail: photos replaced by an import stay on disk, like the product form.
             Storage::disk('public')->delete($stored);
             throw $exception;
         }
+        // ponytail: a replaced main photo stays on disk, like the product form; gallery photos go.
+        Storage::disk('public')->delete($replaced);
+
+        return $counts;
+    }
+
+    /**
+     * The photos named in anh_phu ("a.jpg | b.jpg") that become the product's gallery, and
+     * those among them not stored yet. Empty when the cell is blank, has a problem, or names
+     * the gallery the product already has, so the same file imported twice copies nothing.
+     * `$main` is the row's main photo (anh), which a gallery does not repeat.
+     *
+     * @param  list<Issue>  $errors
+     * @return array{names: list<string>, new: list<string>}
+     */
+    private function gallery(string $cell, string $main, ?ImportImages $images, ?Product $existing, int $line, array &$errors): array
+    {
+        $unchanged = ['names' => [], 'new' => []];
+        $names = array_values(array_unique(array_filter(array_map('trim', explode('|', $cell)), fn (string $name) => $name !== '')));
+        if (count($names) > ProductImage::MAX_PER_PRODUCT) {
+            $errors[] = ['line' => $line, 'message' => 'Cột anh_phu có quá '.ProductImage::MAX_PER_PRODUCT.' ảnh.'];
+
+            return $unchanged;
+        }
+        // By content: the same photo under two names is one photo.
+        $photos = [];
+        $valid = true;
+        foreach ($names as $name) {
+            $problem = $images ? $images->problem($name) : 'Dòng có ảnh “'.$name.'” nhưng chưa kèm tệp ZIP ảnh.';
+            if ($problem !== null || ! $images) {
+                $errors[] = ['line' => $line, 'message' => (string) $problem];
+                $valid = false;
+            } else {
+                $photos[$images->hash($name)] ??= $name;
+            }
+        }
+        if ($main !== '' && $images && $images->problem($main) === null) {
+            unset($photos[$images->hash($main)]);
+        }
+        $stored = $existing ? $existing->images->pluck('hash')->all() : [];
+        if (! $valid || $photos === [] || array_keys($photos) === $stored) {
+            return $unchanged;
+        }
+
+        return ['names' => array_values($photos), 'new' => array_values(array_diff_key($photos, array_flip($stored)))];
     }
 
     /**
@@ -456,6 +535,10 @@ class CatalogImporter
             if ($value('gia_nhap') !== '' && ($cost === null || $cost > 1_000_000_000)) {
                 $problems[] = 'Giá nhập “'.$value('gia_nhap').'” không hợp lệ. Ghi số đồng hoặc để trống.';
             }
+            $list = $value('gia_goc') === '' ? null : $this->number($value('gia_goc'), true);
+            if ($value('gia_goc') !== '' && ($list === null || $list > 1_000_000_000 || ($price !== null && $list <= $price))) {
+                $problems[] = 'Giá gốc “'.$value('gia_goc').'” phải là số đồng cao hơn giá bán, hoặc để trống.';
+            }
             $stock = $this->number($value('ton_kho'), false);
             if ($stock === null || $stock > 1_000_000) {
                 $problems[] = 'Tồn kho “'.$value('ton_kho').'” phải là số nguyên từ 0.';
@@ -472,6 +555,7 @@ class CatalogImporter
                 $limit = match ($field) {
                     'mo_ta' => 20000,
                     'hang', 'danh_muc' => 120,
+                    'anh_phu' => 3000,
                     default => 200,
                 };
                 if (mb_strlen($value($field)) > $limit) {
@@ -497,7 +581,7 @@ class CatalogImporter
                     }
                 }
             }
-            $groups[$slug]['variants'][] = ['line' => $line, 'sku' => $sku, 'name' => $variantName, 'price' => (int) $price, 'cost' => $cost === null ? null : (int) $cost, 'stock' => (int) $stock, 'is_active' => (bool) $active];
+            $groups[$slug]['variants'][] = ['line' => $line, 'sku' => $sku, 'name' => $variantName, 'price' => (int) $price, 'list' => $list, 'cost' => $cost === null ? null : (int) $cost, 'stock' => (int) $stock, 'is_active' => (bool) $active];
         }
 
         return $groups;

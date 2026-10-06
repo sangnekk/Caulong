@@ -11,7 +11,54 @@ type Settings = {
     contact_email: string;
     contact_address: string;
     contact_chat_url: string;
+    segment_vip_spend: number;
+    segment_inactive_days: number;
+    segment_lost_days: number;
+    segment_new_days: number;
+    segment_potential_events: number;
 };
+
+/** The customer groups' thresholds, in the order the form shows them. */
+const segmentRules: {
+    key: keyof Settings;
+    label: string;
+    help: (value: number) => string;
+    step?: number;
+}[] = [
+    {
+        key: 'segment_vip_spend',
+        label: 'Khách VIP: đã thu từ (₫)',
+        help: (value) =>
+            'Khách có tổng tiền đã thu từ ' + money(value) + ' là VIP.',
+        step: 100000,
+    },
+    {
+        key: 'segment_inactive_days',
+        label: 'Không hoạt động: số ngày không mua',
+        help: (value) =>
+            'Khách đã mua mà ' +
+            value +
+            ' ngày chưa đặt đơn mới (trừ khách VIP).',
+    },
+    {
+        key: 'segment_lost_days',
+        label: 'Đã mất: số ngày không có dấu hiệu gì',
+        help: (value) =>
+            'Không đơn, không ghé cửa hàng trong ' + value + ' ngày.',
+    },
+    {
+        key: 'segment_new_days',
+        label: 'Khách mới: số ngày sau khi đăng ký',
+        help: (value) =>
+            'Tài khoản chưa mua, đăng ký trong ' + value + ' ngày gần đây.',
+    },
+    {
+        key: 'segment_potential_events',
+        label: 'Tiềm năng: số lượt quan tâm trong 30 ngày',
+        help: (value) =>
+            'Chưa mua nhưng đã xem, lưu hoặc thêm giỏ từ ' + value + ' lượt.',
+    },
+];
 
 /** What a customer pays for delivery at a given cart value, under the settings being edited. */
 const feeFor = (subtotal: number, settings: Settings) =>
@@ -46,7 +93,7 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
             <Head title="Cài đặt cửa hàng" />
             <PageHeader
                 title="Cài đặt cửa hàng"
-                description="Phí giao hàng và thông tin liên hệ khách nhìn thấy. Lưu xong là áp dụng ngay cho giỏ hàng và đơn mới; đơn đã đặt giữ nguyên số tiền cũ."
+                description="Phí giao hàng, thông tin liên hệ khách nhìn thấy và cách xếp nhóm khách hàng. Lưu xong là áp dụng ngay cho giỏ hàng và đơn mới; đơn đã đặt giữ nguyên số tiền cũ."
             />
             <Errors errors={form.errors} />
             <form onSubmit={submit} noValidate>
@@ -232,6 +279,69 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
                                 aria-invalid={!!form.errors.contact_chat_url}
                             />
                         </Field>
+                    </div>
+                </section>
+
+                <section
+                    className="admin-form-section"
+                    aria-labelledby="segments-title"
+                >
+                    <h2 id="segments-title">Nhóm khách hàng</h2>
+                    <p className="admin-lead">
+                        Mỗi tài khoản khách được xếp vào một nhóm theo đơn hàng
+                        và hoạt động của họ: Mới, Tiềm năng, Đang mua, VIP,
+                        Không hoạt động, Đã mất. Nhóm được xếp lại mỗi ngày, mỗi
+                        khi khách đặt hoặc trả tiền đơn, và ngay sau khi bạn đổi
+                        các ngưỡng dưới đây. Xem theo nhóm ở{' '}
+                        <Link href="/admin/customers">Khách hàng</Link>; tặng mã
+                        cho một nhóm ở{' '}
+                        <Link href="/admin/coupons">Mã giảm giá</Link>.
+                    </p>
+                    <div className="admin-form-grid">
+                        {segmentRules.map(({ key, label, help, step }) => (
+                            <Field
+                                key={key}
+                                name={key}
+                                label={label}
+                                error={
+                                    (
+                                        form.errors as Record<
+                                            string,
+                                            string | undefined
+                                        >
+                                    )[key]
+                                }
+                            >
+                                <input
+                                    id={key}
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={1}
+                                    step={step ?? 1}
+                                    required
+                                    value={data[key]}
+                                    onChange={(e) =>
+                                        form.setData(
+                                            key,
+                                            e.target.value === ''
+                                                ? 0
+                                                : Math.max(
+                                                      0,
+                                                      Math.floor(
+                                                          Number(
+                                                              e.target.value,
+                                                          ),
+                                                      ),
+                                                  ),
+                                        )
+                                    }
+                                    aria-describedby={key + '-help'}
+                                />
+                                <small id={key + '-help'}>
+                                    {help(Number(data[key]))}
+                                </small>
+                            </Field>
+                        ))}
                     </div>
                 </section>
 

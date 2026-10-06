@@ -11,12 +11,21 @@ use Illuminate\Support\Facades\Schema;
  */
 class ShopSettings
 {
+    /** The thresholds of the customer groups, as keys of config('shop.segments'). */
+    public const SEGMENT_RULES = ['vip_spend', 'inactive_days', 'lost_days', 'new_days', 'potential_events'];
+
     /** @var array<string, string>|null */
     private ?array $saved = null;
 
-    /** @return array{shipping_fee: int, free_shipping_threshold: int, hotline: string, contact_email: string, contact_address: string, contact_chat_url: string} */
+    /**
+     * Everything the settings page edits. The group thresholds are saved as "segment_<rule>".
+     *
+     * @return array{shipping_fee: int, free_shipping_threshold: int, hotline: string, contact_email: string, contact_address: string, contact_chat_url: string, segment_vip_spend: int, segment_inactive_days: int, segment_lost_days: int, segment_new_days: int, segment_potential_events: int}
+     */
     public function all(): array
     {
+        $segments = $this->segments();
+
         return [
             'shipping_fee' => $this->shippingFee(),
             'free_shipping_threshold' => $this->freeShippingThreshold(),
@@ -24,6 +33,29 @@ class ShopSettings
             'contact_email' => $this->string('contact_email'),
             'contact_address' => $this->string('contact_address'),
             'contact_chat_url' => $this->string('contact_chat_url'),
+            'segment_vip_spend' => $segments['vip_spend'],
+            'segment_inactive_days' => $segments['inactive_days'],
+            'segment_lost_days' => $segments['lost_days'],
+            'segment_new_days' => $segments['new_days'],
+            'segment_potential_events' => $segments['potential_events'],
+        ];
+    }
+
+    /**
+     * Where one customer group ends and the next begins (App\Services\CustomerSegmentation).
+     *
+     * @return array{vip_spend: int, inactive_days: int, lost_days: int, new_days: int, potential_events: int}
+     */
+    public function segments(): array
+    {
+        $rule = fn (string $key): int => (int) ($this->saved()['segment_'.$key] ?? config('shop.segments.'.$key));
+
+        return [
+            'vip_spend' => $rule('vip_spend'),
+            'inactive_days' => $rule('inactive_days'),
+            'lost_days' => $rule('lost_days'),
+            'new_days' => $rule('new_days'),
+            'potential_events' => $rule('potential_events'),
         ];
     }
 
@@ -37,7 +69,7 @@ class ShopSettings
         return (int) ($this->saved()['free_shipping_threshold'] ?? config('shop.free_shipping_threshold'));
     }
 
-    /** @param  array{shipping_fee: int, free_shipping_threshold: int, hotline: ?string, contact_email: ?string, contact_address: ?string, contact_chat_url: ?string}  $values */
+    /** @param  array<string, int|string|null>  $values  by the keys of all() */
     public function save(array $values): void
     {
         foreach ($values as $key => $value) {

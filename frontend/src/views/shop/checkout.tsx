@@ -1,7 +1,9 @@
 'use client';
 
 import { Head, Link, useForm, usePage } from '@/lib/page';
+import { useEffect } from 'react';
 import { DemoBadge, FormErrors, OrderTotals } from '@/layouts/shop-layout';
+import { report } from '@/lib/analytics';
 import { vnd, type Cart } from '@/types/commerce';
 
 type Props = {
@@ -41,6 +43,10 @@ export default function Checkout({
         (item) => item.is_available === false || item.stock < item.quantity,
     );
     const cod = paymentMethods.find((method) => method.id === 'cod');
+    const hasItems = cart.items.length > 0;
+    useEffect(() => {
+        if (hasItems) report({ name: 'checkout_started' });
+    }, [hasItems]);
     const fieldErrors = form.errors as Record<string, string | undefined>;
     return (
         <>
@@ -69,6 +75,8 @@ export default function Checkout({
             ) : (
                 <form
                     className="store-two-column"
+                    // Name, phone and address: masked in Clarity recordings.
+                    data-clarity-mask="true"
                     onSubmit={(event) => {
                         event.preventDefault();
                         form.post('/checkout', { preserveScroll: true });
@@ -324,7 +332,19 @@ export default function Checkout({
                                 </li>
                             ))}
                         </ul>
-                        <OrderTotals totals={cart} hint />
+                        <OrderTotals
+                            totals={cart}
+                            discount={cart.discount}
+                            couponCode={cart.coupon?.code}
+                            hint
+                        />
+                        {cart.coupon?.error && (
+                            <p className="store-hint" role="status">
+                                Mã {cart.coupon.code} không được tính cho đơn
+                                này: {cart.coupon.error}{' '}
+                                <Link href="/cart">Đổi mã ở giỏ hàng</Link>
+                            </p>
+                        )}
                         {cart.items.some((item) => item.is_demo) && (
                             <p className="store-notice">
                                 Đây sẽ là đơn mẫu vì có sản phẩm mẫu; không phải

@@ -327,9 +327,73 @@ class CatalogImportTest extends TestCase
         $import($colours, ['--drop-missing' => true])->expectsOutputToContain('Đã xóa 0 SKU không còn trong file, ẩn 0.')->assertSuccessful();
     }
 
-    private function png(): string
+    public function test_list_price_and_gallery_columns_are_imported_and_reimported(): void
+    {
+        $admin = $this->admin();
+        $header = self::HEADER.';Giá gốc;Ảnh phụ';
+        $photos = ['tc300.png' => $this->png(), 'tc300-2.png' => $this->png(60), 'tc300-3.png' => $this->png(120), 'tc300-4.png' => $this->png(180)];
+        $row = fn (string $price, string $list, string $gallery) => 'Vợt Tia Chớp 300;;;Mô tả;tấn công;;;tc300.png;;TC300-4U;'.$price.';3;'.$list.';'.$gallery;
+
+        // The main photo named again among the others is not shown twice.
+        [, $plan, $location] = $this->preview($admin, $this->csv([$row('1290000', '1.590.000', 'tc300.png | TC300-2.png|tc300-3.png')], $header), [], $this->zip($photos));
+        $this->assertSame([], $plan['errors']);
+        $this->assertSame(3, $plan['summary']['images']);
+        $this->assertSame(['TC300-2.png', 'tc300-3.png'], $plan['products'][0]['gallery']);
+        $this->actingAs($admin)->post($location, ['fingerprint' => $plan['fingerprint']])->assertRedirect('/admin/products');
+        $racket = Product::with('images', 'variants')->where('slug', 'vot-tia-chop-300')->firstOrFail();
+        $this->assertSame(1590000, $racket->variants[0]->compare_at_price);
+        $this->assertSame([1, 2], $racket->images->pluck('position')->all());
+        $this->assertSame([hash('sha256', $photos['tc300-2.png']), hash('sha256', $photos['tc300-3.png'])], $racket->images->pluck('hash')->all());
+        [$second, $third] = $racket->images->pluck('path')->all();
+        Storage::disk('public')->assertExists([$second, $third]);
+        $this->assertCount(3, $racket->gallery_urls);
+
+        // The same file again copies nothing; a blank list price keeps the stored one.
+        [, $plan] = $this->preview($admin, $this->csv([$row('1290000', '', 'tc300-2.png|tc300-3.png')], $header), [], $this->zip($photos));
+        $this->assertSame([0, 'unchanged', 'unchanged', []], [$plan['summary']['images'], $plan['products'][0]['action'], $plan['products'][0]['variants'][0]['action'], $plan['products'][0]['gallery']]);
+
+        // A different gallery replaces the old one: kept photos keep their file, dropped ones go.
+        [, $plan, $location] = $this->preview($admin, $this->csv([$row('1290000', '1490000', 'tc300-3.png|tc300-4.png')], $header), [], $this->zip($photos));
+        $this->assertSame([1, 'update', 'update'], [$plan['summary']['images'], $plan['products'][0]['action'], $plan['products'][0]['variants'][0]['action']]);
+        $this->actingAs($admin)->post($location, ['fingerprint' => $plan['fingerprint']])->assertRedirect('/admin/products');
+        $racket->refresh()->load('images', 'variants');
+        $this->assertSame(1490000, $racket->variants[0]->compare_at_price);
+        $this->assertSame([$third, 1], [$racket->images[0]->path, $racket->images[0]->position]);
+        $this->assertSame(hash('sha256', $photos['tc300-4.png']), $racket->images[1]->hash);
+        Storage::disk('public')->assertMissing($second);
+        Storage::disk('public')->assertExists([$third, $racket->images[1]->path]);
+
+        // Without the two columns nothing about them changes.
+        [, $plan] = $this->preview($admin, $this->csv(['Vợt Tia Chớp 300;;;;;;;;;TC300-4U;1290000;3']));
+        $this->assertSame(['unchanged', 'unchanged'], [$plan['products'][0]['action'], $plan['products'][0]['variants'][0]['action']]);
+    }
+
+    public function test_list_price_and_gallery_problems_are_reported_by_line(): void
+    {
+        $admin = $this->admin();
+        $header = self::HEADER.';Giá gốc;Ảnh phụ';
+        [, $plan] = $this->preview($admin, $this->csv([
+            'Vợt Một;;;Mô tả;tấn công;;;;;M-1;1290000;3;1290000;',
+            'Vợt Hai;;;Mô tả;tấn công;;;;;H-1;1290000;3;abc;',
+            'Vợt Ba;;;Mô tả;tấn công;;;;;B-1;1290000;3;;co.png|thieu.png',
+            'Vợt Bốn;;;Mô tả;tấn công;;;;;BON-1;1290000;3;;'.implode('|', array_map(fn ($number) => 'a'.$number.'.png', range(1, 13))),
+        ], $header), [], $this->zip(['co.png' => $this->png()]));
+        $this->assertSame([
+            [2, 'Giá gốc “1290000” phải là số đồng cao hơn giá bán, hoặc để trống.'],
+            [3, 'Giá gốc “abc” phải là số đồng cao hơn giá bán, hoặc để trống.'],
+            [4, 'Không thấy ảnh “thieu.png” trong bộ ảnh.'],
+            [5, 'Cột anh_phu có quá 12 ảnh.'],
+        ], collect($plan['errors'])->map(fn ($error) => [$error['line'], $error['message']])->all());
+
+        // Photos named without a ZIP to find them in.
+        [, $plan] = $this->preview($admin, $this->csv(['Vợt Ba;;;Mô tả;tấn công;;;;;B-1;1290000;3;;co.png'], $header));
+        $this->assertSame(['Dòng có ảnh “co.png” nhưng chưa kèm tệp ZIP ảnh.'], collect($plan['errors'])->pluck('message')->all());
+    }
+
+    private function png(int $shade = 0): string
     {
         $image = imagecreatetruecolor(4, 4);
+        imagefill($image, 0, 0, (int) imagecolorallocate($image, $shade, $shade, $shade));
         ob_start();
         imagepng($image);
 

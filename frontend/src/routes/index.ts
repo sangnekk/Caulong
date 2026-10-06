@@ -361,7 +361,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     dashboard.form = dashboardForm
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
 export const account = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -376,7 +376,7 @@ account.definition = {
 
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
 account.url = (options?: RouteQueryOptions) => {
@@ -385,7 +385,7 @@ account.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
 account.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -394,7 +394,7 @@ account.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
 account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -404,7 +404,7 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
     const accountForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -414,7 +414,7 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
         accountForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -423,7 +423,7 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:17
+ * @see app/Http/Controllers/AccountController.php:20
  * @route '/account'
  */
         accountForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -437,3 +437,81 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
     
     account.form = accountForm
+/**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+export const recommendations = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: recommendations.url(options),
+    method: 'get',
+})
+
+recommendations.definition = {
+    methods: ["get","head"],
+    url: '/recommendations',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+recommendations.url = (options?: RouteQueryOptions) => {
+    return recommendations.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+recommendations.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: recommendations.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+recommendations.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: recommendations.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+    const recommendationsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: recommendations.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+        recommendationsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: recommendations.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\RecommendationController::__invoke
+ * @see app/Http/Controllers/RecommendationController.php:21
+ * @route '/recommendations'
+ */
+        recommendationsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: recommendations.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    recommendations.form = recommendationsForm

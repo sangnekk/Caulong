@@ -2,12 +2,23 @@
 
 import { Head, Link, useForm, usePage } from '@/lib/page';
 import { Minus, Phone, Plus } from 'lucide-react';
-import { DemoBadge, FormErrors, ProductImage } from '@/layouts/shop-layout';
+import { useEffect } from 'react';
+import ProductGallery from '@/components/shop-product-gallery';
+import { ProductStrip } from '@/components/shop-product-card';
+import Recommendations from '@/components/shop-recommendations';
+import Reviews, { Stars } from '@/components/shop-reviews';
+import WishlistButton from '@/components/shop-wishlist-button';
+import { mark, report } from '@/lib/analytics';
+import { DemoBadge, FormErrors } from '@/layouts/shop-layout';
 import {
+    discount,
     playStyles,
     skillLevels,
     vnd,
     type Product as ProductData,
+    type ProductCard,
+    type ProductReviews,
+    type ReviewViewer,
     type ShopSharedProps,
 } from '@/types/commerce';
 
@@ -19,7 +30,30 @@ const specLabels = {
     max_tension: 'Mức căng tối đa',
 };
 
-export default function Product({ product }: { product: ProductData }) {
+/** At or below this many left, the page says how many. */
+const LOW_STOCK = 5;
+
+type Props = {
+    product: ProductData;
+    /** Units in real orders. */
+    sold: number;
+    boughtTogether: ProductCard[];
+    related: ProductCard[];
+    similar: ProductCard[];
+    reviews: ProductReviews;
+    /** What the signed-in customer saved and may write here; null for a guest. */
+    viewer: { wishlisted: boolean; review: NonNullable<ReviewViewer> } | null;
+};
+
+export default function Product({
+    product,
+    sold,
+    boughtTogether,
+    related,
+    similar,
+    reviews,
+    viewer,
+}: Props) {
     const variants = product.variants.filter((variant) => variant.is_active);
     const first = variants.find((variant) => variant.stock > 0) ?? variants[0];
     const form = useForm({ variant_id: first?.id ?? 0, quantity: 1 });
@@ -32,6 +66,11 @@ export default function Product({ product }: { product: ProductData }) {
     const quantity = form.data.quantity;
     const setQuantity = (value: number) =>
         form.setData('quantity', Math.min(Math.max(1, value), limit));
+    // Reported from here, not counted in Laravel: Next.js also asks for this page when it
+    // prefetches a link, and a prefetch is not a visit.
+    useEffect(() => {
+        report({ name: 'product_view', product: product.id });
+    }, [product.id]);
     return (
         <>
             <Head title={product.name} />
@@ -41,10 +80,9 @@ export default function Product({ product }: { product: ProductData }) {
                 <span>{product.name}</span>
             </nav>
             <div className="store-product-detail">
-                <ProductImage
-                    src={product.image_url}
+                <ProductGallery
+                    images={product.images ?? [product.image_url]}
                     name={product.name}
-                    eager
                 />
                 <section className="store-product-info">
                     <div className="store-inline">
@@ -58,11 +96,66 @@ export default function Product({ product }: { product: ProductData }) {
                         {playStyles[product.play_style]} ·{' '}
                         {skillLevels[product.skill_level]}
                     </p>
-                    <p className="store-detail-price">
-                        {selected
-                            ? vnd(selected.price)
-                            : 'Chưa có phiên bản bán'}
-                    </p>
+                    {reviews.average !== null && (
+                        <p className="store-detail-rating">
+                            <Stars rating={reviews.average} />
+                            <a href="#danh-gia">
+                                {reviews.average.toLocaleString('vi-VN', {
+                                    minimumFractionDigits: 1,
+                                })}{' '}
+                                · {reviews.count} đánh giá
+                            </a>
+                        </p>
+                    )}
+                    {selected ? (
+                        <>
+                            <p className="store-detail-price">
+                                <strong>{vnd(selected.price)}</strong>
+                                {selected.compare_at_price !== null && (
+                                    <>
+                                        <del>
+                                            <span className="store-sr-only">
+                                                Giá niêm yết{' '}
+                                            </span>
+                                            {vnd(selected.compare_at_price)}
+                                        </del>
+                                        <span className="store-discount">
+                                            {discount(
+                                                selected.price,
+                                                selected.compare_at_price,
+                                            )}
+                                        </span>
+                                    </>
+                                )}
+                            </p>
+                            <p className="store-detail-status">
+                                <span
+                                    className={
+                                        selected.stock > LOW_STOCK
+                                            ? 'store-stock'
+                                            : selected.stock > 0
+                                              ? 'store-low'
+                                              : 'store-out'
+                                    }
+                                >
+                                    {selected.stock > LOW_STOCK
+                                        ? 'Còn hàng'
+                                        : selected.stock > 0
+                                          ? 'Sắp hết, còn ' + selected.stock
+                                          : 'Hết hàng'}
+                                </span>
+                                {sold > 0 && (
+                                    <span>
+                                        Đã bán {sold.toLocaleString('vi-VN')}
+                                    </span>
+                                )}
+                            </p>
+                        </>
+                    ) : (
+                        <p className="store-detail-price">
+                            <strong>Chưa có phiên bản bán</strong>
+                        </p>
+                    )}
                     {product.is_demo && (
                         <p className="store-notice">
                             Sản phẩm mẫu để thử cửa hàng. Tên, giá và tồn kho
@@ -73,7 +166,10 @@ export default function Product({ product }: { product: ProductData }) {
                     <form
                         onSubmit={(event) => {
                             event.preventDefault();
-                            form.post('/cart/items', { preserveScroll: true });
+                            form.post('/cart/items', {
+                                preserveScroll: true,
+                                onSuccess: () => mark('add_to_cart'),
+                            });
                         }}
                     >
                         <FormErrors errors={form.errors} />
@@ -247,9 +343,8 @@ export default function Product({ product }: { product: ProductData }) {
                         )}
                         {limit > 0 && (
                             <p className="store-hint">
-                                Còn {selected?.stock} sản phẩm. Tối đa {limit}{' '}
-                                sản phẩm mỗi lần thêm; giỏ hàng được kiểm tra
-                                lại.
+                                Tối đa {limit} sản phẩm mỗi lần thêm; giỏ hàng
+                                được kiểm tra lại khi đặt.
                             </p>
                         )}
                         {form.wasSuccessful && (
@@ -259,6 +354,10 @@ export default function Product({ product }: { product: ProductData }) {
                             </p>
                         )}
                     </form>
+                    <WishlistButton
+                        slug={product.slug}
+                        saved={viewer ? viewer.wishlisted : null}
+                    />
                 </section>
             </div>
             <div className="store-product-description">
@@ -284,6 +383,37 @@ export default function Product({ product }: { product: ProductData }) {
                     </dl>
                 </section>
             </div>
+            <Reviews
+                slug={product.slug}
+                reviews={reviews}
+                viewer={viewer ? viewer.review : null}
+            />
+            <ProductStrip
+                id="store-bought-together"
+                title="Thường mua cùng"
+                note="Khách đặt cây vợt này cũng đã đặt những sản phẩm sau."
+                cards={boughtTogether}
+            />
+            <ProductStrip
+                id="store-similar"
+                title="Vợt tương tự"
+                note={
+                    'Cùng lối chơi ' +
+                    playStyles[product.play_style].toLowerCase() +
+                    (product.brand ? ', từ hãng khác.' : '.')
+                }
+                cards={similar}
+            />
+            <ProductStrip
+                id="store-related"
+                title={
+                    product.brand
+                        ? 'Cùng hãng ' + product.brand.name
+                        : 'Sản phẩm liên quan'
+                }
+                cards={related}
+            />
+            <Recommendations productId={product.id} />
         </>
     );
 }

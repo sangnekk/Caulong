@@ -32,6 +32,9 @@ class ImportImages
     /** @var array<string, true> names that appear more than once */
     private array $ambiguous = [];
 
+    /** @var array<string, string> lowercase file name => sha256 of its bytes */
+    private array $hashes = [];
+
     private ?ZipArchive $zip = null;
 
     private function __construct(private readonly int $limit) {}
@@ -117,6 +120,12 @@ class ImportImages
         }
 
         return ['bytes' => $bytes, 'extension' => self::TYPES[$type]];
+    }
+
+    /** sha256 of a valid photo, read once: how an import knows a photo it already stored. */
+    public function hash(string $name): string
+    {
+        return $this->hashes[$this->key($name)] ??= hash('sha256', $this->read($name)['bytes']);
     }
 
     private function add(string $path, string $source): void

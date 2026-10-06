@@ -3,11 +3,13 @@
 import { Head, Link, router, usePage } from '@/lib/page';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import type { FormEvent, MouseEvent } from 'react';
-import { DemoBadge, FormErrors, ProductImage } from '@/layouts/shop-layout';
+import type { FormEvent } from 'react';
+import { ProductCard, toCard } from '@/components/shop-product-card';
+import Recommendations from '@/components/shop-recommendations';
+import { FormErrors } from '@/layouts/shop-layout';
+import { report } from '@/lib/analytics';
 import {
     playStyles,
-    vnd,
     type Pagination,
     type Product,
     type ProductFilters,
@@ -35,17 +37,6 @@ const sorts: Record<string, string> = {
     price_desc: 'Giá cao đến thấp',
     newest: 'Mới nhất',
 };
-
-/** Name only the clicked card's photo, so it alone morphs into the product page photo. */
-function heroFrom(event: MouseEvent<Element>) {
-    document
-        .querySelectorAll<HTMLElement>('.store-product-card .store-image')
-        .forEach((figure) => (figure.style.viewTransitionName = ''));
-    const figure = event.currentTarget
-        .closest('.store-product-card')
-        ?.querySelector<HTMLElement>('.store-image');
-    if (figure) figure.style.viewTransitionName = 'product-hero';
-}
 
 /** Drop empty values and the defaults so URLs stay short and shareable. */
 const cleaned = (filters: ProductFilters) =>
@@ -90,6 +81,18 @@ export default function Products({
         );
     };
     useEffect(() => () => window.clearTimeout(typing.current), []);
+    // A search is what the visitor ended up with on screen: its first page, once per term.
+    const searched = products.current_page === 1 ? (filters.q ?? '') : '';
+    const found = products.total;
+    useEffect(() => {
+        if (!searched) return;
+        // Typing passes through shorter terms: only the one the visitor stops on counts.
+        const timer = window.setTimeout(
+            () => report({ name: 'search', q: searched, results: found }),
+            1500,
+        );
+        return () => window.clearTimeout(timer);
+    }, [searched, found]);
     const submit = (event: FormEvent) => {
         event.preventDefault();
         visit({ q: q.trim() });
@@ -279,67 +282,13 @@ export default function Products({
 
             {products.data.length ? (
                 <div className="store-product-grid" data-loading={loading}>
-                    {products.data.map((product) => {
-                        const variants = product.variants.filter(
-                            (variant) => variant.is_active,
-                        );
-                        const price = variants.length
-                            ? Math.min(
-                                  ...variants.map((variant) => variant.price),
-                              )
-                            : null;
-                        const available = variants.some(
-                            (variant) => variant.stock > 0,
-                        );
-                        return (
-                            <article
-                                className="store-product-card"
-                                key={product.id}
-                                data-available={available}
-                            >
-                                <ProductImage
-                                    src={product.image_url}
-                                    name={product.name}
-                                />
-                                <div className="store-product-meta">
-                                    <span>
-                                        {product.brand?.name ??
-                                            product.category?.name ??
-                                            'Vợt cầu lông'}
-                                    </span>
-                                    {product.is_demo && <DemoBadge />}
-                                </div>
-                                <h2>
-                                    {/* The whole card is this one link (see .store-card-link). */}
-                                    <Link
-                                        href={'/products/' + product.slug}
-                                        className="store-card-link"
-                                        prefetch="hover"
-                                        onClick={heroFrom}
-                                    >
-                                        {product.name}
-                                    </Link>
-                                </h2>
-                                <p>{playStyles[product.play_style]}</p>
-                                <div className="store-product-price">
-                                    <strong>
-                                        {price === null
-                                            ? 'Chưa có giá'
-                                            : 'Từ ' + vnd(price)}
-                                    </strong>
-                                    <span
-                                        className={
-                                            available
-                                                ? 'store-stock'
-                                                : 'store-out'
-                                        }
-                                    >
-                                        {available ? 'Còn hàng' : 'Hết hàng'}
-                                    </span>
-                                </div>
-                            </article>
-                        );
-                    })}
+                    {products.data.map((product) => (
+                        <ProductCard
+                            key={product.id}
+                            card={toCard(product)}
+                            hero
+                        />
+                    ))}
                 </div>
             ) : (
                 <section className="store-empty">
@@ -394,6 +343,7 @@ export default function Products({
                     })}
                 </nav>
             )}
+            <Recommendations suggest />
         </>
     );
 }

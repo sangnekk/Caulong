@@ -23,6 +23,37 @@ function xsrfToken(): string | null {
     return match ? decodeURIComponent(match[1]) : null;
 }
 
+let renewing: Promise<void> | null = null;
+
+/**
+ * GET /session: Laravel answers with the session cookie, new or renewed. Calls made while
+ * one is on its way share it.
+ */
+export function renewSession(): Promise<void> {
+    renewing ??= fetch(API_PREFIX + '/session', {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+    })
+        .then(
+            () => {},
+            () => {},
+        )
+        .finally(() => {
+            renewing = null;
+        });
+    return renewing;
+}
+
+/**
+ * Resolves once the browser holds a session (the XSRF cookie comes and goes with it). A
+ * first visit has none, and requests sent side by side would each be given a session of
+ * their own, the last answer winning: what the others wrote there (a viewed product, the
+ * cart) would be left in a session nobody has. So the first request waits for the session.
+ */
+function sessionReady(): Promise<void> {
+    return xsrfToken() === null ? renewSession() : Promise.resolve();
+}
+
 function isFile(value: unknown): value is Blob {
     return typeof Blob !== 'undefined' && value instanceof Blob;
 }
@@ -133,9 +164,6 @@ export function send(
             : { Accept: 'application/json' }),
         ...headers,
     };
-    const token = xsrfToken();
-    if (token) outgoing['X-XSRF-TOKEN'] = token;
-
     if (verb === 'GET') {
         target = mergeQuery(url, data);
     } else if (data instanceof FormData || forceFormData || hasFiles(data)) {
@@ -154,11 +182,16 @@ export function send(
         body = JSON.stringify(data);
     }
 
-    return fetch(apiUrl(target), {
-        method: verb,
-        headers: outgoing,
-        body,
-        signal,
-        credentials: 'same-origin',
+    const address = apiUrl(target);
+    return sessionReady().then(() => {
+        const token = xsrfToken();
+        if (token) outgoing['X-XSRF-TOKEN'] = token;
+        return fetch(address, {
+            method: verb,
+            headers: outgoing,
+            body,
+            signal,
+            credentials: 'same-origin',
+        });
     });
 }

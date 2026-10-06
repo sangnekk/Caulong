@@ -57,6 +57,8 @@ const waitFor = (expression) =>
     );
 const held = [];
 let resolvePaused;
+// While set, every model request fails at once instead of being held.
+let failing = false;
 const pausedRequest = () =>
     held.length
         ? Promise.resolve()
@@ -75,6 +77,13 @@ const originalHandler = ws.onmessage;
 ws.onmessage = (event) => {
     const m = JSON.parse(event.data);
     if (m.method === 'Fetch.requestPaused') {
+        if (failing) {
+            void command('Fetch.failRequest', {
+                requestId: m.params.requestId,
+                errorReason: 'Failed',
+            }).catch(() => {});
+            return;
+        }
         held.push(m.params.requestId);
         resolvePaused?.();
     } else originalHandler(event);
@@ -142,13 +151,18 @@ try {
     await command('Page.reload', { ignoreCache: true });
     await waitFor("document.querySelector('.rv-viewer[data-status=loading]')");
     await pausedRequest();
+    // The landing starts the download before the viewer's own code arrives. A viewer that
+    // arrives after that download failed asks for the model again, so every attempt fails
+    // until the error is on screen; failing only the first let the second one succeed.
+    failing = true;
     for (const requestId of held.splice(0))
         await command('Fetch.failRequest', {
             requestId,
             errorReason: 'Failed',
         });
-    await command('Fetch.disable');
     await waitFor("document.querySelector('.rv-viewer[data-status=error]')");
+    failing = false;
+    await command('Fetch.disable');
     assert.equal(
         await evaluate("!!document.querySelector('.rv-poster')"),
         true,

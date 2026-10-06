@@ -1,4 +1,4 @@
-import { API_PREFIX } from './http';
+import { renewSession } from './http';
 
 const EVERY_MS = 15 * 60 * 1000;
 const KEY = 'session-renewed-at';
@@ -18,8 +18,5 @@ export function keepSessionAlive(): void {
         // Storage is off (private mode): the cookie simply lasts its normal lifetime.
         return;
     }
-    void fetch(API_PREFIX + '/session', {
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-    }).catch(() => {});
+    void renewSession();
 }

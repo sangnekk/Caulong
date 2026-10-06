@@ -63,8 +63,10 @@ class CatalogTest extends TestCase
             ->where('product.image_url', '/models/hyper-core-poster.png')
             ->has('product.variants', 1)->where('product.variants.0', [
                 'id' => $variant->id, 'sku' => $variant->sku, 'name' => '4U / G5',
-                'price' => 500000, 'stock' => 0, 'is_active' => true,
-            ])->missing('product.image_path')->missing('product.is_active')->missing('product.created_at'));
+                'price' => 500000, 'compare_at_price' => null, 'stock' => 0, 'is_active' => true,
+            ])->where('product.images', ['/models/hyper-core-poster.png'])
+            ->where('sold', 0)->where('related', [])->where('similar', [])->where('boughtTogether', [])
+            ->missing('product.image_path')->missing('product.is_active')->missing('product.created_at'));
         $this->get('/products/'.$hidden->slug)->assertNotFound();
         $this->get('/products/missing')->assertNotFound();
     }

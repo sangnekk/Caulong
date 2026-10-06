@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use App\Models\User;
+use App\Services\CustomerEvents;
 use App\Services\ShopSettings;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -31,6 +35,13 @@ class AppServiceProvider extends ServiceProvider
         // "php artisan dev" runs the Next.js app in frontend/ (the root "npm run dev") by name.
         DevCommands::except('vite');
         DevCommands::node('dev', 'next');
+
+        // What a visitor did before signing in during this visit joins their account's history.
+        Event::listen(function (Login $event): void {
+            if ($event->user instanceof User) {
+                $this->app->make(CustomerEvents::class)->claim(request(), $event->user);
+            }
+        });
     }
 
     /**

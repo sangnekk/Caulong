@@ -6,8 +6,10 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 
 - **Trang giới thiệu:** vợt Hyper Core8000 bằng Three.js, sáu chương xoay và phóng theo cuộn, màn mở đầu “căng dây” chạy theo tiến độ tải mô hình thật, bản đọc tĩnh cho máy yếu hoặc khi tắt chuyển động.
 - **Cửa hàng:** danh sách vợt có lọc theo hãng, lối chơi, mức giá và hàng còn; trang sản phẩm theo phiên bản; giỏ hàng; đặt hàng COD không cần tài khoản; gợi ý chọn vợt theo ngân sách, lối chơi, trình độ (theo quy tắc, không dùng AI).
-- **Tài khoản:** khách xem đơn của mình, sửa hồ sơ, đổi mật khẩu; đăng nhập có xác minh email, xác thực hai lớp và passkey.
-- **Quản trị:** sản phẩm, tồn kho, đơn hàng, khách hàng, báo cáo doanh số và lãi gộp, cài đặt phí giao và liên hệ, xuất đơn ra CSV, trả lời chat hỗ trợ.
+- **Tài khoản:** khách xem đơn của mình, lưu sản phẩm yêu thích, viết đánh giá cho sản phẩm đã nhận, sửa hồ sơ, đổi mật khẩu; đăng nhập có xác minh email, xác thực hai lớp và passkey.
+- **Quản trị:** sản phẩm, tồn kho, đơn hàng, khách hàng (hồ sơ từng khách: số liệu, đơn, dòng hoạt động, sản phẩm, đánh giá), duyệt đánh giá, báo cáo doanh số và lãi gộp, cài đặt phí giao và liên hệ, xuất đơn ra CSV, trả lời chat hỗ trợ.
+- **Hành vi khách hàng:** cửa hàng tự ghi các sự kiện mua sắm (xem, tìm, thêm giỏ, đặt đơn…) vào database của mình; Microsoft Clarity là tùy chọn, chỉ chạy khi có project ID và khách đồng ý.
+- **Nhóm khách và mã giảm giá:** mỗi khách được xếp vào một nhóm (Mới, Tiềm năng, Đang mua, VIP, Không hoạt động, Đã mất) theo ngưỡng chủ shop đặt; mã giảm giá cho mọi khách, cho riêng một khách hoặc cho một nhóm, có hạn dùng, giới hạn lượt và điều kiện đơn.
 - **Nhập hàng:** từ CSV hoặc Excel kèm ZIP ảnh, có xem trước và khớp theo SKU; đồng bộ danh mục vợt từ shopvnb.com (đã được cho phép) bằng `scripts/vnb-catalog.mjs`.
 - **Chưa có:** thanh toán online, kết nối hãng vận chuyển.
 
@@ -75,6 +77,8 @@ Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (�
 | `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                      |
 | `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel |
 | `php artisan test --compact`          | Chạy test của Laravel                                                       |
+| `php artisan schedule:work`           | Chạy việc định kỳ: xếp lại nhóm khách hàng, xóa sự kiện cũ hơn 365 ngày     |
+| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)  |
 | `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                     |
 | `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                           |
 
@@ -136,6 +140,8 @@ Lệnh chép chỉ chạy khi database mới còn trống và không chép phiê
 - **Địa chỉ:** `APP_URL` và `FRONTEND_URL` là địa chỉ công khai của shop (app Next.js), vì đường dẫn ảnh và liên kết trong email dựng từ đó.
 - **Next.js:** `npm run build` rồi `npm run start`, với `LARAVEL_URL` trong `frontend/.env.local` trỏ tới Laravel. Laravel chỉ cần Next.js gọi tới được, không cần mở ra Internet.
 - **Proxy:** Laravel hiện chỉ tin header chuyển tiếp từ `127.0.0.1` (`bootstrap/app.php`). Nếu Next.js chạy ở máy khác, thêm địa chỉ máy đó.
+- **Việc định kỳ:** thêm cron chạy `php artisan schedule:run` mỗi phút (hoặc giữ `php artisan schedule:work` chạy).
+- **Clarity (tùy chọn):** đặt `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` trước khi build. Cần có trang chính sách quyền riêng tư nói rõ cửa hàng ghi lại gì trước khi bật.
 - Dùng HTTPS, và xác nhận chính sách giao, đổi, trả trước khi nhận đơn thật.
 
 ## Thư mục

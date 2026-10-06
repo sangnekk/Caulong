@@ -20,7 +20,8 @@ Admin → **Nhập hàng** (`/admin/imports`): tải file mẫu, điền hàng c
 - Khớp SKU không phân biệt hoa thường: nhập lại cùng file không tạo trùng; ô trống giữ giá trị cũ; sản phẩm không có trong file không bị đụng tới; không xóa gì.
 - Sản phẩm mới mặc định **ẩn** để kiểm tra, trừ khi chọn “Mở bán ngay”. Không ghi đè sản phẩm demo; SKU đang thuộc sản phẩm khác bị báo lỗi.
 - Tồn kho: nếu có đơn mới hoặc ai đó sửa sản phẩm sau lúc xem trước, lệnh nhập bị từ chối để không ghi đè số lượng mới hơn; xem trước lại rồi nhập. Nên nhập tồn kho lúc tạm ngưng nhận đơn, hoặc bỏ chọn “Cập nhật tồn kho”.
-- Ảnh: tên trong cột `anh` khớp tên tệp trong ZIP (bỏ qua thư mục); chỉ JPEG/PNG/WebP thật, tối đa 5 MB/ảnh, 500 ảnh/lần. Ảnh trùng lần nhập trước không chép lại. Giới hạn tải lên theo PHP (`upload_max_filesize`, `post_max_size`; máy local hiện 2 MB). Bộ ảnh lớn dùng lệnh:
+- Ảnh: tên trong cột `anh` (ảnh chính) khớp tên tệp trong ZIP (bỏ qua thư mục); chỉ JPEG/PNG/WebP thật, tối đa 5 MB/ảnh, 500 ảnh/lần. Ảnh trùng lần nhập trước không chép lại. Cột `anh_phu` ghi các ảnh khác của sản phẩm, cách nhau bằng dấu `|` (vd. `tc300-2.jpg | tc300-3.jpg`), tối đa 12 ảnh: có ghi thì bộ ảnh phụ đang lưu được thay bằng đúng danh sách này (ảnh đã có giữ nguyên tệp, ảnh bị bỏ thì xóa tệp), để trống thì giữ nguyên; ảnh trùng ảnh chính bị bỏ qua. Giới hạn tải lên theo PHP (`upload_max_filesize`, `post_max_size`; máy local hiện 2 MB). Bộ ảnh lớn dùng lệnh ở dưới.
+- Giá niêm yết: cột `gia_goc` (không bắt buộc) là giá gạch ngang cạnh giá bán của SKU đó. Phải cao hơn `gia`, nếu không dòng bị báo lỗi; để trống thì giữ giá niêm yết đang lưu. Cửa hàng chỉ hiện giá niêm yết khi nó cao hơn giá bán hiện tại, nên đổi giá bán lên bằng hoặc hơn giá niêm yết thì dấu giảm giá tự mất.
 
 ```sh
 php artisan shop:import-catalog hang.csv --images=thu-muc-anh --dry-run   # chỉ kiểm tra
@@ -37,7 +38,7 @@ Khi hàng thật đã sẵn sàng: nút **Ẩn sản phẩm demo** ở trang Nh�
 
 ## Dữ liệu vợt từ VNB (đã được VNB cho phép)
 
-`scripts/vnb-catalog.mjs` đọc danh mục vợt cầu lông theo từng hãng trên shopvnb.com (tên, mô tả, thông số, phiên bản, giá, ảnh chính) và ghi CSV đúng định dạng nhập hàng. Chạy lần lượt từng request, có nghỉ giữa các lần, không gọi `/ajax/` (robots.txt), lưu cache từng sản phẩm để chạy lại chỉ lấy phần mới (`--refresh` để đọc lại hết).
+`scripts/vnb-catalog.mjs` đọc danh mục vợt cầu lông theo từng hãng trên shopvnb.com (tên, mô tả, thông số, phiên bản, giá bán, giá niêm yết, ảnh chính và ảnh phụ) và ghi CSV đúng định dạng nhập hàng. Chạy lần lượt từng request, có nghỉ giữa các lần, không gọi `/ajax/` (robots.txt), lưu cache từng sản phẩm để chạy lại chỉ lấy phần mới (`--refresh` để đọc lại hết; `--upgrade` chỉ đọc lại các trang được lưu trước khi script biết lấy ảnh phụ và giá niêm yết).
 
 ```sh
 node scripts/vnb-catalog.mjs                      # → storage/app/private/vnb (không commit)
@@ -51,7 +52,8 @@ Script gồm ba phần: `scripts/vnb/html.mjs` đọc HTML thành cây (không d
 
 - Tồn kho luôn là 0 và sản phẩm mới ở trạng thái ẩn: VNB không công bố số lượng, shop tự nhập (file có cột `ton_kho` khớp SKU, hoặc sửa từng sản phẩm), rồi **Mở bán sản phẩm có tồn kho**.
 - Cập nhật giá sau này: chạy lại script rồi nhập với `--keep-stock` để không ghi đè số lượng shop đã nhập.
-- Cache mỗi sản phẩm (`products/*.json`) ghi đúng những gì trang nêu: tên, mã, hãng, tình trạng còn/hết hàng, giá bán và giá niêm yết, mọi ảnh trong gallery, mọi nhóm tùy chọn (phiên bản, màu kèm ảnh, giá từng lựa chọn), các size và size nào đang hết, bảng thông số, các dòng của bài mô tả. CSV hiện chỉ dùng một phần (importer nhận một ảnh và một nhóm phiên bản cho mỗi sản phẩm); phần còn lại để sẵn cho sau này.
+- Cache mỗi sản phẩm (`products/*.json`) ghi đúng những gì trang nêu: tên, mã, hãng, tình trạng còn/hết hàng, giá bán và giá niêm yết, mọi ảnh trong gallery, mọi nhóm tùy chọn (phiên bản, màu kèm ảnh, giá từng lựa chọn), các size và size nào đang hết, bảng thông số, các dòng của bài mô tả. CSV dùng một phần: một nhóm phiên bản cho mỗi sản phẩm, ảnh chính (`anh`), tối đa 8 ảnh phụ (`anh_phu`, tệp đặt tên `{đường-dẫn}_2.webp`, `_3`…; dấu gạch dưới không có trong địa chỉ nào của VNB nên không trùng sản phẩm khác) và giá niêm yết (`gia_goc`).
+- Giá niêm yết của VNB là của sản phẩm trang đang chọn sẵn, nên chỉ ghi cho đúng SKU đó (cùng giá với trang) và chỉ khi cao hơn giá bán. Các trang được đọc bằng bản script trước chưa có ảnh phụ và giá niêm yết trong cache: lần chạy thường không đọc lại chúng, chạy `node scripts/vnb-catalog.mjs --upgrade` một lần để lấy (đọc lại khoảng 2.400 trang và tải thêm vài nghìn ảnh, mất khoảng 2–3 giờ), rồi nhập lại với `--keep-stock`.
 - Trang gộp nhiều sản phẩm có các nhóm lựa chọn: **phiên bản** (có/không bảo hành, thường khác giá), **màu** và size. Giá của từng tổ hợp chỉ có qua `/ajax/` nên không đọc, vì vậy chỉ một nhóm thành SKU của shop: nhóm **màu**, tên ghép với phiên bản khi trang chỉ có một phiên bản (vd. “Hồng Tím - Có bảo hành”, giống cách VNB đặt tên). Riêng trang cho chọn giữa nhiều phiên bản thì phiên bản là SKU (chúng mang chênh lệch giá) và màu không được tách; script in số trang như vậy khi chạy xong. Lựa chọn trang ghi giá 0 thì bỏ. Size chỉ ghi trong thông số trọng lượng.
 - SKU: sản phẩm một phiên bản dùng mã VNB (vd. `vnb029165`). Trang gộp dùng `{mã trang}-{mã lựa chọn}` (vd. `vnb030143-7314`): mã trang và mã lựa chọn không đổi giữa các lần chạy. Bản script đầu tiên ghép SKU từ `id` trong form của trang, tức sản phẩm con trang đang chọn sẵn, mà VNB có thể đổi bất cứ lúc nào; các SKU đã tạo kiểu đó được ghi lại trong cache (`skus`) và giữ nguyên khi đọc lại trang, để SKU đã nhập vào shop vẫn khớp. Vì vậy **đừng xóa thư mục cache `products/`** nếu shop đã nhập hàng từ đó: mất cache thì các SKU kiểu cũ đổi sang kiểu mới và lần nhập sau phải dùng `--drop-missing` để bỏ bản cũ.
 - Bài mô tả được đọc thành từng dòng chữ như người xem thấy: thẻ trong dòng (in đậm, liên kết, `span`) không tách chữ, chú thích ảnh căn giữa và nút “Xem thêm” bị bỏ. Tiêu đề mục là các dòng đánh số (“1. Giới thiệu…”, “2. Thông số…”); thẻ tiêu đề HTML không dùng được vì nhiều trang đặt cả nội dung trong thẻ đó. Mô tả là mục 1; trang không đánh số thì lấy mọi dòng. Dòng “Thông số : giá trị” bổ sung cho bảng thông số, bảng được ưu tiên. Chữ có dấu viết bằng mã HTML (`C&acirc;n`) được ghép lại thành chữ thường.
@@ -71,7 +73,7 @@ Chỉ nhập hàng, giá, tồn kho và ảnh shop có quyền dùng. Không l�
 
 Sau khi đăng nhập: quản trị viên vào `/admin`, khách vào **Tài khoản của tôi** (`/account`) hoặc quay lại trang đang mở dở (ví dụ thanh toán); khách không bao giờ bị đưa tới trang quản trị.
 
-**Tài khoản của khách** (`/account`, giao diện cửa hàng): đơn hàng của tôi (trạng thái, sản phẩm, tổng tiền, xem chi tiết; chỉ đơn đặt khi đã đăng nhập), sửa họ tên/email (đổi email thì phải xác minh lại), đổi mật khẩu, đăng xuất. Header cửa hàng có nút Đăng nhập cho khách, menu tài khoản (tài khoản, đơn hàng, quản trị nếu là admin, đăng xuất) khi đã đăng nhập. Trang đơn chỉ ghi “Đặt hàng thành công” ngay sau khi đặt; mở lại từ tài khoản là “Đơn hàng XXXXXXXX”.
+**Tài khoản của khách** (`/account`, giao diện cửa hàng): đơn hàng của tôi (trạng thái, sản phẩm, tổng tiền, xem chi tiết; chỉ đơn đặt khi đã đăng nhập), mã giảm giá của tôi, sản phẩm yêu thích, sửa họ tên/email (đổi email thì phải xác minh lại), đổi mật khẩu, đăng xuất. Header cửa hàng có nút Đăng nhập cho khách, menu tài khoản (tài khoản, đơn hàng, quản trị nếu là admin, đăng xuất) khi đã đăng nhập. Trang đơn chỉ ghi “Đặt hàng thành công” ngay sau khi đặt; mở lại từ tài khoản là “Đơn hàng XXXXXXXX”.
 
 **Trang quản trị** (thanh bên, trên điện thoại là menu kéo ra; khối tài khoản và nút Đăng xuất ở cuối thanh bên): Tổng quan (việc cần xử lý kèm lối tắt, số liệu chỉ tính đơn/hàng thật, hàng sắp hết, đơn gần đây) · Đơn hàng (tab theo trạng thái có số đếm, tìm theo mã đơn/tên/số điện thoại, lọc đã thu/chưa thu; chi tiết có tiến trình, sao chép địa chỉ, gọi điện, đơn khác cùng số điện thoại) · Sản phẩm (tab đang bán/đang ẩn/mẫu, lọc tồn kho/hãng/lối chơi áp dụng ngay, tìm theo tên hoặc SKU, sắp xếp, ảnh nhỏ; “Hết hàng” chỉ báo đỏ với hàng đang bán; bấm vào giá hoặc tồn kho để **sửa nhanh** giá bán, giá nhập và tồn kho từng phiên bản ngay dưới dòng, có kiểm tra tồn kho vừa đổi do đơn mới) · Nhập hàng · Hãng & danh mục (số sản phẩm đang bán/tổng, thêm mới, đường dẫn tự gợi ý) · Khách hàng (tài khoản, số đơn, tiền COD đã thu, đơn gần nhất) · Báo cáo · Cài đặt. Sản phẩm có chọn nhiều dòng để mở bán, ẩn, đánh dấu/bỏ nổi bật cùng lúc (báo trước nếu mở bán hàng chưa có tồn kho); chọn cả trang rồi bấm “Chọn tất cả N sản phẩm khớp bộ lọc” để áp dụng cho mọi trang (hỏi xác nhận). Tổng quan có doanh số hôm nay/7 ngày, lãi gộp và tiền đã thu 7 ngày, việc “sản phẩm đang bán nhưng hết hàng”. Danh sách đơn ẩn đơn mẫu, bật “Hiện đơn mẫu” để xem. Đơn hàng có **Xuất CSV** theo bộ lọc đang xem (UTF-8 có BOM, mở thẳng bằng Excel; chỉ đơn thật). Ngôn ngữ mặc định `APP_LOCALE=vi` (thông báo lỗi, đăng nhập, đặt lại mật khẩu trong `lang/vi`); dự phòng `en` cho chuỗi của gói bên thứ ba.
 
@@ -84,6 +86,83 @@ Sau khi đăng nhập: quản trị viên vào `/admin`, khách vào **Tài kho�
 **Máy local** (`APP_ENV=local`, `app/Support/DemoData.php`): Tổng quan, Báo cáo, Đơn hàng và Khách hàng tính sẵn dữ liệu mẫu, có thông báo vàng và công tắc để chỉ xem số liệu thật (`?demo=0`). `shop:demo-sales` còn tạo khoảng 40 tài khoản khách mẫu (`khach-mau-NNN@khach-mau.invalid`, tên miền dành riêng, mật khẩu ngẫu nhiên nên không đăng nhập được) gắn với đơn mẫu của họ; `--clear` xóa cả các tài khoản này. Production không đổi: mặc định chỉ số liệu thật, không tạo tài khoản mẫu.
 
 **Cửa hàng**: hàng còn luôn đứng trước trong mọi cách sắp xếp; lọc theo hãng, lối chơi, mức giá (theo giá thấp nhất của các phiên bản đang bán), danh mục và “Chỉ hàng còn” áp dụng ngay, không cần nút; bộ lọc đang dùng hiện thành nhãn bấm để bỏ; 24 sản phẩm mỗi trang; cả thẻ sản phẩm bấm được. Trang sản phẩm có nút −/+ số lượng; hàng hết thì thay nút mua bằng gọi hotline (nếu đã cài) và lối tới vợt cùng lối chơi còn hàng.
+
+**Trang sản phẩm**: ảnh chính và các ảnh phụ (`product_images`; thêm/xóa ở form sản phẩm hoặc cột `anh_phu` khi nhập file) xem bằng ảnh nhỏ, nút trước/sau hoặc vuốt ngang trên điện thoại. Giá niêm yết của phiên bản (`product_variants.compare_at_price`; ô “Giá niêm yết” ở form sản phẩm hoặc cột `gia_goc`) hiện gạch ngang kèm phần trăm giảm, chỉ khi cao hơn giá bán. Dưới giá là tình trạng hàng của phiên bản đang chọn (“Còn hàng”, “Sắp hết, còn N” từ 5 trở xuống, “Hết hàng”) và “Đã bán N” khi có đơn thật.
+
+**Gợi ý sản phẩm** (`app/Services/RecommendationService.php`, chấm điểm theo quy tắc, không dùng AI): mỗi sản phẩm ứng viên được cộng điểm theo những gì nó chung với sản phẩm đang xem: cùng danh mục 5, cùng hãng 3, cùng lối chơi 4, cùng trình độ 2, giá lệch không quá 20% 3, cùng điểm cân bằng hoặc độ cứng 1 mỗi thứ, còn hàng 4, bán chạy tối đa 10 (sản phẩm bán nhiều nhất 90 ngày qua được đủ 10, các sản phẩm khác theo tỉ lệ). Điểm bằng nhau thì giá gần hơn đứng trước, rồi tới sản phẩm mới hơn.
+
+- _Thường mua cùng_: sản phẩm nằm chung đơn với sản phẩm đang xem trong ít nhất 2 đơn.
+- _Vợt tương tự_: cùng lối chơi, từ hãng khác. _Cùng hãng_: các vợt khác của hãng đó. Hai dải không bao giờ trùng nhau, và không lặp lại sản phẩm đã nằm ở “Thường mua cùng”.
+- _Vừa xem_: mã sản phẩm lưu trong trình duyệt của khách (`localStorage`, tối đa 12, không gửi gì khác); thẻ sản phẩm lấy lại từ máy chủ nên giá và tồn kho luôn mới.
+- _Gợi ý cho bạn_ (cuối trang danh sách): dựa trên sản phẩm khách đã mua (nếu đăng nhập, cộng 5), đã lưu vào yêu thích (cộng 4) và đã xem (cộng 2; gồm danh sách trong trình duyệt và, với tài khoản, sản phẩm đã xem hoặc thêm giỏ trên thiết bị khác); không có gì để dựa thì là _Bán chạy gần đây_; chưa có đơn thật thì không hiện dải nào.
+- Mọi tín hiệu bán hàng (đã bán, bán chạy, mua cùng, đã mua) chỉ tính **đơn thật không bị hủy**; đơn mẫu không bao giờ được tính. Sản phẩm mẫu chỉ gợi ý sản phẩm mẫu, sản phẩm thật không bao giờ dẫn tới sản phẩm mẫu. Số bán chạy lưu cache 15 phút.
+- Hai dải cuối tải sau khi trang hiện (`GET /recommendations`, JSON, giới hạn 60 lần/phút); request lỗi thì dải đó không hiện, phần còn lại của trang không bị ảnh hưởng.
+
+**Sự kiện khách hàng** (`app/Services/CustomerEvents.php`, bảng `customer_events`): những gì khách làm trong cửa hàng mà chưa bảng nào ghi lại. Tài khoản, đơn hàng và đánh giá đã có bảng riêng nên không ghi thêm lần nữa.
+
+| Sự kiện            | Ghi khi nào                                          | Ai ghi      | Kèm theo                           |
+| ------------------ | ---------------------------------------------------- | ----------- | ---------------------------------- |
+| `product_view`     | Trang sản phẩm đã hiện                               | Trình duyệt | sản phẩm                           |
+| `search`           | Khách dừng lại ở một từ khóa (trang đầu của kết quả) | Trình duyệt | từ khóa, số kết quả                |
+| `checkout_started` | Trang thanh toán đã hiện, giỏ có hàng                | Trình duyệt | số món, tiền hàng (máy chủ tính)   |
+| `coupon_applied`   | Mã giảm giá được nhận vào giỏ                        | Máy chủ     | mã                                 |
+| `add_to_cart`      | Thêm vào giỏ thành công                              | Máy chủ     | sản phẩm, phiên bản, số lượng, giá |
+| `remove_from_cart` | Bỏ một phiên bản khỏi giỏ                            | Máy chủ     | sản phẩm, phiên bản                |
+| `order_placed`     | Đặt đơn thành công (nối lượt truy cập với đơn)       | Máy chủ     | đơn, số món, tổng tiền             |
+| `wishlist_added`   | Lưu một sản phẩm vào yêu thích                       | Máy chủ     | sản phẩm                           |
+| `chat_started`     | Tin nhắn đầu tiên của một cuộc chat mới              | Máy chủ     | —                                  |
+
+- Ba sự kiện đầu do trình duyệt báo (`POST /events`, giới hạn 60 lần/phút) vì Next.js còn tải trước trang khi khách rê chuột vào liên kết: request tới Laravel chưa chắc là có người xem. Trình duyệt chỉ nói tên sự kiện; số liệu do máy chủ tự lấy. Cùng một trang (hoặc cùng từ khóa) trong 30 phút chỉ ghi một lần.
+- Metadata chỉ nhận đúng các khóa ghi ở `CustomerEvents::EVENTS`, giá trị là số nguyên, đúng/sai hoặc chữ tối đa 100 ký tự; mọi thứ khác bị bỏ. Không lưu IP, trình duyệt, tên, số điện thoại, địa chỉ hay bất cứ thứ gì khách gõ ở trang thanh toán.
+- Khách vãng lai được nhóm theo `session_key`: HMAC của một giá trị ngẫu nhiên nằm trong session (không phải mã phiên). Khi khách đăng nhập, sự kiện của lượt truy cập đó được gắn về tài khoản. Xóa tài khoản thì sự kiện xóa theo.
+- Không ghi gì cho tài khoản quản trị. Sự kiện cũ hơn 365 ngày bị xóa mỗi ngày (`php artisan model:prune`, đã đặt lịch; cần `php artisan schedule:work` hoặc cron).
+
+**Yêu thích**: khách đã đăng nhập lưu sản phẩm bằng nút dưới nút mua (tối đa 100), xem và bỏ lưu ở **Tài khoản của tôi**. Sản phẩm ngừng bán vẫn nằm trong danh sách, ghi rõ “Cửa hàng đã ngừng bán”, để khách bỏ đi được.
+
+**Đánh giá** (`app/Services/ReviewService.php`, bảng `product_reviews`): chỉ khách đã nhận sản phẩm từ một **đơn thật đã giao** đặt bằng tài khoản của mình mới viết được, mỗi sản phẩm một đánh giá (gửi lại thì thay bài cũ). Chỉ chấm sao thì hiện ngay; có lời bình thì ở trạng thái chờ cho tới khi quản trị viên bấm “Hiện ở cửa hàng” tại `/admin/reviews` (menu có số đang chờ). Trang sản phẩm hiện điểm trung bình, số đánh giá và 20 đánh giá mới nhất đã hiện, ký bằng tên gọi của khách (từ cuối trong họ tên). Sản phẩm chưa có đánh giá thì ghi đúng như vậy; không có đánh giá mẫu.
+
+**Khách hàng** (`/admin/customers/{id}`, `app/Services/CustomerProfile.php`): bấm tên ở danh sách khách hàng hoặc ở trang đơn. Phía trên là bốn số: đã thu (tiền thực nhận), số đơn (không tính đơn hủy), giá trị đơn trung bình, lần mua gần nhất. Bên dưới là các tab, mỗi tab có địa chỉ riêng:
+
+- _Tổng quan_: 5 đơn gần nhất và 8 hoạt động gần nhất.
+- _Đơn hàng_: mọi đơn của tài khoản.
+- _Hoạt động_: dòng thời gian gộp từ sự kiện khách hàng, các mốc của đơn (đặt, xác nhận, giao đi, đã nhận, hủy, thu tiền), đánh giá và ngày tạo tài khoản; 40 dòng mỗi trang.
+- _Sản phẩm_: đã mua (số lượng, tiền, lần gần nhất), hãng và danh mục thường mua, đã xem khi đăng nhập, yêu thích.
+- _Mã giảm giá_: mã tạo riêng cho khách (kèm nút “Tạo mã riêng”) và các đơn khách đã dùng mã.
+- _Đánh giá_: các đánh giá của khách và trạng thái.
+
+Cạnh tên khách là nhóm của họ, tính lại ngay lúc mở trang. Trên máy local các số này tính cả đơn mẫu (có thông báo vàng); production chỉ tính đơn thật. Mục hội thoại và đơn dịch vụ sẽ thêm khi các phần đó có.
+
+**Nhóm khách hàng** (`app/Services/CustomerSegmentation.php`, cột `users.segment`): mỗi tài khoản khách thuộc đúng một nhóm, xếp theo quy tắc từ đơn thật và hoạt động của chính họ, không dùng AI. Ngưỡng do chủ shop đặt ở `/admin/settings` (mặc định trong `config/shop.php`).
+
+| Nhóm            | Khi nào                                                                                               |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| Đã mất          | Không đặt đơn, không ghé cửa hàng (khi đăng nhập) quá 365 ngày, kể cả khách từng là VIP               |
+| VIP             | Đã mua và tiền shop **đã thu** từ họ đạt 10.000.000 ₫; giữ nhóm này giữa các lần mua                  |
+| Không hoạt động | Đã mua nhưng quá 90 ngày chưa đặt đơn mới; hoặc chưa mua, đăng ký đã quá 30 ngày và không quan tâm gì |
+| Đang mua        | Đã mua (có đơn không bị hủy) trong 90 ngày gần đây                                                    |
+| Tiềm năng       | Chưa mua nhưng có từ 5 lượt xem, lưu, thêm giỏ hoặc mở thanh toán trong 30 ngày gần đây               |
+| Mới             | Chưa mua, đăng ký trong 30 ngày gần đây                                                               |
+
+- Quy tắc xét từ trên xuống: nhóm đầu tiên khớp là nhóm của khách.
+- Nhóm được xếp lại mỗi ngày lúc 03:00 (`php artisan crm:segment`, cần `schedule:work` hoặc cron), ngay khi đơn của khách được đặt, đổi trạng thái hoặc thu tiền, và ngay sau khi đổi ngưỡng ở Cài đặt.
+- Xem và lọc theo nhóm ở `/admin/customers`. Tài khoản quản trị không có nhóm. Nhóm là nhận định nội bộ của shop: không gửi về trình duyệt của khách.
+
+**Mã giảm giá** (`/admin/coupons`, `app/Services/CouponService.php`): khách nhập một mã ở giỏ hàng; mức giảm hiện ở giỏ, trang thanh toán và trên đơn.
+
+- **Ai dùng được:** mọi khách (kể cả không đăng nhập), riêng một tài khoản, hoặc một nhóm khách (phải đăng nhập và đang thuộc nhóm đó lúc dùng). Mã riêng tạo nhanh từ tab Mã giảm giá ở trang khách hàng, với mã 10 ký tự ngẫu nhiên.
+- **Mức giảm:** phần trăm tiền hàng (có thể đặt mức tối đa) hoặc một số tiền; không bao giờ vượt tiền của các món được giảm. Phí giao tính trên tiền hàng trước khi giảm.
+- **Điều kiện:** đơn tối thiểu, ngày bắt đầu và ngày hết hạn (tính trọn ngày theo giờ Việt Nam), tổng số đơn được dùng, số đơn mỗi khách (theo tài khoản; khách không đăng nhập tính theo số điện thoại nhận hàng), chỉ một số danh mục hoặc sản phẩm. Mã không áp dụng cho sản phẩm mẫu.
+- **Tính ở máy chủ:** trình duyệt chỉ gửi mã. Lúc đặt hàng mức giảm được tính lại cùng lúc với việc lưu đơn và giữ chỗ lượt dùng, nên lượt cuối chỉ thuộc về một đơn; nếu mức giảm khác với mức trang thanh toán đã hiện thì đơn bị từ chối và khách được mời xem lại. Hủy đơn thì lượt dùng được trả lại.
+- **Mã của người khác:** mã không tồn tại, đã tắt, của khách khác hoặc của nhóm khác đều nhận cùng một câu “Mã giảm giá không hợp lệ…”, và mỗi phiên chỉ được thử 10 lần mỗi phút. Trang tài khoản của khách có mục “Mã giảm giá của tôi” chỉ gồm mã riêng của họ và mã của nhóm họ đang thuộc.
+- **Sửa và xóa:** sửa mã không đổi các đơn đã đặt (đơn giữ mã và số tiền đã giảm của nó). Mã đã có đơn dùng thì không xóa được, chỉ tắt.
+- **Số liệu:** doanh số là số khách phải trả (đã trừ giảm giá); lãi gộp trừ phần giảm giá rơi vào các dòng có giá nhập; file CSV đơn hàng có cột Giảm giá và Mã giảm giá.
+
+**Microsoft Clarity** (`frontend/src/lib/analytics.ts`, `frontend/src/components/shop-analytics.tsx`): đặt project ID vào `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` rồi build lại; để trống thì không có gì được tải.
+
+- Cửa hàng hỏi mỗi khách một lần (góc dưới bên trái); chỉ khi khách bấm “Đồng ý” script của Clarity mới được tải. Chân trang có dòng cho khách đổi lựa chọn.
+- Clarity chỉ nhận **tên** sự kiện (cùng bộ tên ở bảng trên, thêm `review_submitted`), không nhận từ khóa tìm kiếm, mã sản phẩm, số tiền hay danh tính.
+- Clarity luôn che nội dung ô nhập. Ngoài ra các vùng có dữ liệu cá nhân được đánh dấu `data-clarity-mask`: tên và email ở menu tài khoản, trang tài khoản, form và trang đơn hàng, khung chat, form đánh giá.
+- Trang đăng nhập/đăng ký, cài đặt tài khoản và toàn bộ trang quản trị dừng hẳn việc ghi; tài khoản quản trị không bao giờ bị ghi dù trước đó đã bấm đồng ý.
 
 **Cài đặt** (`/admin/settings`, bảng `settings`): phí giao hàng, mức miễn phí giao (0 = không miễn phí theo giá trị đơn; phí 0 = luôn miễn phí), số điện thoại và email liên hệ. Lưu xong áp dụng ngay cho giỏ và đơn mới; đơn đã đặt giữ số tiền cũ. Liên hệ hiện ở chân trang cửa hàng và trang đơn; giỏ hàng nhắc “Mua thêm … để được miễn phí giao hàng”. Chưa lưu gì thì dùng mặc định trong `config/shop.php`.
 

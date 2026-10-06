@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\SupportConversation;
 use App\Models\SupportMessage;
+use App\Services\CustomerEvents;
 use App\Services\SupportChatResponder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class SupportChatController extends Controller
         ]);
     }
 
-    public function store(Request $request, SupportChatResponder $responder): JsonResponse
+    public function store(Request $request, SupportChatResponder $responder, CustomerEvents $events): JsonResponse
     {
         $validated = $request->validate(['message' => ['required', 'string', 'max:1000']]);
         $body = trim($validated['message']);
@@ -74,6 +75,7 @@ class SupportChatController extends Controller
             $sessionKey = hash_hmac('sha256', $request->session()->getId(), (string) config('app.key'));
             $conversation = SupportConversation::create(['session_key' => $sessionKey]);
             $request->session()->put('support_conversation_id', $conversation->id);
+            $events->record($request, 'chat_started');
         }
 
         $guest = $request->user() === null;

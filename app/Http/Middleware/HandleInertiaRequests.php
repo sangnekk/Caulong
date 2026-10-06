@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Order;
+use App\Models\ProductReview;
 use App\Models\SupportConversation;
 use App\Services\CartService;
 use App\Services\ShopSettings;
@@ -66,6 +67,8 @@ class HandleInertiaRequests extends Middleware
                     ? SupportConversation::where('status', 'open')->where('needs_human', true)->whereHas('messages', fn ($query) => $query
                         ->where('sender', 'customer')->whereNull('read_at'))->count()
                     : 0,
+                // Reviews with words wait for the shop to read them.
+                'pending_reviews' => $request->user()?->is_admin ? ProductReview::where('status', 'pending')->count() : 0,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

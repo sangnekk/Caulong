@@ -4,6 +4,8 @@ export type Variant = {
     sku: string;
     name: string;
     price: number;
+    /** The list price, only when it is above the price. */
+    compare_at_price: number | null;
     stock: number;
     is_active: boolean;
 };
@@ -13,6 +15,8 @@ export type Product = {
     slug: string;
     description: string;
     image_url: string;
+    /** Every photo, the main one first: on the product page only. */
+    images?: string[];
     play_style: 'attack' | 'speed' | 'balanced';
     skill_level: 'beginner' | 'intermediate' | 'advanced' | 'all';
     specs: Partial<
@@ -26,6 +30,50 @@ export type Product = {
     brand: Taxonomy | null;
     category: Taxonomy | null;
     variants: Variant[];
+};
+/** A product as a card: in the grid, and in the lists of suggestions. */
+export type ProductCard = {
+    id: number;
+    name: string;
+    slug: string;
+    image_url: string;
+    play_style: Product['play_style'];
+    is_demo: boolean;
+    brand: string | null;
+    /** The lowest price among the versions on sale. */
+    price: number | null;
+    compare_at_price: number | null;
+    in_stock: boolean;
+};
+/** Published reviews of a product: the average and the latest ones. */
+export type ProductReviews = {
+    count: number;
+    average: number | null;
+    items: {
+        id: number;
+        /** The customer's given name only. */
+        author: string;
+        rating: number;
+        body: string | null;
+        created_at: string;
+    }[];
+};
+/** What the signed-in customer may write on a product page; null for a guest. */
+export type ReviewViewer = {
+    /** They received the product in a real order. */
+    eligible: boolean;
+    mine: {
+        rating: number;
+        body: string | null;
+        status: 'pending' | 'published' | 'hidden';
+    } | null;
+} | null;
+/** A saved product on the account page; one no longer sold stays listed until removed. */
+export type WishlistItem = ProductCard & { on_sale: boolean };
+export type Recommendations = {
+    viewed: ProductCard[];
+    basis: 'personal' | 'popular' | null;
+    suggested: ProductCard[];
 };
 export type Pagination<T> = {
     data: T[];
@@ -61,7 +109,28 @@ export type CartItem = {
     is_demo: boolean;
 };
 export type Totals = { subtotal: number; shipping_fee: number; total: number };
-export type Cart = Totals & { items: CartItem[]; count: number };
+export type Cart = Totals & {
+    items: CartItem[];
+    count: number;
+    /** What the entered coupon takes off right now. */
+    discount: number;
+    /** The code kept with the cart; `error` says why it takes nothing off at the moment. */
+    coupon: { code: string; name: string | null; error: string | null } | null;
+};
+/** A coupon given to the customer (their own, or their group's), on the account page. */
+export type AccountCoupon = {
+    code: string;
+    name: string;
+    type: 'percent' | 'fixed';
+    value: number;
+    min_order: number;
+    max_discount: number | null;
+    starts_at: string | null;
+    expires_at: string | null;
+    /** Made for this customer alone. */
+    personal: boolean;
+    state: 'usable' | 'scheduled' | 'expired' | 'used';
+};
 export type Order = Totals & {
     public_id: string;
     name: string;
@@ -72,6 +141,9 @@ export type Order = Totals & {
     status: string;
     payment_status: string;
     payment_method: string;
+    /** What a coupon took off; total = subtotal - discount_total + shipping_fee. */
+    discount_total: number;
+    coupon_code: string | null;
     is_demo: boolean;
     created_at: string;
     items: {
@@ -89,6 +161,7 @@ export type ShopSharedProps = {
         is_admin: boolean;
         pending_orders?: number;
         pending_support_chats?: number;
+        pending_reviews?: number;
         shipping_fee?: number;
         contact?: {
             hotline: string;
@@ -106,6 +179,23 @@ export const vnd = (amount: number): string =>
         currency: 'VND',
         maximumFractionDigits: 0,
     }).format(amount);
+/** How far below its list price something sells, as a whole percentage ("-17%"). */
+export const discount = (price: number, listPrice: number): string =>
+    '-' + Math.max(1, Math.round((1 - price / listPrice) * 100)) + '%';
+/** What a coupon takes off, in a line: "Giảm 10%, tối đa 100.000 ₫ · đơn từ 500.000 ₫". */
+export const couponTerms = (
+    coupon: Pick<
+        AccountCoupon,
+        'type' | 'value' | 'max_discount' | 'min_order'
+    >,
+): string =>
+    (coupon.type === 'percent'
+        ? 'Giảm ' +
+          coupon.value +
+          '%' +
+          (coupon.max_discount ? ', tối đa ' + vnd(coupon.max_discount) : '')
+        : 'Giảm ' + vnd(coupon.value)) +
+    (coupon.min_order > 0 ? ' · đơn từ ' + vnd(coupon.min_order) : '');
 export const shortOrderCode = (publicId: string): string =>
     publicId.replaceAll('-', '').slice(0, 8).toUpperCase();
 export const playStyles = {

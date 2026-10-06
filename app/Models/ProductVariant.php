@@ -13,14 +13,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $sku
  * @property string $name
  * @property int $price
+ * @property int|null $compare_at_price
  * @property int|null $cost_price
  * @property int $stock
  * @property bool $is_active
+ * @property-read int|null $list_price
  * @property-read Product $product
  */
 class ProductVariant extends Model
 {
-    protected $fillable = ['product_id', 'sku', 'name', 'price', 'cost_price', 'stock', 'is_active'];
+    protected $fillable = ['product_id', 'sku', 'name', 'price', 'compare_at_price', 'cost_price', 'stock', 'is_active'];
 
     /** What the shop paid is for the admin only; storefront payloads never carry it. */
     protected $hidden = ['cost_price'];
@@ -31,9 +33,20 @@ class ProductVariant extends Model
         return Attribute::make(set: fn (string $value): string => strtolower(trim($value)));
     }
 
+    /**
+     * The list price to strike through beside the price, or null: a list price at or below
+     * what is charged is not a saving and is never shown as one.
+     *
+     * @return Attribute<int|null, never>
+     */
+    protected function listPrice(): Attribute
+    {
+        return Attribute::get(fn (): ?int => $this->compare_at_price > $this->price ? $this->compare_at_price : null);
+    }
+
     protected function casts(): array
     {
-        return ['price' => 'integer', 'cost_price' => 'integer', 'stock' => 'integer', 'is_active' => 'boolean'];
+        return ['price' => 'integer', 'compare_at_price' => 'integer', 'cost_price' => 'integer', 'stock' => 'integer', 'is_active' => 'boolean'];
     }
 
     /** @return BelongsTo<Product, $this> */

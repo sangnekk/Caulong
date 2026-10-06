@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,7 +13,12 @@ use Illuminate\Validation\ValidationException;
 
 class OrderService
 {
-    public function __construct(private CartService $cart) {}
+    public function __construct(
+        private CartService $cart,
+        private CustomerEvents $events,
+        private CouponService $coupons,
+        private CustomerSegmentation $segments,
+    ) {}
 
     /** @param array<string, mixed> $data */
     public function checkout(Request $request, array $data): Order
@@ -47,6 +53,7 @@ class OrderService
             $variants = ProductVariant::whereIn('id', $variantIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
             $prices = $request->session()->get('checkout_prices', []);
             $items = [];
+            $lines = [];
             $subtotal = 0;
             $hasDemo = false;
             $hasReal = false;
@@ -80,11 +87,35 @@ class OrderService
                     'quantity' => $quantity,
                     'line_total' => $lineTotal,
                 ];
+                $lines[] = [
+                    'product_id' => (int) $product->id, 'category_id' => $product->category_id,
+                    'line_total' => $lineTotal, 'is_demo' => (bool) $product->is_demo,
+                ];
             }
             if ($hasDemo && $hasReal) {
                 throw ValidationException::withMessages(['cart' => 'Không thể đặt chung sản phẩm demo và sản phẩm thật trong cùng một đơn. Vui lòng tách riêng giỏ hàng.']);
             }
             $shipping = $this->cart->shippingFee($subtotal);
+            // The coupon is worked out again here, with the coupon row held so two orders
+            // cannot both take its last use. The figure must be the one the page showed.
+            $shown = (int) $request->session()->get('checkout_discount', 0);
+            $quote = null;
+            $code = $request->session()->get(CartService::COUPON);
+            if (is_string($code)) {
+                try {
+                    $quote = $this->coupons->quote($code, $request->user(), $lines, $data['phone'], lock: true);
+                } catch (ValidationException $rejected) {
+                    // Shown as not applying: the order goes ahead without it. Otherwise the customer is told.
+                    if ($shown > 0) {
+                        throw ValidationException::withMessages(['coupon' => $rejected->validator->errors()->first()
+                            .' Bỏ mã ở giỏ hàng hoặc tải lại trang thanh toán rồi đặt lại.']);
+                    }
+                }
+            }
+            $discount = $quote['discount'] ?? 0;
+            if ($discount !== $shown) {
+                throw ValidationException::withMessages(['cart' => 'Mức giảm giá đã thay đổi. Vui lòng tải lại trang thanh toán, xem lại tổng tiền rồi đặt hàng lại.']);
+            }
             $order = Order::create([
                 'public_id' => (string) Str::uuid(),
                 'checkout_token' => $token,
@@ -99,9 +130,14 @@ class OrderService
                 'status' => 'pending',
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shipping,
-                'total' => $subtotal + $shipping,
+                'discount_total' => $discount,
+                'coupon_code' => $discount > 0 ? $quote['coupon']->code : null,
+                'total' => $subtotal - $discount + $shipping,
                 'is_demo' => $hasDemo,
             ]);
+            if ($quote !== null && $discount > 0) {
+                $this->coupons->redeem($quote['coupon'], $order, $discount);
+            }
             foreach ($items as $item) {
                 $changed = ProductVariant::whereKey($item['variant_id'])
                     ->where('is_active', true)->where('stock', '>=', $item['quantity'])
@@ -115,20 +151,24 @@ class OrderService
             return $order;
         }, 3);
         if (! $isReplay) {
-            $request->session()->forget(['shopping_cart', 'checkout_prices']);
+            $request->session()->forget(['shopping_cart', 'checkout_prices', 'checkout_discount', CartService::COUPON]);
+            $this->events->record($request, 'order_placed', orderId: $order->id, metadata: [
+                'items' => (int) $order->items()->sum('quantity'), 'total' => (int) $order->total,
+            ]);
         }
         $completed[$token] = $order->public_id;
         $request->session()->put('checkout_orders', array_slice($completed, -25, null, true));
         $access = $request->session()->get('order_access', []);
         $access[] = $order->public_id;
         $request->session()->put('order_access', array_slice(array_values(array_unique($access)), -25));
+        $this->regroup($order);
 
         return $order;
     }
 
     public function transition(Order $order, string $status): Order
     {
-        return DB::transaction(function () use ($order, $status) {
+        $order = DB::transaction(function () use ($order, $status) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $allowed = [
                 'pending' => ['confirmed', 'cancelled'],
@@ -154,16 +194,21 @@ class OrderService
                         ProductVariant::whereKey($item->variant_id)->increment('stock', $item->quantity);
                     }
                 }
+                // The coupon was not used after all: its use goes back to the customer.
+                $this->coupons->release($locked);
             }
             $locked->update(['status' => $status, $status.'_at' => now()]);
 
             return $locked;
         }, 3);
+        $this->regroup($order);
+
+        return $order;
     }
 
     public function markCodPaid(Order $order): Order
     {
-        return DB::transaction(function () use ($order) {
+        $order = DB::transaction(function () use ($order) {
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             if ($locked->payment_method !== 'cod' || $locked->status !== 'delivered') {
                 throw ValidationException::withMessages(['payment_status' => 'Chỉ xác nhận đã thu tiền COD cho đơn đã giao thành công.']);
@@ -174,5 +219,16 @@ class OrderService
 
             return $locked;
         }, 3);
+        $this->regroup($order);
+
+        return $order;
+    }
+
+    /** An order placed, cancelled or paid can move its customer to another group. */
+    private function regroup(Order $order): void
+    {
+        if ($order->user_id !== null && ($user = User::find($order->user_id)) !== null) {
+            rescue(fn () => $this->segments->refresh($user));
+        }
     }
 }

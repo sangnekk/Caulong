@@ -1,7 +1,8 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../wayfinder'
+import reviews from './reviews'
 /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +17,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +26,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +35,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +45,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +55,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +64,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\CatalogController::index
- * @see app/Http/Controllers/CatalogController.php:26
+ * @see app/Http/Controllers/CatalogController.php:31
  * @route '/products'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +80,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
 export const show = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -94,7 +95,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
 show.url = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions) => {
@@ -127,7 +128,7 @@ show.url = (args: { product: string | { slug: string } } | [product: string | { 
 
 /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
 show.get = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -136,7 +137,7 @@ show.get = (args: { product: string | { slug: string } } | [product: string | { 
 })
 /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
 show.head = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -146,7 +147,7 @@ show.head = (args: { product: string | { slug: string } } | [product: string | {
 
     /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
     const showForm = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -156,7 +157,7 @@ show.head = (args: { product: string | { slug: string } } | [product: string | {
 
             /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
         showForm.get = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -165,7 +166,7 @@ show.head = (args: { product: string | { slug: string } } | [product: string | {
         })
             /**
 * @see \App\Http\Controllers\CatalogController::show
- * @see app/Http/Controllers/CatalogController.php:109
+ * @see app/Http/Controllers/CatalogController.php:114
  * @route '/products/{product}'
  */
         showForm.head = (args: { product: string | { slug: string } } | [product: string | { slug: string } ] | string | { slug: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -182,6 +183,7 @@ show.head = (args: { product: string | { slug: string } } | [product: string | {
 const products = {
     index: Object.assign(index, index),
 show: Object.assign(show, show),
+reviews: Object.assign(reviews, reviews),
 }
 
 export default products

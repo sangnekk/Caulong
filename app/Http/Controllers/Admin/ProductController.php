@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -190,6 +191,7 @@ class ProductController extends Controller
         $product->load('variants')->variants->each->makeVisible('cost_price');
         $payload = $product->toArray();
         $payload['image_url'] = $product->image_url;
+        $payload['images'] = $product->images->map(fn (ProductImage $image) => ['id' => $image->id, 'url' => $image->url])->all();
 
         return Inertia::render('admin/product-form', ['product' => $payload, ...$this->taxonomies()]);
     }
@@ -228,12 +230,17 @@ class ProductController extends Controller
             'specs' => ['nullable', 'array:weight,balance,stiffness,material,max_tension'],
             'specs.*' => ['nullable', 'string', 'max:200'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+            'gallery' => ['nullable', 'array', 'max:'.ProductImage::MAX_PER_PRODUCT],
+            'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
+            'remove_images' => ['nullable', 'array', 'max:'.ProductImage::MAX_PER_PRODUCT],
+            'remove_images.*' => ['integer', 'distinct'],
             'variants' => ['required', 'array', 'min:1', 'max:100'],
-            'variants.*' => ['required', 'array:id,sku,name,price,cost_price,stock,is_active,expected_stock'],
+            'variants.*' => ['required', 'array:id,sku,name,price,compare_at_price,cost_price,stock,is_active,expected_stock'],
             'variants.*.id' => ['nullable', 'integer', 'min:1', 'distinct'],
             'variants.*.sku' => ['required', 'string', 'max:80', 'regex:/^[A-Za-z0-9][A-Za-z0-9._-]*$/', 'distinct:ignore_case'],
             'variants.*.name' => ['required', 'string', 'max:120'],
             'variants.*.price' => ['required', 'integer', 'min:0', 'max:1000000000'],
+            'variants.*.compare_at_price' => ['nullable', 'integer', 'max:1000000000', 'gt:variants.*.price'],
             'variants.*.cost_price' => ['nullable', 'integer', 'min:0', 'max:1000000000'],
             'variants.*.stock' => ['required', 'integer', 'min:0', 'max:1000000'],
             'variants.*.expected_stock' => ['nullable', 'integer', 'min:0', 'max:1000000'],
@@ -244,12 +251,20 @@ class ProductController extends Controller
             'distinct' => 'Không được lặp mã hoặc biến thể.',
             'image' => 'Chọn ảnh JPEG, PNG hoặc WebP.',
             'image.max' => 'Ảnh tối đa 5 MB.',
+            'gallery.max' => 'Mỗi sản phẩm tối đa '.ProductImage::MAX_PER_PRODUCT.' ảnh phụ.',
+            'gallery.*.image' => 'Ảnh phụ phải là JPEG, PNG hoặc WebP.',
+            'gallery.*.mimes' => 'Ảnh phụ phải là JPEG, PNG hoặc WebP.',
+            'gallery.*.mimetypes' => 'Ảnh phụ phải là JPEG, PNG hoặc WebP.',
+            'gallery.*.max' => 'Mỗi ảnh phụ tối đa 5 MB.',
             'slug.regex' => 'Dùng chữ thường không dấu, số và dấu gạch nối.',
             'variants.*.sku.regex' => 'SKU chỉ dùng chữ, số, dấu chấm, gạch nối và gạch dưới.',
+            'variants.*.compare_at_price.*' => 'Giá niêm yết phải cao hơn giá bán, hoặc để trống.',
         ]);
         $uploaded = null;
+        $stored = [];
+        $removed = [];
         try {
-            $saved = DB::transaction(function () use ($request, $product, $data, &$uploaded): Product {
+            $saved = DB::transaction(function () use ($request, $product, $data, &$uploaded, &$stored, &$removed): Product {
                 $current = $product->exists ? Product::whereKey($product->id)->lockForUpdate()->firstOrFail() : $product;
                 // Checkout locks variants in this same order. Omitted rows remain untouched.
                 $existing = $current->exists
@@ -269,7 +284,7 @@ class ProductController extends Controller
                         throw ValidationException::withMessages(["variants.{$index}.sku" => 'SKU đã được sử dụng.']);
                     }
                 }
-                $attributes = Arr::except($data, ['image', 'variants']);
+                $attributes = Arr::except($data, ['image', 'gallery', 'remove_images', 'variants']);
                 if ($request->hasFile('image')) {
                     $uploaded = $request->file('image')->store('products', 'public');
                     if (! $uploaded) {
@@ -285,18 +300,37 @@ class ProductController extends Controller
                     $row->save();
                 }
 
-                // ponytail: old images retained; add reference-aware cleanup when storage warrants it.
+                // Further photos: only this product's rows can be removed, whatever ids arrive.
+                $gone = $current->images()->whereKey($data['remove_images'] ?? [])->get();
+                $removed = $gone->pluck('path')->all();
+                $current->images()->whereKey($gone->modelKeys())->delete();
+                $files = $request->file('gallery', []);
+                if ($current->images()->count() + count($files) > ProductImage::MAX_PER_PRODUCT) {
+                    throw ValidationException::withMessages(['gallery' => 'Mỗi sản phẩm tối đa '.ProductImage::MAX_PER_PRODUCT.' ảnh phụ. Bỏ bớt ảnh cũ trước khi thêm.']);
+                }
+                $position = (int) $current->images()->max('position');
+                foreach ($files as $file) {
+                    $hash = (string) hash_file('sha256', $file->getRealPath());
+                    $path = $file->store('products', 'public');
+                    if (! $path) {
+                        throw ValidationException::withMessages(['gallery' => 'Không lưu được ảnh. Vui lòng thử lại.']);
+                    }
+                    $stored[] = $path;
+                    $current->images()->create(['path' => $path, 'hash' => $hash, 'position' => ++$position]);
+                }
+
+                // ponytail: a replaced main image is retained; add reference-aware cleanup when storage warrants it.
                 return $current;
             });
         } catch (Throwable $exception) {
-            if ($uploaded) {
-                Storage::disk('public')->delete($uploaded);
-            }
+            Storage::disk('public')->delete(array_filter([$uploaded, ...$stored]));
             if ($exception instanceof UniqueConstraintViolationException) {
                 throw ValidationException::withMessages(['variants' => 'SKU hoặc đường dẫn vừa được sử dụng. Kiểm tra và thử lại.']);
             }
             throw $exception;
         }
+        // Only once the rows are gone for good; a failed save keeps every file it had.
+        Storage::disk('public')->delete($removed);
 
         return redirect()->route('admin.products.edit', $saved)->with('success', 'Đã lưu sản phẩm.');
     }

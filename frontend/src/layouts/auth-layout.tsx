@@ -1,6 +1,7 @@
 'use client';
 
 import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
+import { useNoRecording } from '@/lib/analytics';
 
 export default function AuthLayout({
     title = '',
@@ -11,6 +12,7 @@ export default function AuthLayout({
     description?: string;
     children: React.ReactNode;
 }) {
+    useNoRecording();
     return (
         <AuthLayoutTemplate title={title} description={description}>
             {children}

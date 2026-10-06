@@ -85,13 +85,13 @@ class OrderController extends Controller
                 return;
             }
             fwrite($out, "\xEF\xBB\xBF");
-            fputcsv($out, ['Mã đơn', 'Ngày đặt', 'Khách hàng', 'Điện thoại', 'Địa chỉ', 'Trạng thái', 'Thanh toán', 'Ngày thu tiền', 'Số sản phẩm', 'Tiền hàng', 'Phí giao', 'Tổng cộng']);
+            fputcsv($out, ['Mã đơn', 'Ngày đặt', 'Khách hàng', 'Điện thoại', 'Địa chỉ', 'Trạng thái', 'Thanh toán', 'Ngày thu tiền', 'Số sản phẩm', 'Tiền hàng', 'Giảm giá', 'Mã giảm giá', 'Phí giao', 'Tổng cộng']);
             $labels = ['pending' => 'Chờ xác nhận', 'confirmed' => 'Đã xác nhận', 'shipped' => 'Đang giao', 'delivered' => 'Đã giao', 'cancelled' => 'Đã hủy'];
             foreach ($query->lazy(200) as $order) {
                 fputcsv($out, [
                     $order->id, $time($order->created_at), $order->name, $order->phone, $order->address,
                     $labels[$order->status] ?? $order->status, $order->payment_status === 'paid' ? 'Đã thu' : 'Chưa thu',
-                    $time($order->paid_at), $order->getAttribute('items_count'), $order->subtotal, $order->shipping_fee, $order->total,
+                    $time($order->paid_at), $order->getAttribute('items_count'), $order->subtotal, $order->discount_total, (string) $order->getAttribute('coupon_code'), $order->shipping_fee, $order->total,
                 ]);
             }
             fclose($out);

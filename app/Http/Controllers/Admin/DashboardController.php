@@ -51,7 +51,11 @@ class DashboardController extends Controller
                 'today_orders' => $kept($today)->count(),
                 'week_sales' => (int) $kept($week)->sum('total'),
                 'week_orders' => $kept($week)->count(),
-                'week_profit' => (int) (clone $costed)->sum(DB::raw('line_total - unit_cost * quantity')),
+                // Less the share of the week's coupons that falls on the lines with a known cost.
+                'week_profit' => (int) (clone $costed)->sum(DB::raw('line_total - unit_cost * quantity'))
+                    - (($goods = (int) $kept($week)->sum('subtotal')) > 0
+                        ? intdiv((int) $kept($week)->sum('discount_total') * (int) (clone $costed)->sum('line_total'), $goods)
+                        : 0),
                 'week_costed' => (int) (clone $costed)->sum('line_total'),
                 'week_collected' => (int) $orders()->where('paid_at', '>=', $week->utc())->sum('total'),
                 'orders_open' => $orders()->whereIn('status', ['pending', 'confirmed', 'shipped'])->count(),
