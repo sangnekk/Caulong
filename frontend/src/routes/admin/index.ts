@@ -11,6 +11,8 @@ import reviews from './reviews'
 import brands from './brands'
 import categories from './categories'
 import imports from './imports'
+import serviceOrders from './service-orders'
+import serviceStrings from './service-strings'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
  * @see app/Http/Controllers/Admin/DashboardController.php:22
@@ -182,6 +184,8 @@ reviews: Object.assign(reviews, reviews),
 brands: Object.assign(brands, brands),
 categories: Object.assign(categories, categories),
 imports: Object.assign(imports, imports),
+serviceOrders: Object.assign(serviceOrders, serviceOrders),
+serviceStrings: Object.assign(serviceStrings, serviceStrings),
 }
 
 export default admin

@@ -7,11 +7,13 @@ use App\Mail\CouponMail;
 use App\Mail\OrderMail;
 use App\Mail\ProductsMail;
 use App\Mail\ResendTransport;
+use App\Mail\ServiceOrderMail;
 use App\Mail\ShopMail;
 use App\Mail\WelcomeMail;
 use App\Models\Coupon;
 use App\Models\EmailLog;
 use App\Models\Order;
+use App\Models\ServiceOrder;
 use App\Models\User;
 use App\Support\DemoData;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -29,7 +31,10 @@ use InvalidArgumentException;
 class EmailService
 {
     /** About something the customer did: sent whenever there is an address to send to. */
-    public const TRANSACTIONAL = ['welcome', 'order_placed', 'order_shipped', 'order_delivered', 'order_cancelled', 'coupon'];
+    public const TRANSACTIONAL = [
+        'welcome', 'order_placed', 'order_shipped', 'order_delivered', 'order_cancelled', 'coupon',
+        'service_placed', 'service_ready', 'service_cancelled',
+    ];
 
     /** Promotional: only to customers who agreed to it, each with a link to stop. */
     public const MARKETING = ['abandoned_cart', 'winback', 'post_purchase', 'vip'];
@@ -95,6 +100,18 @@ class EmailService
         $user = $order->user_id === null ? null : User::find($order->user_id);
 
         return $this->send('order_'.$stage, $order->email ?: $user?->email, new OrderMail($order, $stage), $user, $order);
+    }
+
+    /**
+     * To whoever asked for the stringing: the address they gave, else their account's.
+     *
+     * @param  value-of<ServiceOrderMail::STAGES>  $stage
+     */
+    public function service(ServiceOrder $order, string $stage): ?EmailLog
+    {
+        $user = $order->user_id === null ? null : User::find($order->user_id);
+
+        return $this->send('service_'.$stage, $order->email ?: $user?->email, new ServiceOrderMail($order, $stage), $user);
     }
 
     /**

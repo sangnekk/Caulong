@@ -1145,6 +1145,82 @@
     border-color: var(--accent);
     background: oklch(0.97 0.03 260);
 }
+/* The steps of a stringing request: done, where it is now, still to come. */
+.store-steps {
+    display: flex;
+    margin: 1.25rem 0;
+    padding: 0;
+    list-style: none;
+}
+.store-steps li {
+    position: relative;
+    flex: 1;
+    padding-top: 1.35rem;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+.store-steps li::before {
+    content: '';
+    position: absolute;
+    top: 0.3rem;
+    left: 50%;
+    z-index: 1;
+    width: 0.8rem;
+    height: 0.8rem;
+    margin-left: -0.4rem;
+    border: 2px solid oklch(0.78 0.02 260);
+    border-radius: 999px;
+    background: #fff;
+}
+.store-steps li + li::after {
+    content: '';
+    position: absolute;
+    top: 0.65rem;
+    right: 50%;
+    width: 100%;
+    height: 2px;
+    background: var(--line);
+}
+.store-steps li[data-state='done'],
+.store-steps li[data-state='current'] {
+    color: var(--ink);
+}
+.store-steps li[data-state='done']::before {
+    border-color: oklch(0.55 0.13 150);
+    background: oklch(0.55 0.13 150);
+}
+.store-steps li[data-state='done'] + li::after,
+.store-steps li[data-state='current']::after {
+    background: oklch(0.55 0.13 150);
+}
+.store-steps li[data-state='current']::before {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 0 4px oklch(0.94 0.035 260);
+}
+/* A choice between a few options, each a card with a radio (the stringing form). */
+.store-choice {
+    display: grid;
+    gap: 0.35rem;
+}
+.store-choice-label {
+    font-size: 0.86rem;
+    font-weight: 600;
+}
+.store-choice .store-payment {
+    margin-top: 0;
+}
+.store-choice .store-payment:has(input:checked) {
+    border-color: var(--accent);
+    background: oklch(0.97 0.03 260);
+}
+.store-choice .store-hint,
+.store-field .store-hint {
+    margin: 0;
+    font-size: 0.85rem;
+}
 .store-variants small,
 .store-payment small {
     display: block;
@@ -1623,7 +1699,8 @@
     font-weight: 700;
     margin-bottom: 1rem;
 }
-.store-checkout-fields .store-field {
+.store-checkout-fields .store-field,
+.store-checkout-fields .store-choice {
     margin-bottom: 1rem;
 }
 .store-terms {

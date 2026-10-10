@@ -6,9 +6,12 @@ import { useState } from 'react';
 import { ProductImage } from '@/layouts/shop-layout';
 import {
     couponTerms,
+    kg,
+    serviceStatuses,
     shortOrderCode,
     vnd,
     type AccountCoupon,
+    type ServiceOrderSummary,
     type WishlistItem,
 } from '@/types/commerce';
 
@@ -165,6 +168,7 @@ export default function Account({
     orders,
     wishlist,
     coupons,
+    serviceOrders,
     conversations,
     totals,
 }: {
@@ -181,6 +185,8 @@ export default function Account({
     wishlist: WishlistItem[];
     /** Made for this customer or for their group; nobody else's. */
     coupons: AccountCoupon[];
+    /** The rackets they asked the shop to string, the latest first. */
+    serviceOrders: ServiceOrderSummary[];
     /** Their conversations in the support chat, the latest first. */
     conversations: AccountConversation[];
     totals: { orders: number; open: number };
@@ -381,6 +387,80 @@ export default function Account({
                             </div>
                         )}
                     </section>
+
+                    {serviceOrders.length > 0 && (
+                        <section aria-labelledby="dan-day">
+                            <h2 id="dan-day">Yêu cầu đan dây của tôi</h2>
+                            <ol className="store-account-orders">
+                                {serviceOrders.map((request) => {
+                                    const [label, tone] =
+                                        serviceStatuses[request.status];
+                                    return (
+                                        <li
+                                            key={request.public_id}
+                                            className="store-account-order"
+                                        >
+                                            <div>
+                                                <h3>
+                                                    Yêu cầu {request.code}
+                                                    <span
+                                                        className="store-status"
+                                                        data-tone={tone}
+                                                    >
+                                                        {label}
+                                                    </span>
+                                                </h3>
+                                                <p>
+                                                    {request.racket}
+                                                    {request.quantity > 1 &&
+                                                        ' × ' +
+                                                            request.quantity}
+                                                    {' · '}
+                                                    {request.service_type ===
+                                                    'own_string'
+                                                        ? 'dây bạn mang tới'
+                                                        : request.string_name}
+                                                    {' · '}
+                                                    {kg(request.tension_kg)}
+                                                </p>
+                                                <p>
+                                                    Gửi ngày{' '}
+                                                    {new Date(
+                                                        request.created_at,
+                                                    ).toLocaleDateString(
+                                                        'vi-VN',
+                                                    )}
+                                                </p>
+                                            </div>
+                                            <div className="store-account-order-total">
+                                                {request.total > 0
+                                                    ? vnd(request.total)
+                                                    : 'Chờ báo giá'}
+                                                <br />
+                                                <Link
+                                                    href={
+                                                        '/service-orders/' +
+                                                        request.public_id
+                                                    }
+                                                >
+                                                    Xem chi tiết
+                                                    <span className="store-sr-only">
+                                                        {' '}
+                                                        yêu cầu {request.code}
+                                                    </span>
+                                                </Link>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                            <p className="store-hint">
+                                <Link href="/services">
+                                    Gửi yêu cầu đan dây mới
+                                </Link>
+                            </p>
+                        </section>
+                    )}
 
                     {coupons.length > 0 && (
                         <section aria-labelledby="ma-giam-gia">

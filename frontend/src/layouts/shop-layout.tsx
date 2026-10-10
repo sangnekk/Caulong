@@ -387,6 +387,18 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                         >
                             Gợi ý chọn vợt
                         </Link>
+                        {props.shop?.stringing && (
+                            <Link
+                                href="/services"
+                                prefetch="hover"
+                                aria-current={current(
+                                    path === '/services' ||
+                                        path.startsWith('/service-orders'),
+                                )}
+                            >
+                                Đan dây
+                            </Link>
+                        )}
                         <Link href="/" prefetch="hover" viewTransition>
                             Tìm hiểu vợt
                         </Link>

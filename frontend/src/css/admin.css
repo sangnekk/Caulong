@@ -2397,6 +2397,40 @@
     }
 }
 
+/* ───── Stringing service: the shop's strings ───── */
+.commerce-admin .admin-list-title {
+    margin: 1.75rem 0 0.75rem;
+    font-size: 1.05rem;
+}
+.admin-detail-list + .admin-toolbar {
+    margin-top: 1rem;
+}
+.admin-string-list {
+    display: grid;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.admin-string-list .admin-panel + .admin-panel {
+    margin-top: 0;
+}
+.admin-string-list h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+.admin-string-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.9rem;
+}
+.admin-string-actions > button:only-child {
+    margin-left: auto;
+}
+
 /* ───── Automatic emails (settings) ───── */
 .admin-automation {
     margin: 0;

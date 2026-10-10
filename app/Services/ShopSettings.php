@@ -26,7 +26,8 @@ class ShopSettings
     private ?array $saved = null;
 
     /**
-     * Everything the settings page edits: all(), and the automatic emails as "marketing_<rule>".
+     * Everything the settings page edits: all(), the automatic emails as "marketing_<rule>" and
+     * the stringing service as "stringing_<rule>".
      *
      * @return array<string, int|string|bool>
      */
@@ -36,8 +37,24 @@ class ShopSettings
         foreach ($this->marketing() as $rule => $value) {
             $page['marketing_'.$rule] = $value;
         }
+        foreach ($this->stringing() as $rule => $value) {
+            $page['stringing_'.$rule] = $value;
+        }
 
         return $page;
+    }
+
+    /**
+     * The stringing service: whether requests are taken online, and the fee for stringing one
+     * racket (App\Services\StringingService).
+     *
+     * @return array{enabled: bool, fee: int}
+     */
+    public function stringing(): array
+    {
+        $rule = fn (string $key): int => (int) ($this->saved()['stringing_'.$key] ?? config('shop.stringing.'.$key));
+
+        return ['enabled' => $rule('enabled') === 1, 'fee' => $rule('fee')];
     }
 
     /**

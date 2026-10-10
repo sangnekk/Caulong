@@ -40,6 +40,20 @@ return [
         'batch' => 200,
         'winback_every_days' => 180,
     ],
+    // The racket stringing service (App\Services\StringingService). The strings and their prices
+    // are the shop's own list in /admin/service-strings: none are made up here.
+    'stringing' => [
+        // Whether requests are taken online; the owner switches it in /admin/settings.
+        'enabled' => true,
+        // Dong for stringing one racket, besides the string. 0: told when the racket is handed in.
+        'fee' => 0,
+        // The tensions the form takes, in kg, in steps of half a kilogram.
+        'tension_min' => 8,
+        'tension_max' => 15,
+        // How many rackets one request can hold, and how far ahead a visit can be planned.
+        'max_rackets' => 10,
+        'book_ahead_days' => 30,
+    ],
     // The support chat (App\Services\SupportChat).
     'support' => [
         // Days a conversation staff marked as solved waits for the customer before it closes itself.

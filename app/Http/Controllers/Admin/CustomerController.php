@@ -7,6 +7,7 @@ use App\Models\ProductReview;
 use App\Models\User;
 use App\Services\CustomerProfile;
 use App\Services\CustomerSegmentation;
+use App\Services\StringingService;
 use App\Services\SupportChat;
 use App\Support\DemoData;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ use Inertia\Response;
 /** Registered accounts and what they have ordered. Guests who check out without an account are in Orders. */
 class CustomerController extends Controller
 {
-    private const TABS = ['overview', 'orders', 'timeline', 'products', 'coupons', 'conversations', 'reviews'];
+    private const TABS = ['overview', 'orders', 'timeline', 'products', 'coupons', 'services', 'conversations', 'reviews'];
 
     public function index(Request $request): Response
     {
@@ -68,7 +69,7 @@ class CustomerController extends Controller
     }
 
     /** One account: its figures, then the tab asked for. Each tab loads only its own data. */
-    public function show(Request $request, User $user, CustomerProfile $profile, CustomerSegmentation $segments, SupportChat $chat): Response
+    public function show(Request $request, User $user, CustomerProfile $profile, CustomerSegmentation $segments, SupportChat $chat, StringingService $stringing): Response
     {
         $validated = $request->validate([
             'tab' => ['nullable', Rule::in(self::TABS)],
@@ -109,6 +110,7 @@ class CustomerController extends Controller
             },
             'products' => $tab === 'products' ? $profile->products($user, $demo) : null,
             'coupons' => $tab === 'coupons' ? $profile->coupons($user) : null,
+            'services' => $tab === 'services' ? $stringing->history($user, 50) : null,
             // Every conversation of theirs in the support chat, tickets or not.
             'conversations' => $tab === 'conversations' ? $chat->history($user, 50) : null,
             'reviews' => $tab === 'reviews'

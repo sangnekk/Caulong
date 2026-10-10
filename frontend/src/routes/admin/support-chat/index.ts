@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::claim
- * @see app/Http/Controllers/Admin/SupportChatController.php:105
+ * @see app/Http/Controllers/Admin/SupportChatController.php:111
  * @route '/admin/support-chat/{conversation}/claim'
  */
 export const claim = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ claim.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::claim
- * @see app/Http/Controllers/Admin/SupportChatController.php:105
+ * @see app/Http/Controllers/Admin/SupportChatController.php:111
  * @route '/admin/support-chat/{conversation}/claim'
  */
 claim.url = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -127,7 +127,7 @@ claim.url = (args: { conversation: number | { id: number } } | [conversation: nu
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::claim
- * @see app/Http/Controllers/Admin/SupportChatController.php:105
+ * @see app/Http/Controllers/Admin/SupportChatController.php:111
  * @route '/admin/support-chat/{conversation}/claim'
  */
 claim.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -137,7 +137,7 @@ claim.post = (args: { conversation: number | { id: number } } | [conversation: n
 
     /**
 * @see \App\Http\Controllers\Admin\SupportChatController::claim
- * @see app/Http/Controllers/Admin/SupportChatController.php:105
+ * @see app/Http/Controllers/Admin/SupportChatController.php:111
  * @route '/admin/support-chat/{conversation}/claim'
  */
     const claimForm = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -147,7 +147,7 @@ claim.post = (args: { conversation: number | { id: number } } | [conversation: n
 
             /**
 * @see \App\Http\Controllers\Admin\SupportChatController::claim
- * @see app/Http/Controllers/Admin/SupportChatController.php:105
+ * @see app/Http/Controllers/Admin/SupportChatController.php:111
  * @route '/admin/support-chat/{conversation}/claim'
  */
         claimForm.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -158,7 +158,7 @@ claim.post = (args: { conversation: number | { id: number } } | [conversation: n
     claim.form = claimForm
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::reply
- * @see app/Http/Controllers/Admin/SupportChatController.php:129
+ * @see app/Http/Controllers/Admin/SupportChatController.php:135
  * @route '/admin/support-chat/{conversation}/reply'
  */
 export const reply = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -173,7 +173,7 @@ reply.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::reply
- * @see app/Http/Controllers/Admin/SupportChatController.php:129
+ * @see app/Http/Controllers/Admin/SupportChatController.php:135
  * @route '/admin/support-chat/{conversation}/reply'
  */
 reply.url = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -206,7 +206,7 @@ reply.url = (args: { conversation: number | { id: number } } | [conversation: nu
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::reply
- * @see app/Http/Controllers/Admin/SupportChatController.php:129
+ * @see app/Http/Controllers/Admin/SupportChatController.php:135
  * @route '/admin/support-chat/{conversation}/reply'
  */
 reply.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -216,7 +216,7 @@ reply.post = (args: { conversation: number | { id: number } } | [conversation: n
 
     /**
 * @see \App\Http\Controllers\Admin\SupportChatController::reply
- * @see app/Http/Controllers/Admin/SupportChatController.php:129
+ * @see app/Http/Controllers/Admin/SupportChatController.php:135
  * @route '/admin/support-chat/{conversation}/reply'
  */
     const replyForm = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -226,7 +226,7 @@ reply.post = (args: { conversation: number | { id: number } } | [conversation: n
 
             /**
 * @see \App\Http\Controllers\Admin\SupportChatController::reply
- * @see app/Http/Controllers/Admin/SupportChatController.php:129
+ * @see app/Http/Controllers/Admin/SupportChatController.php:135
  * @route '/admin/support-chat/{conversation}/reply'
  */
         replyForm.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -237,7 +237,7 @@ reply.post = (args: { conversation: number | { id: number } } | [conversation: n
     reply.form = replyForm
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::resolve
- * @see app/Http/Controllers/Admin/SupportChatController.php:149
+ * @see app/Http/Controllers/Admin/SupportChatController.php:155
  * @route '/admin/support-chat/{conversation}/resolve'
  */
 export const resolve = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -252,7 +252,7 @@ resolve.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::resolve
- * @see app/Http/Controllers/Admin/SupportChatController.php:149
+ * @see app/Http/Controllers/Admin/SupportChatController.php:155
  * @route '/admin/support-chat/{conversation}/resolve'
  */
 resolve.url = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -285,7 +285,7 @@ resolve.url = (args: { conversation: number | { id: number } } | [conversation: 
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::resolve
- * @see app/Http/Controllers/Admin/SupportChatController.php:149
+ * @see app/Http/Controllers/Admin/SupportChatController.php:155
  * @route '/admin/support-chat/{conversation}/resolve'
  */
 resolve.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -295,7 +295,7 @@ resolve.post = (args: { conversation: number | { id: number } } | [conversation:
 
     /**
 * @see \App\Http\Controllers\Admin\SupportChatController::resolve
- * @see app/Http/Controllers/Admin/SupportChatController.php:149
+ * @see app/Http/Controllers/Admin/SupportChatController.php:155
  * @route '/admin/support-chat/{conversation}/resolve'
  */
     const resolveForm = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -305,7 +305,7 @@ resolve.post = (args: { conversation: number | { id: number } } | [conversation:
 
             /**
 * @see \App\Http\Controllers\Admin\SupportChatController::resolve
- * @see app/Http/Controllers/Admin/SupportChatController.php:149
+ * @see app/Http/Controllers/Admin/SupportChatController.php:155
  * @route '/admin/support-chat/{conversation}/resolve'
  */
         resolveForm.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -316,7 +316,7 @@ resolve.post = (args: { conversation: number | { id: number } } | [conversation:
     resolve.form = resolveForm
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::close
- * @see app/Http/Controllers/Admin/SupportChatController.php:161
+ * @see app/Http/Controllers/Admin/SupportChatController.php:167
  * @route '/admin/support-chat/{conversation}/close'
  */
 export const close = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -331,7 +331,7 @@ close.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::close
- * @see app/Http/Controllers/Admin/SupportChatController.php:161
+ * @see app/Http/Controllers/Admin/SupportChatController.php:167
  * @route '/admin/support-chat/{conversation}/close'
  */
 close.url = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
@@ -364,7 +364,7 @@ close.url = (args: { conversation: number | { id: number } } | [conversation: nu
 
 /**
 * @see \App\Http\Controllers\Admin\SupportChatController::close
- * @see app/Http/Controllers/Admin/SupportChatController.php:161
+ * @see app/Http/Controllers/Admin/SupportChatController.php:167
  * @route '/admin/support-chat/{conversation}/close'
  */
 close.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -374,7 +374,7 @@ close.post = (args: { conversation: number | { id: number } } | [conversation: n
 
     /**
 * @see \App\Http\Controllers\Admin\SupportChatController::close
- * @see app/Http/Controllers/Admin/SupportChatController.php:161
+ * @see app/Http/Controllers/Admin/SupportChatController.php:167
  * @route '/admin/support-chat/{conversation}/close'
  */
     const closeForm = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -384,7 +384,7 @@ close.post = (args: { conversation: number | { id: number } } | [conversation: n
 
             /**
 * @see \App\Http\Controllers\Admin\SupportChatController::close
- * @see app/Http/Controllers/Admin/SupportChatController.php:161
+ * @see app/Http/Controllers/Admin/SupportChatController.php:167
  * @route '/admin/support-chat/{conversation}/close'
  */
         closeForm.post = (args: { conversation: number | { id: number } } | [conversation: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

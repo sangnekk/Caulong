@@ -237,11 +237,75 @@ export const emailTypes: Record<string, string> = {
     order_delivered: 'Đơn đã giao',
     order_cancelled: 'Đơn đã hủy',
     coupon: 'Tặng mã giảm giá',
+    service_placed: 'Đã nhận yêu cầu đan dây',
+    service_ready: 'Vợt đã đan xong',
+    service_cancelled: 'Hủy yêu cầu đan dây',
     abandoned_cart: 'Nhắc giỏ hàng',
     winback: 'Mời khách quay lại',
     post_purchase: 'Mời đánh giá',
     vip: 'Cảm ơn khách VIP',
 };
+
+/** Where a stringing request stands (App\Services\StringingService::STATUSES), as staff say it. */
+export type ServiceState =
+    | 'pending'
+    | 'confirmed'
+    | 'in_progress'
+    | 'ready'
+    | 'completed'
+    | 'cancelled';
+export const serviceStates: Record<ServiceState, [string, string | undefined]> =
+    {
+        pending: ['Chờ xác nhận', 'warning'],
+        confirmed: ['Đã hẹn', 'accent'],
+        in_progress: ['Đang đan', 'info'],
+        ready: ['Chờ khách lấy', 'success'],
+        completed: ['Đã trả vợt', undefined],
+        cancelled: ['Đã hủy', 'danger'],
+    };
+
+export function ServiceStatus({ status }: { status: ServiceState }) {
+    const [label, tone] = serviceStates[status] ?? [status, undefined];
+    return (
+        <span className="admin-badge" data-tone={tone}>
+            {label}
+        </span>
+    );
+}
+
+/** A stringing request in a list (App\Services\StringingService::summary). */
+export type ServiceSummary = {
+    id: number;
+    public_id: string;
+    /** The short code the customer reads out at the counter. */
+    code: string;
+    status: ServiceState;
+    racket: string;
+    string_name: string | null;
+    service_type: 'shop_string' | 'own_string';
+    tension_kg: number;
+    quantity: number;
+    total: number;
+    created_at: string;
+};
+
+/** The racket, the string and the tension of a request, in one line. */
+export const serviceLine = (
+    order: Pick<
+        ServiceSummary,
+        'racket' | 'quantity' | 'string_name' | 'service_type' | 'tension_kg'
+    >,
+) =>
+    order.racket +
+    (order.quantity > 1 ? ' × ' + order.quantity : '') +
+    ' · ' +
+    (order.service_type === 'own_string'
+        ? 'dây khách mang tới' +
+          (order.string_name ? ' (' + order.string_name + ')' : '')
+        : (order.string_name ?? 'dây của shop')) +
+    ' · ' +
+    order.tension_kg.toLocaleString('vi-VN') +
+    ' kg';
 
 /** Staff roles (App\Models\User::ROLES), as the admin names them. */
 export const staffRoles: Record<string, string> = {

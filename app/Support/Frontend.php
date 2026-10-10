@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\ServiceOrder;
 use App\Models\User;
 use Illuminate\Support\Facades\URL;
 
@@ -35,6 +36,14 @@ final class Frontend
     {
         return self::url(URL::temporarySignedRoute(
             'orders.show', now()->addDays(self::ORDER_LINK_DAYS), ['order' => $order->public_id], absolute: false,
+        ));
+    }
+
+    /** A stringing request's page, opened the same way: by the signature, for as long. */
+    public static function serviceOrder(ServiceOrder $order): string
+    {
+        return self::url(URL::temporarySignedRoute(
+            'service-orders.show', now()->addDays(self::ORDER_LINK_DAYS), ['serviceOrder' => $order->public_id], absolute: false,
         ));
     }
 

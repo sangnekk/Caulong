@@ -155,6 +155,43 @@ export type Order = Totals & {
         line_total: number;
     }[];
 };
+/** Where a stringing request stands (App\Services\StringingService::STATUSES). */
+export type ServiceStatus =
+    | 'pending'
+    | 'confirmed'
+    | 'in_progress'
+    | 'ready'
+    | 'completed'
+    | 'cancelled';
+/** A request to have rackets strung, as lists show it. */
+export type ServiceOrderSummary = {
+    id: number;
+    public_id: string;
+    /** The short code the customer reads out at the counter. */
+    code: string;
+    status: ServiceStatus;
+    racket: string;
+    string_name: string | null;
+    /** The shop's string, or one the customer brings. */
+    service_type: 'shop_string' | 'own_string';
+    tension_kg: number;
+    quantity: number;
+    /** What is paid when the racket is collected; 0 while the shop has not said. */
+    total: number;
+    created_at: string;
+};
+/** The steps of a stringing request, in the customer's words, with the tone of their badge. */
+export const serviceStatuses: Record<ServiceStatus, [string, string]> = {
+    pending: ['Chờ cửa hàng xác nhận', 'warning'],
+    confirmed: ['Đã hẹn', 'accent'],
+    in_progress: ['Đang đan', 'info'],
+    ready: ['Đã đan xong', 'success'],
+    completed: ['Đã trả vợt', ''],
+    cancelled: ['Đã hủy', 'danger'],
+};
+/** A tension as it is said: "11,5 kg". */
+export const kg = (value: number): string =>
+    value.toLocaleString('vi-VN') + ' kg';
 export type ShopSharedProps = {
     shop: {
         cart_count: number;
@@ -165,6 +202,10 @@ export type ShopSharedProps = {
         pending_orders?: number;
         pending_support_chats?: number;
         pending_reviews?: number;
+        /** Stringing requests the shop has not answered yet (admins only). */
+        pending_service_orders?: number;
+        /** The shop takes stringing requests online. */
+        stringing?: boolean;
         shipping_fee?: number;
         contact?: {
             hotline: string;

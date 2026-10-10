@@ -46,6 +46,9 @@ class SettingsController extends Controller
             'marketing_vip' => ['sometimes', 'required', 'boolean'],
             'marketing_vip_percent' => ['sometimes', 'required', 'integer', 'between:1,50'],
             'marketing_vip_valid_days' => ['sometimes', 'required', 'integer', 'between:1,90'],
+            // The stringing service: taken online or not, and the fee for one racket.
+            'stringing_enabled' => ['sometimes', 'required', 'boolean'],
+            'stringing_fee' => ['sometimes', 'required', 'integer', 'min:0', 'max:5000000'],
         ], [
             'shipping_fee.*' => 'Phí giao hàng phải là số tiền từ 0 đến 5.000.000 ₫.',
             'free_shipping_threshold.*' => 'Mức miễn phí giao hàng phải là số tiền hợp lệ.',
@@ -65,6 +68,8 @@ class SettingsController extends Controller
             'marketing_vip_percent.*' => 'Mức giảm cho khách VIP phải từ 1% đến 50%.',
             'marketing_vip_valid_days.*' => 'Số ngày hiệu lực của mã cho khách VIP phải từ 1 đến 90.',
             'marketing_*' => 'Lựa chọn email tự động không hợp lệ.',
+            'stringing_fee.*' => 'Phí công đan phải là số tiền từ 0 đến 5.000.000 ₫.',
+            'stringing_enabled.*' => 'Lựa chọn nhận đặt lịch đan dây không hợp lệ.',
         ]);
         $settings->save([
             'shipping_fee' => (int) $data['shipping_fee'],
@@ -75,7 +80,7 @@ class SettingsController extends Controller
             'contact_chat_url' => $data['contact_chat_url'] ?? null,
             ...array_map('intval', array_filter(
                 $data,
-                fn (string $key) => str_starts_with($key, 'segment_') || str_starts_with($key, 'marketing_'),
+                fn (string $key) => str_starts_with($key, 'segment_') || str_starts_with($key, 'marketing_') || str_starts_with($key, 'stringing_'),
                 ARRAY_FILTER_USE_KEY,
             )),
         ]);

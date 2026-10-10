@@ -8,6 +8,7 @@ import CustomerEventController from './CustomerEventController'
 import MarketingConsentController from './MarketingConsentController'
 import WishlistController from './WishlistController'
 import ReviewController from './ReviewController'
+import ServiceOrderController from './ServiceOrderController'
 import SupportChatController from './SupportChatController'
 import Admin from './Admin'
 import AdvisorController from './AdvisorController'
@@ -22,6 +23,7 @@ CustomerEventController: Object.assign(CustomerEventController, CustomerEventCon
 MarketingConsentController: Object.assign(MarketingConsentController, MarketingConsentController),
 WishlistController: Object.assign(WishlistController, WishlistController),
 ReviewController: Object.assign(ReviewController, ReviewController),
+ServiceOrderController: Object.assign(ServiceOrderController, ServiceOrderController),
 SupportChatController: Object.assign(SupportChatController, SupportChatController),
 Admin: Object.assign(Admin, Admin),
 AdvisorController: Object.assign(AdvisorController, AdvisorController),

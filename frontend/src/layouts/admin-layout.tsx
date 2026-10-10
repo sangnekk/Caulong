@@ -20,6 +20,7 @@ import {
     TicketPercent,
     UserRound,
     Users,
+    Wrench,
     X,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -37,6 +38,8 @@ const workNav = [
     { href: '/admin', label: 'Tổng quan', icon: LayoutDashboard },
     { href: '/admin/reports', label: 'Báo cáo', icon: ChartColumn },
     { href: '/admin/orders', label: 'Đơn hàng', icon: ReceiptText },
+    // The stringing service; its list of strings (/admin/service-strings) is part of it.
+    { href: '/admin/service-orders', label: 'Đan dây', icon: Wrench },
     { href: '/admin/support-chat', label: 'Chat hỗ trợ', icon: MessageCircle },
     { href: '/admin/products', label: 'Sản phẩm', icon: Package },
     { href: '/admin/imports', label: 'Nhập hàng', icon: FileUp },
@@ -65,6 +68,7 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     const pending = props.shop?.pending_orders ?? 0;
     const pendingSupportChats = props.shop?.pending_support_chats ?? 0;
     const pendingReviews = props.shop?.pending_reviews ?? 0;
+    const pendingServices = props.shop?.pending_service_orders ?? 0;
     // Support staff answer customers and nothing else: Laravel refuses them the other pages,
     // so the menu does not offer them.
     const support = props.shop?.staff_role === 'support';
@@ -126,7 +130,11 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     }, [path, pendingSupportChats]);
 
     const isCurrent = (href: string) =>
-        href === '/admin' ? path === href : path.startsWith(href);
+        href === '/admin'
+            ? path === href
+            : path.startsWith(href) ||
+              (href === '/admin/service-orders' &&
+                  path.startsWith('/admin/service-strings'));
     const signOut = () => {
         setSigningOut(true);
         router.post('/logout', {}, { onFinish: () => setSigningOut(false) });
@@ -177,6 +185,18 @@ export default function AdminLayout({ children }: PropsWithChildren) {
                                                 }
                                             >
                                                 {pending}
+                                            </span>
+                                        )}
+                                    {href === '/admin/service-orders' &&
+                                        pendingServices > 0 && (
+                                            <span
+                                                className="admin-nav-count"
+                                                aria-label={
+                                                    pendingServices +
+                                                    ' yêu cầu đan dây chờ xác nhận'
+                                                }
+                                            >
+                                                {pendingServices}
                                             </span>
                                         )}
                                     {href === '/admin/support-chat' &&

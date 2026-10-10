@@ -15,6 +15,8 @@ import {
     query,
     ReviewStatus,
     SegmentBadge,
+    serviceLine,
+    ServiceStatus,
     staffRoles,
     Stars,
     Tabs,
@@ -26,6 +28,7 @@ import type {
     Order,
     Pagination,
     ReviewState,
+    ServiceSummary,
 } from './shared';
 
 type Customer = {
@@ -107,6 +110,7 @@ type Tab =
     | 'timeline'
     | 'products'
     | 'coupons'
+    | 'services'
     | 'conversations'
     | 'reviews';
 
@@ -116,6 +120,7 @@ const tabs: [Tab, string][] = [
     ['timeline', 'Hoạt động'],
     ['products', 'Sản phẩm'],
     ['coupons', 'Mã giảm giá'],
+    ['services', 'Đan dây'],
     ['conversations', 'Hội thoại'],
     ['reviews', 'Đánh giá'],
 ];
@@ -255,6 +260,7 @@ export default function CustomerDetail({
     timeline,
     products,
     coupons,
+    services,
     conversations,
     reviews,
 }: {
@@ -267,6 +273,7 @@ export default function CustomerDetail({
     timeline: Timeline | null;
     products: Products | null;
     coupons: Coupons | null;
+    services: ServiceSummary[] | null;
     conversations: ChatSummary[] | null;
     reviews: Review[] | null;
 }) {
@@ -659,6 +666,44 @@ export default function CustomerDetail({
                     </section>
                 </div>
             )}
+
+            {tab === 'services' &&
+                services &&
+                (services.length ? (
+                    <section
+                        className="admin-panel"
+                        aria-label="Yêu cầu đan dây của khách"
+                    >
+                        <ul className="admin-low-stock">
+                            {services.map((request) => (
+                                <li key={request.id}>
+                                    <span>
+                                        <Link
+                                            href={
+                                                '/admin/service-orders/' +
+                                                request.id
+                                            }
+                                        >
+                                            #{request.id} ·{' '}
+                                            {serviceLine(request)}
+                                        </Link>
+                                        <small className="admin-muted">
+                                            {dateTime(request.created_at)}
+                                            {request.total > 0 &&
+                                                ' · ' + money(request.total)}
+                                        </small>
+                                    </span>
+                                    <ServiceStatus status={request.status} />
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                ) : (
+                    <div className="admin-empty">
+                        <strong>Chưa gửi yêu cầu đan dây nào.</strong>
+                        Yêu cầu khách gửi khi đã đăng nhập sẽ hiện ở đây.
+                    </div>
+                ))}
 
             {tab === 'conversations' &&
                 conversations &&

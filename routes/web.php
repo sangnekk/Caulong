@@ -28,6 +28,7 @@ require __DIR__.'/settings.php';
 require __DIR__.'/catalog.php';
 require __DIR__.'/checkout.php';
 require __DIR__.'/customer.php';
+require __DIR__.'/services.php';
 require __DIR__.'/support-chat.php';
 require __DIR__.'/admin.php';
 require __DIR__.'/advisor.php';

@@ -26,6 +26,10 @@ type Settings = {
     marketing_vip: boolean;
     marketing_vip_percent: number;
     marketing_vip_valid_days: number;
+    /** The stringing service is offered on the storefront. */
+    stringing_enabled: boolean;
+    /** Dong for stringing one racket, besides the string; 0: said when the racket is handed in. */
+    stringing_fee: number;
 };
 type NumberSetting = {
     [Key in keyof Settings]: Settings[Key] extends number ? Key : never;
@@ -496,6 +500,76 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
                             </div>
                         </fieldset>
                     ))}
+                </section>
+
+                <section
+                    className="admin-form-section"
+                    aria-labelledby="stringing-title"
+                >
+                    <h2 id="stringing-title">Dịch vụ đan dây</h2>
+                    <p className="admin-lead">
+                        Khách gửi yêu cầu ở trang Đan dây của cửa hàng, mang vợt
+                        tới và trả tiền khi nhận lại. Các loại dây và giá từng
+                        loại ở{' '}
+                        <Link href="/admin/service-strings">
+                            Dây đan và giá
+                        </Link>
+                        ; yêu cầu của khách ở{' '}
+                        <Link href="/admin/service-orders">Đan dây</Link>.
+                    </p>
+                    <label className="admin-check">
+                        <input
+                            type="checkbox"
+                            checked={data.stringing_enabled}
+                            onChange={(e) =>
+                                form.setData(
+                                    'stringing_enabled',
+                                    e.target.checked,
+                                )
+                            }
+                        />
+                        Nhận yêu cầu đan dây trên website
+                    </label>
+                    <div className="admin-form-grid">
+                        <Field
+                            name="stringing_fee"
+                            label="Phí công đan mỗi cây (₫)"
+                            error={form.errors.stringing_fee}
+                        >
+                            <input
+                                id="stringing_fee"
+                                type="number"
+                                inputMode="numeric"
+                                min={0}
+                                max={5000000}
+                                step={1000}
+                                required
+                                value={data.stringing_fee}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'stringing_fee',
+                                        e.target.value === ''
+                                            ? 0
+                                            : Math.max(
+                                                  0,
+                                                  Math.floor(
+                                                      Number(e.target.value),
+                                                  ),
+                                              ),
+                                    )
+                                }
+                                aria-describedby="stringing_fee-help"
+                                aria-invalid={!!form.errors.stringing_fee}
+                            />
+                            <small id="stringing_fee-help">
+                                {data.stringing_fee
+                                    ? 'Cộng ' +
+                                      money(data.stringing_fee) +
+                                      ' cho mỗi cây vợt, ngoài tiền dây.'
+                                    : 'Để 0: trang Đan dây ghi “báo khi nhận vợt”, bạn nhập số tiền ở từng yêu cầu.'}
+                            </small>
+                        </Field>
+                    </div>
                 </section>
 
                 <section

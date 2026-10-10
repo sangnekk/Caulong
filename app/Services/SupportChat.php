@@ -34,7 +34,7 @@ class SupportChat
     /** Ten of them: about 10^15 codes, far beyond what the lookup's attempt limit lets anyone try. */
     private const CODE_LENGTH = 10;
 
-    public function __construct(private CustomerEvents $events, private CustomerProfile $profile) {}
+    public function __construct(private CustomerEvents $events, private CustomerProfile $profile, private StringingService $stringing) {}
 
     /**
      * The conversation this visitor is in: the one their browser session started, or, for a
@@ -209,6 +209,7 @@ class SupportChat
      *     orders: list<array{id: int, code: string, status: string, payment_status: string, total: int, is_demo: bool, created_at: string}>,
      *     purchased: list<array{name: string, units: int}>,
      *     viewed: list<array{id: int, name: string}>,
+     *     services: list<array{id: int, public_id: string, code: string, status: string, racket: string, string_name: string|null, service_type: string, tension_kg: float, quantity: int, total: int, created_at: string}>,
      *     conversations: list<array{id: int, status: string, needs_human: bool, started_at: string, last_message_at: string|null, excerpt: string, messages: int, assigned_name: string|null}>
      * }
      */
@@ -258,6 +259,8 @@ class SupportChat
                 array_slice($products['purchased'], 0, 5),
             ),
             'viewed' => $viewed,
+            // The rackets they had strung, or asked to: the stringing service's own requests.
+            'services' => $customer === null ? [] : $this->stringing->history($customer, 3),
             'conversations' => $this->summaries(($customer !== null
                 ? $customer->conversations()->getQuery()
                 : SupportConversation::query()->whereNull('user_id')->where('session_key', $conversation->session_key))

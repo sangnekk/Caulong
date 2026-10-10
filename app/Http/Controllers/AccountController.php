@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CouponService;
+use App\Services\StringingService;
 use App\Services\SupportChat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +19,7 @@ use Inertia\Response;
 /** The customer's own account: orders, saved products, details, password, sign-out. */
 class AccountController extends Controller
 {
-    public function show(Request $request, CouponService $coupons, SupportChat $chat): Response
+    public function show(Request $request, CouponService $coupons, SupportChat $chat, StringingService $stringing): Response
     {
         /** @var User $user */
         $user = $request->user();
@@ -53,6 +54,8 @@ class AccountController extends Controller
                 ])->all(),
             // Coupons made for this customer or for their group; nobody else's.
             'coupons' => $coupons->givenTo($user),
+            // The rackets they asked the shop to string.
+            'serviceOrders' => $stringing->history($user, 10),
             // Their conversations with the shop; each is read in full from /support-chat/conversations/{id}.
             'conversations' => array_map(
                 fn (array $conversation) => array_diff_key($conversation, ['needs_human' => true, 'assigned_name' => true]),

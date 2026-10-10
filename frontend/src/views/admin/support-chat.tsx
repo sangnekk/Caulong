@@ -11,8 +11,10 @@ import {
     OrderStatus,
     PageHeader,
     SegmentBadge,
+    serviceLine,
+    ServiceStatus,
 } from './shared';
-import type { ChatState, ChatSummary } from './shared';
+import type { ChatState, ChatSummary, ServiceSummary } from './shared';
 
 type Conversation = {
     id: number;
@@ -68,6 +70,8 @@ type Context = {
     }[];
     purchased: { name: string; units: number }[];
     viewed: { id: number; name: string }[];
+    /** The rackets they asked the shop to string. */
+    services: ServiceSummary[];
     conversations: ChatSummary[];
 };
 
@@ -197,6 +201,35 @@ function ContextPanel({
                         {context.viewed.map((product) => (
                             <li key={product.id}>
                                 <span>{product.name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+            {context.services.length > 0 && (
+                <section>
+                    <h3>Đan dây</h3>
+                    <ul>
+                        {context.services.map((request) => (
+                            <li key={request.id}>
+                                <span>
+                                    {canManageShop ? (
+                                        <Link
+                                            href={
+                                                '/admin/service-orders/' +
+                                                request.id
+                                            }
+                                        >
+                                            {request.code}
+                                        </Link>
+                                    ) : (
+                                        <strong>{request.code}</strong>
+                                    )}
+                                    <small className="admin-muted">
+                                        {serviceLine(request)}
+                                    </small>
+                                </span>
+                                <ServiceStatus status={request.status} />
                             </li>
                         ))}
                     </ul>
