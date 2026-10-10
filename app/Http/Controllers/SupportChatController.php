@@ -4,18 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\SupportConversation;
-use App\Models\SupportMessage;
-use App\Services\CustomerEvents;
+use App\Services\SupportChat;
 use App\Services\SupportChatResponder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
+/** The customer's side of the support chat: the widget on every shop page (JSON). */
 class SupportChatController extends Controller
 {
+    /** Wrong codes one address may try before the lookup stops answering for a while. */
+    private const LOOKUP_ATTEMPTS = 5;
+
+    private const LOOKUP_MINUTES = 10;
+
     public function context(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -41,17 +45,12 @@ class SupportChatController extends Controller
         return response()->json(['purchased_products' => $products]);
     }
 
-    public function index(Request $request): JsonResponse
+    public function index(Request $request, SupportChat $chat): JsonResponse
     {
-        $conversation = $this->conversation($request);
-
-        return response()->json([
-            'status' => $conversation?->status,
-            'messages' => $conversation ? $this->messages($conversation) : [],
-        ]);
+        return response()->json($this->state($chat, $chat->current($request)));
     }
 
-    public function store(Request $request, SupportChatResponder $responder, CustomerEvents $events): JsonResponse
+    public function store(Request $request, SupportChat $chat, SupportChatResponder $responder): JsonResponse
     {
         $validated = $request->validate(['message' => ['required', 'string', 'max:1000']]);
         $body = trim($validated['message']);
@@ -70,59 +69,81 @@ class SupportChatController extends Controller
         }
         RateLimiter::hit($sessionRateKey, 60);
 
-        $conversation = $this->conversation($request);
+        $conversation = $chat->current($request);
         if (! $conversation || $conversation->status === 'closed') {
-            $sessionKey = hash_hmac('sha256', $request->session()->getId(), (string) config('app.key'));
-            $conversation = SupportConversation::create(['session_key' => $sessionKey]);
-            $request->session()->put('support_conversation_id', $conversation->id);
-            $events->record($request, 'chat_started');
+            $conversation = $chat->start($request);
+        }
+        $chat->customerWrote($conversation, $body, $responder->reply($body, $request->user() === null));
+
+        return response()->json($this->state($chat, $conversation->refresh()));
+    }
+
+    /**
+     * A code to read this conversation again later, on any device and without an account.
+     * Only once the conversation is solved or closed, and only for whoever is still in it.
+     */
+    public function code(Request $request, SupportChat $chat): JsonResponse
+    {
+        $conversation = $chat->current($request);
+        if (! $conversation || ! in_array($conversation->status, ['resolved', 'closed'], true)) {
+            return response()->json(['message' => 'Mã xem lại chỉ có khi cuộc trò chuyện đã được giải quyết hoặc đã đóng.'], 422);
+        }
+        $issued = $chat->issueCode($conversation);
+
+        return response()->json(['code' => $issued['code'], 'expires_at' => $issued['expires_at']->toIso8601String()]);
+    }
+
+    /** Reads a finished conversation with its code. Wrong codes are counted per address. */
+    public function lookup(Request $request, SupportChat $chat): JsonResponse
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
+        $attempts = 'support-chat-lookup:'.$request->ip();
+        if (RateLimiter::tooManyAttempts($attempts, self::LOOKUP_ATTEMPTS)) {
+            return response()->json(['message' => 'Bạn đã nhập sai mã nhiều lần. Vui lòng thử lại sau '.self::LOOKUP_MINUTES.' phút.'], 429);
+        }
+        $conversation = $chat->byCode($data['code']);
+        if (! $conversation) {
+            RateLimiter::hit($attempts, self::LOOKUP_MINUTES * 60);
+
+            // The same answer for a code that never existed and one that ran out.
+            return response()->json(['message' => 'Mã không đúng hoặc đã hết hạn.'], 404);
         }
 
-        $guest = $request->user() === null;
-        DB::transaction(function () use ($conversation, $body, $responder, $guest): void {
-            $reply = $responder->reply($body, $guest);
-            $conversation->messages()->create([
-                'sender' => 'customer',
-                'body' => $body,
-                'read_at' => $reply['needs_human'] ? null : now(),
-            ]);
-            $conversation->messages()->create([
-                'sender' => 'bot',
-                'body' => $reply['body'],
-                'action_url' => $reply['action_url'],
-                'action_label' => $reply['action_label'],
-            ]);
-            $conversation->forceFill([
-                'needs_human' => $conversation->needs_human || $reply['needs_human'],
-                'last_message_at' => now(),
-            ])->save();
-        });
-        $conversation->refresh();
+        return response()->json($this->transcript($chat, $conversation));
+    }
 
-        return response()->json([
+    /** One of the signed-in customer's own conversations, for the history on their account page. */
+    public function show(Request $request, SupportConversation $conversation, SupportChat $chat): JsonResponse
+    {
+        abort_unless($conversation->user_id !== null && $conversation->user_id === $request->user()?->id, 404);
+
+        return response()->json($this->transcript($chat, $conversation));
+    }
+
+    /**
+     * What the widget shows: the conversation the visitor is in, if any.
+     *
+     * @return array<string, mixed>
+     */
+    private function state(SupportChat $chat, ?SupportConversation $conversation): array
+    {
+        return [
+            'status' => $conversation?->status,
+            'messages' => $conversation ? $chat->messages($conversation) : [],
+            // Whether a code to read it again can be asked for, and until when the last one is good.
+            'can_request_code' => $conversation !== null && in_array($conversation->status, ['resolved', 'closed'], true),
+            'code_expires_at' => $conversation?->access_code_expires_at?->isFuture() ? $conversation->access_code_expires_at->toIso8601String() : null,
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function transcript(SupportChat $chat, SupportConversation $conversation): array
+    {
+        return [
             'status' => $conversation->status,
-            'messages' => $this->messages($conversation),
-        ]);
-    }
-
-    /** @return list<array{id: int, sender: string, body: string, action_url: string|null, action_label: string|null, created_at: string}> */
-    private function messages(SupportConversation $conversation): array
-    {
-        return array_values($conversation->messages()->oldest('id')->limit(100)->get()
-            ->map(fn (SupportMessage $message) => [
-                'id' => $message->id,
-                'sender' => $message->sender,
-                'body' => $message->body,
-                'action_url' => $message->action_url,
-                'action_label' => $message->action_label,
-                'created_at' => $message->created_at->toIso8601String(),
-            ])->all());
-    }
-
-    private function conversation(Request $request): ?SupportConversation
-    {
-        $id = $request->session()->get('support_conversation_id');
-
-        return is_numeric($id) ? SupportConversation::find((int) $id) : null;
+            'started_at' => $conversation->created_at->toIso8601String(),
+            'closed_at' => $conversation->closed_at?->toIso8601String(),
+            'messages' => $chat->messages($conversation, 200),
+        ];
     }
 }

@@ -1,6 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
-import settings from './settings'
 import supportChat from './support-chat'
+import settings from './settings'
 import products from './products'
 import orders from './orders'
 import taxonomies from './taxonomies'
@@ -13,7 +13,7 @@ import categories from './categories'
 import imports from './imports'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -28,7 +28,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -37,7 +37,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -46,7 +46,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -56,7 +56,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
     const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -66,7 +66,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
         dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -75,7 +75,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:21
+ * @see app/Http/Controllers/Admin/DashboardController.php:22
  * @route '/admin'
  */
         dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -169,9 +169,9 @@ reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     reports.form = reportsForm
 const admin = {
     dashboard: Object.assign(dashboard, dashboard),
+supportChat: Object.assign(supportChat, supportChat),
 reports: Object.assign(reports, reports),
 settings: Object.assign(settings, settings),
-supportChat: Object.assign(supportChat, supportChat),
 products: Object.assign(products, products),
 orders: Object.assign(orders, orders),
 taxonomies: Object.assign(taxonomies, taxonomies),

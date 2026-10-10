@@ -2266,6 +2266,136 @@
         max-height: 48vh;
     }
 }
+.admin-chat-tabs a {
+    gap: 0.45rem;
+    white-space: nowrap;
+}
+.admin-chat-tabs a span {
+    min-width: 1.4rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: oklch(0.93 0.01 262);
+    color: var(--ink-2);
+    font-size: 0.75rem;
+    text-align: center;
+}
+.admin-chat-tabs a[aria-current='page'] span {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+.admin-chat-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+.admin-chat-entry-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+/* Who the customer is, next to the conversation; under it when three columns do not fit. */
+.admin-chat-layout[data-context='shown'] {
+    grid-template-columns: minmax(14rem, 18rem) minmax(0, 1fr) minmax(
+            15rem,
+            19rem
+        );
+}
+.admin-chat-context {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    font-size: 0.88rem;
+}
+.admin-chat-context section {
+    padding: 0.8rem 1rem;
+}
+.admin-chat-context section + section {
+    border-top: 1px solid var(--line);
+}
+.admin-chat-context h2,
+.admin-chat-context h3 {
+    margin: 0 0 0.45rem;
+    color: var(--ink-3);
+    font-size: 0.76rem;
+    font-weight: 650;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+.admin-chat-context p {
+    margin: 0;
+}
+.admin-chat-context-name {
+    font-size: 1rem;
+    font-weight: 650;
+}
+.admin-chat-context-name + p {
+    margin-top: 0.2rem;
+    overflow-wrap: anywhere;
+}
+.admin-chat-context-figures {
+    display: grid;
+    gap: 0.3rem;
+    margin: 0.7rem 0 0;
+}
+.admin-chat-context-figures div {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+.admin-chat-context-figures dt {
+    color: var(--ink-3);
+}
+.admin-chat-context-figures dd {
+    margin: 0;
+    font-weight: 600;
+    text-align: right;
+}
+.admin-chat-context ul {
+    display: grid;
+    gap: 0.55rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.admin-chat-context li {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.6rem;
+}
+.admin-chat-context li > span:first-child {
+    display: grid;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.admin-chat-context li .admin-badge {
+    flex: 0 0 auto;
+}
+@media (max-width: 1320px) {
+    .admin-chat-layout[data-context='shown'] {
+        grid-template-columns: minmax(15rem, 22rem) minmax(0, 1fr);
+    }
+    .admin-chat-context {
+        grid-column: 2;
+    }
+}
+@media (max-width: 900px) {
+    .admin-chat-layout[data-context='shown'] {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .admin-chat-context {
+        grid-column: auto;
+    }
+    .admin-chat-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .admin-chat-conversation-head {
+        flex-wrap: wrap;
+    }
+}
 
 /* ───── Automatic emails (settings) ───── */
 .admin-automation {

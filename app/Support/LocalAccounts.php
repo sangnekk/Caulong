@@ -14,10 +14,15 @@ class LocalAccounts
 {
     public const PASSWORD = 'Test-Cau-Long-2026!';
 
-    /** @var list<array{email: string, name: string, admin: bool, role: string}> */
+    /**
+     * `staff` is the account's users.role (null: a customer); `role` is how the login page names it.
+     *
+     * @var list<array{email: string, name: string, staff: value-of<User::ROLES>|null, role: string}>
+     */
     public const ACCOUNTS = [
-        ['email' => 'admin@test.local', 'name' => 'Quản trị Thử nghiệm', 'admin' => true, 'role' => 'Quản trị'],
-        ['email' => 'khach@test.local', 'name' => 'Khách Thử nghiệm', 'admin' => false, 'role' => 'Khách hàng'],
+        ['email' => 'admin@test.local', 'name' => 'Quản trị Thử nghiệm', 'staff' => 'admin', 'role' => 'Quản trị'],
+        ['email' => 'hotro@test.local', 'name' => 'Hỗ trợ Thử nghiệm', 'staff' => 'support', 'role' => 'Nhân viên hỗ trợ'],
+        ['email' => 'khach@test.local', 'name' => 'Khách Thử nghiệm', 'staff' => null, 'role' => 'Khách hàng'],
     ];
 
     public static function enabled(): bool
@@ -46,7 +51,8 @@ class LocalAccounts
                 $user->password = Hash::make(self::PASSWORD);
             }
             $user->forceFill([
-                'is_admin' => $account['admin'],
+                'is_admin' => $account['staff'] !== null,
+                'role' => $account['staff'],
                 'email_verified_at' => $user->email_verified_at ?? now(),
             ]);
             if ($user->isDirty()) {

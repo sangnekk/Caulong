@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
 use App\Services\CouponService;
+use App\Services\SupportChat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -17,7 +18,7 @@ use Inertia\Response;
 /** The customer's own account: orders, saved products, details, password, sign-out. */
 class AccountController extends Controller
 {
-    public function show(Request $request, CouponService $coupons): Response
+    public function show(Request $request, CouponService $coupons, SupportChat $chat): Response
     {
         /** @var User $user */
         $user = $request->user();
@@ -52,6 +53,11 @@ class AccountController extends Controller
                 ])->all(),
             // Coupons made for this customer or for their group; nobody else's.
             'coupons' => $coupons->givenTo($user),
+            // Their conversations with the shop; each is read in full from /support-chat/conversations/{id}.
+            'conversations' => array_map(
+                fn (array $conversation) => array_diff_key($conversation, ['needs_human' => true, 'assigned_name' => true]),
+                $chat->history($user),
+            ),
             'totals' => [
                 'orders' => $user->orders()->count(),
                 'open' => $user->orders()->whereIn('status', ['pending', 'confirmed', 'shipped'])->count(),

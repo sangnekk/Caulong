@@ -40,4 +40,11 @@ return [
         'batch' => 200,
         'winback_every_days' => 180,
     ],
+    // The support chat (App\Services\SupportChat).
+    'support' => [
+        // Days a conversation staff marked as solved waits for the customer before it closes itself.
+        'resolved_days' => 3,
+        // Days the code for reading a finished conversation again stays good.
+        'code_days' => 30,
+    ],
 ];

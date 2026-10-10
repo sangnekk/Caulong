@@ -59,8 +59,10 @@ class HandleInertiaRequests extends Middleware
                 ],
                 'free_shipping_from' => app(ShopSettings::class)->freeShippingThreshold(),
                 'is_admin' => (bool) $request->user()?->is_admin,
+                // What a staff account may open: "admin" the whole of /admin, "support" its inbox only.
+                'staff_role' => $request->user()?->staffRole(),
                 // Admin navigation badge: real orders waiting for a call (demo orders are labelled, not work).
-                'pending_orders' => $request->user()?->is_admin
+                'pending_orders' => $request->user()?->can('manage-shop')
                     ? Order::where('is_demo', false)->where('status', 'pending')->count()
                     : 0,
                 'pending_support_chats' => $request->user()?->is_admin
@@ -68,7 +70,7 @@ class HandleInertiaRequests extends Middleware
                         ->where('sender', 'customer')->whereNull('read_at'))->count()
                     : 0,
                 // Reviews with words wait for the shop to read them.
-                'pending_reviews' => $request->user()?->is_admin ? ProductReview::where('status', 'pending')->count() : 0,
+                'pending_reviews' => $request->user()?->can('manage-shop') ? ProductReview::where('status', 'pending')->count() : 0,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

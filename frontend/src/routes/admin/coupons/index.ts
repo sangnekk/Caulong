@@ -157,7 +157,7 @@ create.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     create.form = createForm
 /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
 export const products = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -172,7 +172,7 @@ products.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
 products.url = (options?: RouteQueryOptions) => {
@@ -181,7 +181,7 @@ products.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
 products.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -190,7 +190,7 @@ products.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
 products.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -200,7 +200,7 @@ products.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
     const productsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -210,7 +210,7 @@ products.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
         productsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -219,7 +219,7 @@ products.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Admin\CouponController::products
- * @see app/Http/Controllers/Admin/CouponController.php:119
+ * @see app/Http/Controllers/Admin/CouponController.php:121
  * @route '/admin/coupons/products'
  */
         productsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

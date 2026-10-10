@@ -1,6 +1,7 @@
 import { Link, usePage } from '@/lib/page';
 import { MessageCircle, SendHorizontal, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
 import { mark } from '@/lib/analytics';
 import type { ShopSharedProps } from '@/types/commerce';
 
@@ -12,11 +13,25 @@ type ChatMessage = {
     action_label: string | null;
     created_at?: string;
 };
+/** Where the conversation stands (App\Services\SupportChat): closed is over, the rest go on. */
+type ChatStatus = 'open' | 'pending' | 'resolved' | 'closed';
 type ChatResponse = {
-    status: 'open' | 'closed' | null;
+    status: ChatStatus | null;
     messages: ChatMessage[];
+    /** Solved or closed: a code to read it again later can be asked for. */
+    can_request_code: boolean;
+    /** Until when the code already given is good; the code itself is shown only once. */
+    code_expires_at: string | null;
 };
 type ChatContextResponse = { purchased_products: string[] };
+type AccessCode = { code: string; expires_at: string };
+/** A finished conversation opened with its code. */
+type Transcript = {
+    status: ChatStatus;
+    started_at: string;
+    closed_at: string | null;
+    messages: ChatMessage[];
+};
 
 const greeting: ChatMessage = {
     id: 0,
@@ -24,6 +39,12 @@ const greeting: ChatMessage = {
     body: 'Xin chào! Mình là trợ lý tự động của Shop Cầu Lông. Bạn có thể hỏi về chọn vợt, giao hàng, thanh toán hoặc nhập mã đơn 8 ký tự nếu đặt hàng khi chưa đăng nhập.',
     action_url: null,
     action_label: null,
+};
+const noConversation: ChatResponse = {
+    status: null,
+    messages: [],
+    can_request_code: false,
+    code_expires_at: null,
 };
 const quickQuestions = [
     'Tư vấn chọn vợt',
@@ -34,26 +55,86 @@ const quickQuestions = [
     'Hỗ trợ vấn đề khác',
 ];
 
+const day = (value: string) => new Date(value).toLocaleDateString('vi-VN');
+
+/** The chat's own endpoints are Laravel's (next.config.ts sends /support-chat/* there). */
+const post = (url: string, body?: Record<string, string>) =>
+    fetch(url, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN':
+                document.querySelector<HTMLMetaElement>(
+                    'meta[name="csrf-token"]',
+                )?.content ?? '',
+        },
+        body: JSON.stringify(body ?? {}),
+    });
+
+function Messages({ messages }: { messages: ChatMessage[] }) {
+    return messages.map((message) => (
+        <div
+            key={message.id}
+            className="store-chat-message"
+            data-author={
+                message.sender === 'customer' ? 'visitor' : 'assistant'
+            }
+        >
+            {message.sender === 'admin' && <small>Nhân viên hỗ trợ</small>}
+            <p>{message.body}</p>
+            {message.action_url &&
+                message.action_label &&
+                (message.action_url.startsWith('http') ? (
+                    <a
+                        href={message.action_url}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        {message.action_label}
+                    </a>
+                ) : (
+                    <Link href={message.action_url}>
+                        {message.action_label}
+                    </Link>
+                ))}
+        </div>
+    ));
+}
+
 export default function ShopSupportChat() {
-    const { props } = usePage<ShopSharedProps>();
+    const { props } = usePage<ShopSharedProps & { auth?: { user: unknown } }>();
     const shop = props.shop;
     const chatUrl = shop?.contact?.chat_url;
+    // A customer's conversations are kept on their account; a visitor's are read again by code.
+    const hasAccount = !!props.auth?.user && !shop?.is_admin;
     const [open, setOpen] = useState(false);
     const [draft, setDraft] = useState('');
-    const [messages, setMessages] = useState<ChatMessage[]>([]);
+    const [chat, setChat] = useState<ChatResponse>(noConversation);
     const [purchasedProducts, setPurchasedProducts] = useState<string[]>([]);
-    const [conversationStatus, setConversationStatus] = useState<
-        'open' | 'closed' | null
-    >(null);
+    const [code, setCode] = useState<AccessCode | null>(null);
+    const [requestingCode, setRequestingCode] = useState(false);
+    const [looking, setLooking] = useState(false);
+    const [typedCode, setTypedCode] = useState('');
+    const [lookingUp, setLookingUp] = useState(false);
+    const [lookupError, setLookupError] = useState('');
+    const [transcript, setTranscript] = useState<Transcript | null>(null);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState('');
     const launcher = useRef<HTMLButtonElement>(null);
     const input = useRef<HTMLInputElement>(null);
+    const codeInput = useRef<HTMLInputElement>(null);
     const messagesEnd = useRef<HTMLDivElement>(null);
 
+    const messages = chat.messages;
+    const conversationStatus = chat.status;
+
     useEffect(() => {
-        if (open) input.current?.focus();
-    }, [open]);
+        if (!open) return;
+        if (looking) codeInput.current?.focus();
+        else input.current?.focus();
+    }, [open, looking]);
 
     useEffect(() => {
         if (!open) return;
@@ -66,9 +147,7 @@ export default function ShopSupportChat() {
                     cache: 'no-store',
                 });
                 if (!response.ok || cancelled) return;
-                const data = (await response.json()) as ChatResponse;
-                setMessages(data.messages);
-                setConversationStatus(data.status);
+                setChat((await response.json()) as ChatResponse);
             } catch {
                 if (!cancelled)
                     setError('Không tải được hội thoại. Vui lòng thử lại.');
@@ -99,7 +178,7 @@ export default function ShopSupportChat() {
 
     useEffect(() => {
         if (open) messagesEnd.current?.scrollIntoView({ block: 'end' });
-    }, [messages, open]);
+    }, [messages, open, looking, transcript]);
 
     useEffect(() => {
         if (!open) return;
@@ -120,19 +199,7 @@ export default function ShopSupportChat() {
         setSending(true);
         setError('');
         const starting = !messages.length || conversationStatus === 'closed';
-        void fetch('/support-chat/messages', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                Accept: 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN':
-                    document.querySelector<HTMLMetaElement>(
-                        'meta[name="csrf-token"]',
-                    )?.content ?? '',
-            },
-            body: JSON.stringify({ message: text }),
-        })
+        void post('/support-chat/messages', { message: text })
             .then(async (response) => {
                 if (!response.ok) {
                     setError(
@@ -142,13 +209,66 @@ export default function ShopSupportChat() {
                     );
                     return;
                 }
-                const data = (await response.json()) as ChatResponse;
-                setMessages(data.messages);
-                setConversationStatus(data.status);
-                if (starting) mark('chat_started');
+                setChat((await response.json()) as ChatResponse);
+                if (starting) {
+                    // A new conversation: the code shown was the previous one's.
+                    setCode(null);
+                    mark('chat_started');
+                }
             })
             .catch(() => setError('Mất kết nối. Vui lòng thử gửi lại.'))
             .finally(() => setSending(false));
+    };
+
+    const requestCode = () => {
+        if (requestingCode) return;
+        setRequestingCode(true);
+        setError('');
+        void post('/support-chat/code')
+            .then(async (response) => {
+                if (!response.ok) {
+                    setError('Chưa lấy được mã. Vui lòng thử lại.');
+                    return;
+                }
+                const issued = (await response.json()) as AccessCode;
+                setCode(issued);
+                setChat((current) => ({
+                    ...current,
+                    code_expires_at: issued.expires_at,
+                }));
+            })
+            .catch(() => setError('Mất kết nối. Vui lòng thử lại.'))
+            .finally(() => setRequestingCode(false));
+    };
+
+    const lookUp = (event: FormEvent) => {
+        event.preventDefault();
+        const typed = typedCode.trim();
+        if (!typed || lookingUp) return;
+        setLookingUp(true);
+        setLookupError('');
+        void post('/support-chat/lookup', { code: typed })
+            .then(async (response) => {
+                if (response.ok) {
+                    setTranscript((await response.json()) as Transcript);
+                    return;
+                }
+                const refused = (await response.json().catch(() => null)) as {
+                    message?: string;
+                } | null;
+                setLookupError(
+                    refused?.message ?? 'Mã không đúng hoặc đã hết hạn.',
+                );
+            })
+            .catch(() => setLookupError('Mất kết nối. Vui lòng thử lại.'))
+            .finally(() => setLookingUp(false));
+    };
+
+    const backToChat = () => {
+        setLooking(false);
+        setTranscript(null);
+        setTypedCode('');
+        setLookupError('');
     };
 
     return (
@@ -166,7 +286,11 @@ export default function ShopSupportChat() {
                     <header className="store-chat-header">
                         <div>
                             <strong>Hỗ trợ khách hàng</strong>
-                            <span>Trợ lý tự động · Có nhân viên trên Zalo</span>
+                            <span>
+                                {looking
+                                    ? 'Xem lại cuộc trò chuyện cũ'
+                                    : 'Trợ lý tự động · Có nhân viên trên Zalo'}
+                            </span>
                         </div>
                         <button
                             type="button"
@@ -180,146 +304,287 @@ export default function ShopSupportChat() {
                             <X size={20} aria-hidden="true" />
                         </button>
                     </header>
-                    <div
-                        className="store-chat-thread"
-                        role="log"
-                        aria-live="polite"
-                        aria-relevant="additions text"
-                    >
-                        {(messages.length ? messages : [greeting]).map(
-                            (message) => (
-                                <div
-                                    key={message.id}
-                                    className="store-chat-message"
-                                    data-author={
-                                        message.sender === 'customer'
-                                            ? 'visitor'
-                                            : 'assistant'
-                                    }
-                                >
-                                    {message.sender === 'admin' && (
-                                        <small>Nhân viên hỗ trợ</small>
-                                    )}
-                                    <p>{message.body}</p>
-                                    {message.action_url &&
-                                        message.action_label &&
-                                        (message.action_url.startsWith(
-                                            'http',
-                                        ) ? (
-                                            <a
-                                                href={message.action_url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                            >
-                                                {message.action_label}
-                                            </a>
-                                        ) : (
-                                            <Link href={message.action_url}>
-                                                {message.action_label}
-                                            </Link>
-                                        ))}
-                                </div>
-                            ),
-                        )}
-                        <div ref={messagesEnd} />
-                    </div>
-                    <div
-                        className="store-chat-quick"
-                        aria-label="Câu hỏi nhanh"
-                    >
-                        {quickQuestions.map((question) => (
-                            <button
-                                type="button"
-                                key={question}
-                                onClick={() => send(question)}
+                    {looking ? (
+                        <>
+                            <div
+                                className="store-chat-thread"
+                                aria-live="polite"
                             >
-                                {question}
-                            </button>
-                        ))}
-                    </div>
-                    {purchasedProducts.length > 0 && (
-                        <div
-                            className="store-chat-quick store-chat-purchased"
-                            aria-label="Hỗ trợ sản phẩm đã mua"
-                        >
-                            <strong>Bạn cần hỗ trợ sản phẩm đã mua nào?</strong>
-                            {purchasedProducts.map((product) => (
+                                {transcript ? (
+                                    <>
+                                        <p className="store-chat-note">
+                                            Cuộc trò chuyện ngày{' '}
+                                            {day(transcript.started_at)}
+                                            {transcript.closed_at &&
+                                                ', đóng ngày ' +
+                                                    day(transcript.closed_at)}
+                                            . Chỉ để xem lại.
+                                        </p>
+                                        <Messages
+                                            messages={transcript.messages}
+                                        />
+                                    </>
+                                ) : (
+                                    <p className="store-chat-note">
+                                        Nhập mã xem lại bạn nhận được khi cuộc
+                                        trò chuyện kết thúc (10 ký tự, ví dụ
+                                        ABCDE-FGH23). Mã dùng được trong 30
+                                        ngày.
+                                    </p>
+                                )}
+                                <div ref={messagesEnd} />
+                            </div>
+                            {!transcript && (
+                                <form
+                                    className="store-chat-compose"
+                                    onSubmit={lookUp}
+                                >
+                                    <label
+                                        className="store-sr-only"
+                                        htmlFor="store-chat-code"
+                                    >
+                                        Mã xem lại
+                                    </label>
+                                    <input
+                                        ref={codeInput}
+                                        id="store-chat-code"
+                                        value={typedCode}
+                                        maxLength={20}
+                                        autoComplete="off"
+                                        autoCapitalize="characters"
+                                        spellCheck={false}
+                                        placeholder="Mã xem lại"
+                                        disabled={lookingUp}
+                                        onChange={(event) =>
+                                            setTypedCode(event.target.value)
+                                        }
+                                    />
+                                    <button
+                                        type="submit"
+                                        aria-label="Xem lại cuộc trò chuyện"
+                                        disabled={
+                                            !typedCode.trim() || lookingUp
+                                        }
+                                    >
+                                        <SendHorizontal
+                                            size={19}
+                                            aria-hidden="true"
+                                        />
+                                    </button>
+                                </form>
+                            )}
+                            {lookupError && (
+                                <p className="store-chat-status" role="alert">
+                                    {lookupError}
+                                </p>
+                            )}
+                            <div className="store-chat-handoff">
                                 <button
                                     type="button"
-                                    key={product}
-                                    title={'Gửi yêu cầu hỗ trợ về ' + product}
-                                    onClick={() =>
-                                        send(
-                                            'Hỗ trợ sản phẩm đã mua: ' +
-                                                product,
-                                        )
-                                    }
+                                    className="store-chat-link"
+                                    onClick={backToChat}
                                 >
-                                    Hỗ trợ: {product}
+                                    Quay lại chat
                                 </button>
-                            ))}
-                        </div>
-                    )}
-                    <form
-                        className="store-chat-compose"
-                        onSubmit={(event) => {
-                            event.preventDefault();
-                            send(draft);
-                        }}
-                    >
-                        <label
-                            className="store-sr-only"
-                            htmlFor="store-chat-input"
-                        >
-                            Nhập câu hỏi
-                        </label>
-                        <input
-                            ref={input}
-                            id="store-chat-input"
-                            value={draft}
-                            maxLength={300}
-                            placeholder="Nhập câu hỏi hoặc mã đơn 8 ký tự"
-                            disabled={sending}
-                            onChange={(event) => setDraft(event.target.value)}
-                        />
-                        <button
-                            type="submit"
-                            aria-label="Gửi câu hỏi"
-                            disabled={!draft.trim() || sending}
-                        >
-                            <SendHorizontal size={19} aria-hidden="true" />
-                        </button>
-                    </form>
-                    {conversationStatus === 'closed' && (
-                        <p className="store-chat-status">
-                            Cuộc trò chuyện trước đã đóng. Gửi tin mới để mở
-                            cuộc trò chuyện khác.
-                        </p>
-                    )}
-                    {error && (
-                        <p className="store-chat-status" role="alert">
-                            {error}
-                        </p>
-                    )}
-                    <div className="store-chat-handoff">
-                        <span>Cần hỗ trợ chi tiết?</span>
-                        {chatUrl ? (
-                            <a href={chatUrl} target="_blank" rel="noreferrer">
-                                Chat với nhân viên trên Zalo
-                            </a>
-                        ) : shop?.contact?.hotline ? (
-                            <a
-                                href={
-                                    'tel:' +
-                                    shop.contact.hotline.replace(/[^0-9+]/g, '')
-                                }
+                                {transcript && (
+                                    <button
+                                        type="button"
+                                        className="store-chat-link"
+                                        onClick={() => setTranscript(null)}
+                                    >
+                                        Nhập mã khác
+                                    </button>
+                                )}
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <div
+                                className="store-chat-thread"
+                                role="log"
+                                aria-live="polite"
+                                aria-relevant="additions text"
                             >
-                                Gọi tổng đài
-                            </a>
-                        ) : (
-                            <span>Thông tin liên hệ đang được cập nhật</span>
-                        )}
-                    </div>
+                                <Messages
+                                    messages={
+                                        messages.length ? messages : [greeting]
+                                    }
+                                />
+                                <div ref={messagesEnd} />
+                            </div>
+                            <div
+                                className="store-chat-quick"
+                                aria-label="Câu hỏi nhanh"
+                            >
+                                {quickQuestions.map((question) => (
+                                    <button
+                                        type="button"
+                                        key={question}
+                                        onClick={() => send(question)}
+                                    >
+                                        {question}
+                                    </button>
+                                ))}
+                            </div>
+                            {purchasedProducts.length > 0 && (
+                                <div
+                                    className="store-chat-quick store-chat-purchased"
+                                    aria-label="Hỗ trợ sản phẩm đã mua"
+                                >
+                                    <strong>
+                                        Bạn cần hỗ trợ sản phẩm đã mua nào?
+                                    </strong>
+                                    {purchasedProducts.map((product) => (
+                                        <button
+                                            type="button"
+                                            key={product}
+                                            title={
+                                                'Gửi yêu cầu hỗ trợ về ' +
+                                                product
+                                            }
+                                            onClick={() =>
+                                                send(
+                                                    'Hỗ trợ sản phẩm đã mua: ' +
+                                                        product,
+                                                )
+                                            }
+                                        >
+                                            Hỗ trợ: {product}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <form
+                                className="store-chat-compose"
+                                onSubmit={(event) => {
+                                    event.preventDefault();
+                                    send(draft);
+                                }}
+                            >
+                                <label
+                                    className="store-sr-only"
+                                    htmlFor="store-chat-input"
+                                >
+                                    Nhập câu hỏi
+                                </label>
+                                <input
+                                    ref={input}
+                                    id="store-chat-input"
+                                    value={draft}
+                                    maxLength={300}
+                                    placeholder="Nhập câu hỏi hoặc mã đơn 8 ký tự"
+                                    disabled={sending}
+                                    onChange={(event) =>
+                                        setDraft(event.target.value)
+                                    }
+                                />
+                                <button
+                                    type="submit"
+                                    aria-label="Gửi câu hỏi"
+                                    disabled={!draft.trim() || sending}
+                                >
+                                    <SendHorizontal
+                                        size={19}
+                                        aria-hidden="true"
+                                    />
+                                </button>
+                            </form>
+                            {conversationStatus === 'resolved' && (
+                                <p className="store-chat-status">
+                                    Nhân viên đã đánh dấu yêu cầu này là đã giải
+                                    quyết. Bạn cứ nhắn tiếp nếu còn cần hỗ trợ.
+                                </p>
+                            )}
+                            {conversationStatus === 'closed' && (
+                                <p className="store-chat-status">
+                                    Cuộc trò chuyện trước đã đóng. Gửi tin mới
+                                    để mở cuộc trò chuyện khác.
+                                </p>
+                            )}
+                            {chat.can_request_code &&
+                                (hasAccount ? (
+                                    <p className="store-chat-status">
+                                        Cuộc trò chuyện này được lưu trong{' '}
+                                        <Link href="/account#ho-tro">
+                                            Tài khoản của tôi
+                                        </Link>
+                                        .
+                                    </p>
+                                ) : code ? (
+                                    <p
+                                        className="store-chat-status store-chat-code"
+                                        role="status"
+                                    >
+                                        Mã xem lại: <code>{code.code}</code>
+                                        <span>
+                                            Dùng đến {day(code.expires_at)}. Mã
+                                            chỉ hiện một lần, bạn hãy lưu lại.
+                                        </span>
+                                    </p>
+                                ) : (
+                                    <p className="store-chat-status">
+                                        {chat.code_expires_at
+                                            ? 'Bạn đã lấy mã xem lại (dùng đến ' +
+                                              day(chat.code_expires_at) +
+                                              '). '
+                                            : 'Muốn xem lại cuộc trò chuyện này sau? '}
+                                        <button
+                                            type="button"
+                                            className="store-chat-link"
+                                            disabled={requestingCode}
+                                            onClick={requestCode}
+                                        >
+                                            {chat.code_expires_at
+                                                ? 'Lấy mã mới (mã cũ hết dùng được)'
+                                                : 'Lấy mã xem lại'}
+                                        </button>
+                                    </p>
+                                ))}
+                            {error && (
+                                <p className="store-chat-status" role="alert">
+                                    {error}
+                                </p>
+                            )}
+                            <div className="store-chat-handoff">
+                                {hasAccount ? (
+                                    <span>Cần hỗ trợ chi tiết?</span>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        className="store-chat-link"
+                                        onClick={() => setLooking(true)}
+                                    >
+                                        Có mã xem lại?
+                                    </button>
+                                )}
+                                {chatUrl ? (
+                                    <a
+                                        href={chatUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                    >
+                                        Chat với nhân viên trên Zalo
+                                    </a>
+                                ) : shop?.contact?.hotline ? (
+                                    <a
+                                        href={
+                                            'tel:' +
+                                            shop.contact.hotline.replace(
+                                                /[^0-9+]/g,
+                                                '',
+                                            )
+                                        }
+                                    >
+                                        Gọi tổng đài
+                                    </a>
+                                ) : (
+                                    <span>
+                                        Thông tin liên hệ đang được cập nhật
+                                    </span>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </section>
             )}
             <button

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\CustomerEvents;
 use App\Services\EmailService;
 use App\Services\ShopSettings;
+use App\Services\SupportChat;
 use App\Support\Frontend;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Events\Login;
@@ -18,6 +19,7 @@ use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
@@ -47,10 +49,16 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureMail();
 
-        // What a visitor did before signing in during this visit joins their account's history.
+        // Staff roles (User::ROLES). Admins run the shop; support staff only answer customers,
+        // so everything in /admin but the support inbox asks for this.
+        Gate::define('manage-shop', fn (User $user): bool => $user->staffRole() === 'admin');
+
+        // What a visitor did before signing in during this visit joins their account's history,
+        // and so does the support conversation they were in.
         Event::listen(function (Login $event): void {
             if ($event->user instanceof User) {
                 $this->app->make(CustomerEvents::class)->claim(request(), $event->user);
+                $this->app->make(SupportChat::class)->claim(request(), $event->user);
             }
         });
     }

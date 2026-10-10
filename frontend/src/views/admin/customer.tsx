@@ -3,6 +3,7 @@
 import { Head, Link } from '@/lib/page';
 import type { ReactNode } from 'react';
 import {
+    ChatStatus,
     CouponState,
     couponTerms,
     date,
@@ -14,10 +15,12 @@ import {
     query,
     ReviewStatus,
     SegmentBadge,
+    staffRoles,
     Stars,
     Tabs,
 } from './shared';
 import type {
+    ChatSummary,
     CouponStateName,
     CouponTerms,
     Order,
@@ -31,6 +34,8 @@ type Customer = {
     email: string;
     verified: boolean;
     is_admin: boolean;
+    /** What a staff account may do; null for a customer. */
+    staff_role: string | null;
     /** The group the customer is in right now; null for staff. */
     segment: string | null;
     joined: string;
@@ -102,6 +107,7 @@ type Tab =
     | 'timeline'
     | 'products'
     | 'coupons'
+    | 'conversations'
     | 'reviews';
 
 const tabs: [Tab, string][] = [
@@ -110,6 +116,7 @@ const tabs: [Tab, string][] = [
     ['timeline', 'Hoạt động'],
     ['products', 'Sản phẩm'],
     ['coupons', 'Mã giảm giá'],
+    ['conversations', 'Hội thoại'],
     ['reviews', 'Đánh giá'],
 ];
 
@@ -248,6 +255,7 @@ export default function CustomerDetail({
     timeline,
     products,
     coupons,
+    conversations,
     reviews,
 }: {
     customer: Customer;
@@ -259,6 +267,7 @@ export default function CustomerDetail({
     timeline: Timeline | null;
     products: Products | null;
     coupons: Coupons | null;
+    conversations: ChatSummary[] | null;
     reviews: Review[] | null;
 }) {
     const base = '/admin/customers/' + customer.id;
@@ -276,7 +285,8 @@ export default function CustomerDetail({
                         <SegmentBadge segment={customer.segment} />{' '}
                         {customer.is_admin ? (
                             <span className="admin-badge" data-tone="accent">
-                                Quản trị viên
+                                {staffRoles[customer.staff_role ?? 'admin'] ??
+                                    'Nhân viên'}
                             </span>
                         ) : (
                             !customer.verified && (
@@ -649,6 +659,51 @@ export default function CustomerDetail({
                     </section>
                 </div>
             )}
+
+            {tab === 'conversations' &&
+                conversations &&
+                (conversations.length ? (
+                    <section
+                        className="admin-panel"
+                        aria-label="Các cuộc trò chuyện với cửa hàng"
+                    >
+                        <ul className="admin-low-stock">
+                            {conversations.map((conversation) => (
+                                <li key={conversation.id}>
+                                    <span>
+                                        <Link
+                                            href={
+                                                '/admin/support-chat?status=all&conversation=' +
+                                                conversation.id
+                                            }
+                                        >
+                                            {conversation.excerpt ||
+                                                'Không có nội dung'}
+                                        </Link>
+                                        <small className="admin-muted">
+                                            {dateTime(conversation.started_at)}{' '}
+                                            · {conversation.messages} tin nhắn
+                                            {conversation.needs_human
+                                                ? conversation.assigned_name
+                                                    ? ' · ' +
+                                                      conversation.assigned_name +
+                                                      ' tiếp nhận'
+                                                    : ' · chưa ai nhận'
+                                                : ' · chỉ trợ lý tự động trả lời'}
+                                        </small>
+                                    </span>
+                                    <ChatStatus status={conversation.status} />
+                                </li>
+                            ))}
+                        </ul>
+                    </section>
+                ) : (
+                    <div className="admin-empty">
+                        <strong>Chưa có cuộc trò chuyện nào.</strong>
+                        Những gì khách nhắn ở khung chat khi đã đăng nhập sẽ
+                        hiện ở đây.
+                    </div>
+                ))}
 
             {tab === 'reviews' &&
                 reviews &&

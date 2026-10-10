@@ -158,7 +158,10 @@ export type Order = Totals & {
 export type ShopSharedProps = {
     shop: {
         cart_count: number;
+        /** A staff account: it works in /admin. */
         is_admin: boolean;
+        /** What a staff account may open there: everything, or the support inbox only. */
+        staff_role?: 'admin' | 'support' | null;
         pending_orders?: number;
         pending_support_chats?: number;
         pending_reviews?: number;

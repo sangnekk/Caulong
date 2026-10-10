@@ -7,6 +7,7 @@ use App\Models\ProductReview;
 use App\Models\User;
 use App\Services\CustomerProfile;
 use App\Services\CustomerSegmentation;
+use App\Services\SupportChat;
 use App\Support\DemoData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -17,7 +18,7 @@ use Inertia\Response;
 /** Registered accounts and what they have ordered. Guests who check out without an account are in Orders. */
 class CustomerController extends Controller
 {
-    private const TABS = ['overview', 'orders', 'timeline', 'products', 'coupons', 'reviews'];
+    private const TABS = ['overview', 'orders', 'timeline', 'products', 'coupons', 'conversations', 'reviews'];
 
     public function index(Request $request): Response
     {
@@ -44,6 +45,7 @@ class CustomerController extends Controller
                 'email' => $user->email,
                 'verified' => $user->hasVerifiedEmail(),
                 'is_admin' => $user->is_admin,
+                'staff_role' => $user->staffRole(),
                 'segment' => $user->segment,
                 'joined' => $user->created_at,
                 'orders' => (int) $user->getAttribute('orders_count'),
@@ -66,7 +68,7 @@ class CustomerController extends Controller
     }
 
     /** One account: its figures, then the tab asked for. Each tab loads only its own data. */
-    public function show(Request $request, User $user, CustomerProfile $profile, CustomerSegmentation $segments): Response
+    public function show(Request $request, User $user, CustomerProfile $profile, CustomerSegmentation $segments, SupportChat $chat): Response
     {
         $validated = $request->validate([
             'tab' => ['nullable', Rule::in(self::TABS)],
@@ -86,6 +88,7 @@ class CustomerController extends Controller
                 'email' => $user->email,
                 'verified' => $user->hasVerifiedEmail(),
                 'is_admin' => $user->is_admin,
+                'staff_role' => $user->staffRole(),
                 // Worked out now: the page explains the group with today's figures next to it.
                 'segment' => $segments->refresh($user),
                 'joined' => $user->created_at,
@@ -106,6 +109,8 @@ class CustomerController extends Controller
             },
             'products' => $tab === 'products' ? $profile->products($user, $demo) : null,
             'coupons' => $tab === 'coupons' ? $profile->coupons($user) : null,
+            // Every conversation of theirs in the support chat, tickets or not.
+            'conversations' => $tab === 'conversations' ? $chat->history($user, 50) : null,
             'reviews' => $tab === 'reviews'
                 ? $user->reviews()->with('product:id,name,slug')->latest('id')->get()->map(fn (ProductReview $review) => [
                     ...$review->only(['id', 'rating', 'body', 'status', 'created_at']),

@@ -9,9 +9,11 @@ use Illuminate\Support\Facades\Validator;
 
 class MakeAdmin extends Command
 {
-    protected $signature = 'shop:make-admin {email : Email tài khoản đã xác minh} {--force : Bỏ qua xác nhận}';
+    protected $signature = 'shop:make-admin {email : Email tài khoản đã xác minh}
+        {--role=admin : admin (toàn quyền) hoặc support (chỉ trả lời khách ở Chat hỗ trợ)}
+        {--force : Bỏ qua xác nhận}';
 
-    protected $description = 'Cấp quyền quản trị cho tài khoản đã tồn tại và xác minh email';
+    protected $description = 'Cấp quyền quản trị, hoặc quyền nhân viên hỗ trợ, cho tài khoản đã tồn tại và xác minh email';
 
     public function handle(): int
     {
@@ -22,24 +24,36 @@ class MakeAdmin extends Command
             return self::FAILURE;
         }
 
+        $role = (string) $this->option('role');
+        if (! in_array($role, User::ROLES, true)) {
+            $this->error('Vai trò không hợp lệ. Chọn một trong: '.implode(', ', User::ROLES).'.');
+
+            return self::FAILURE;
+        }
+
         $user = User::where('email', $email)->first();
         if (! $user || ! $user->hasVerifiedEmail()) {
             $this->error('Cần tài khoản đã tồn tại và đã xác minh email. Không tạo tài khoản mới.');
 
             return self::FAILURE;
         }
-        if (! $this->option('force') && ! $this->confirm("Cấp toàn quyền quản trị cho {$email}?", false)) {
+        $question = $role === 'admin'
+            ? "Cấp toàn quyền quản trị cho {$email}?"
+            : "Cấp quyền nhân viên hỗ trợ (chỉ Chat hỗ trợ) cho {$email}?";
+        if (! $this->option('force') && ! $this->confirm($question, false)) {
             $this->warn('Đã hủy.');
 
             return self::FAILURE;
         }
 
-        $promoted = DB::transaction(function () use ($user, $email): bool {
+        $promoted = DB::transaction(function () use ($user, $email, $role): bool {
             $current = User::whereKey($user->id)->lockForUpdate()->first();
             if (! $current || $current->email !== $email || ! $current->hasVerifiedEmail()) {
                 return false;
             }
+            // A staff account either way; the role says how much of /admin it may use.
             $current->is_admin = true;
+            $current->role = $role;
             $current->save();
 
             return true;
@@ -49,7 +63,7 @@ class MakeAdmin extends Command
 
             return self::FAILURE;
         }
-        $this->info("Đã cấp quyền quản trị: {$email}");
+        $this->info($role === 'admin' ? "Đã cấp quyền quản trị: {$email}" : "Đã cấp quyền nhân viên hỗ trợ: {$email}");
 
         return self::SUCCESS;
     }

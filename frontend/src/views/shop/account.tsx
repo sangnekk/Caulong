@@ -53,6 +53,109 @@ const couponStates: Record<AccountCoupon['state'], [string, string]> = {
     expired: ['Hết hạn', ''],
 };
 
+/** A conversation with the shop in the support chat (App\Services\SupportChat::history). */
+type AccountConversation = {
+    id: number;
+    status: 'open' | 'pending' | 'resolved' | 'closed';
+    started_at: string;
+    last_message_at: string | null;
+    /** How it began: the customer's first message. */
+    excerpt: string;
+    messages: number;
+};
+type ChatLine = {
+    id: number;
+    sender: 'customer' | 'admin' | 'bot';
+    body: string;
+};
+
+const chatStates: Record<AccountConversation['status'], [string, string]> = {
+    open: ['Đang chờ shop trả lời', 'warning'],
+    pending: ['Shop đã trả lời', 'info'],
+    resolved: ['Đã giải quyết', 'success'],
+    closed: ['Đã đóng', ''],
+};
+
+/** One past conversation; its messages are fetched the first time it is opened. */
+function Conversation({ conversation }: { conversation: AccountConversation }) {
+    const [open, setOpen] = useState(false);
+    const [lines, setLines] = useState<ChatLine[] | null>(null);
+    const [failed, setFailed] = useState(false);
+    const [label, tone] = chatStates[conversation.status];
+    const thread = 'chat-' + conversation.id;
+    const toggle = () => {
+        setOpen(!open);
+        if (open || lines) return;
+        setFailed(false);
+        fetch('/support-chat/conversations/' + conversation.id, {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' },
+            cache: 'no-store',
+        })
+            .then((response) =>
+                response.ok
+                    ? (response.json() as Promise<{ messages: ChatLine[] }>)
+                    : Promise.reject(new Error(String(response.status))),
+            )
+            .then((data) => setLines(data.messages))
+            .catch(() => setFailed(true));
+    };
+
+    return (
+        <li>
+            <h3>
+                Ngày{' '}
+                {new Date(conversation.started_at).toLocaleDateString('vi-VN')}
+                <span className="store-status" data-tone={tone}>
+                    {label}
+                </span>
+            </h3>
+            <p>“{conversation.excerpt}”</p>
+            <p>
+                {conversation.messages} tin nhắn ·{' '}
+                <button
+                    type="button"
+                    className="store-chat-link"
+                    aria-expanded={open}
+                    aria-controls={thread}
+                    onClick={toggle}
+                >
+                    {open ? 'Thu gọn' : 'Xem lại'}
+                </button>
+            </p>
+            {open && (
+                <div id={thread} className="store-history-thread">
+                    {failed ? (
+                        <p role="alert">
+                            Không tải được cuộc trò chuyện. Vui lòng thử lại
+                            sau.
+                        </p>
+                    ) : lines === null ? (
+                        <p role="status">Đang tải…</p>
+                    ) : (
+                        lines.map((line) => (
+                            <div
+                                key={line.id}
+                                className="store-chat-message"
+                                data-author={
+                                    line.sender === 'customer'
+                                        ? 'visitor'
+                                        : 'assistant'
+                                }
+                            >
+                                {line.sender === 'admin' && (
+                                    <small>Nhân viên hỗ trợ</small>
+                                )}
+                                <p>{line.body}</p>
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </li>
+    );
+}
+
 function FieldError({ message }: { message?: string }) {
     return message ? <p className="store-field-error">{message}</p> : null;
 }
@@ -62,6 +165,7 @@ export default function Account({
     orders,
     wishlist,
     coupons,
+    conversations,
     totals,
 }: {
     account: {
@@ -77,6 +181,8 @@ export default function Account({
     wishlist: WishlistItem[];
     /** Made for this customer or for their group; nobody else's. */
     coupons: AccountCoupon[];
+    /** Their conversations in the support chat, the latest first. */
+    conversations: AccountConversation[];
     totals: { orders: number; open: number };
 }) {
     const profile = useForm({ name: account.name, email: account.email });
@@ -391,6 +497,25 @@ export default function Account({
                             </div>
                         )}
                     </section>
+
+                    {conversations.length > 0 && (
+                        <section aria-labelledby="ho-tro">
+                            <h2 id="ho-tro">Lịch sử hỗ trợ</h2>
+                            <ul className="store-history">
+                                {conversations.map((conversation) => (
+                                    <Conversation
+                                        key={conversation.id}
+                                        conversation={conversation}
+                                    />
+                                ))}
+                            </ul>
+                            <p className="store-hint">
+                                Các cuộc trò chuyện với cửa hàng khi bạn đã đăng
+                                nhập. Cần hỗ trợ thêm, mở khung chat ở góc màn
+                                hình.
+                            </p>
+                        </section>
+                    )}
                 </div>
 
                 <aside

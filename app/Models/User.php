@@ -30,7 +30,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property bool $is_admin
+ * @property bool $is_admin a staff account: works in /admin and is never counted as a customer
+ * @property string|null $role what a staff account may do, one of self::ROLES; see staffRole()
  * @property string|null $segment one of App\Services\CustomerSegmentation::SEGMENTS, once worked out
  * @property Carbon|null $segment_updated_at
  * @property Carbon|null $marketing_opt_in_at when they agreed to promotional email; null: they have not
@@ -43,6 +44,27 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
+
+    /**
+     * What staff may do. "admin" runs the whole shop; "support" only answers customers in the
+     * support chat. Checked through the "manage-shop" gate (AppServiceProvider), never in pages.
+     */
+    public const ROLES = ['admin', 'support'];
+
+    /**
+     * The role of a staff account, null for a customer. Staff without a role written down
+     * are admins: every staff account was one before roles existed.
+     *
+     * @return value-of<self::ROLES>|null
+     */
+    public function staffRole(): ?string
+    {
+        if (! $this->is_admin) {
+            return null;
+        }
+
+        return $this->role === 'support' ? 'support' : 'admin';
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -111,5 +133,15 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function coupons(): HasMany
     {
         return $this->hasMany(Coupon::class);
+    }
+
+    /**
+     * Their conversations with the shop in the support chat.
+     *
+     * @return HasMany<SupportConversation, $this>
+     */
+    public function conversations(): HasMany
+    {
+        return $this->hasMany(SupportConversation::class);
     }
 }

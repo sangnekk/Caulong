@@ -65,6 +65,12 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     const pending = props.shop?.pending_orders ?? 0;
     const pendingSupportChats = props.shop?.pending_support_chats ?? 0;
     const pendingReviews = props.shop?.pending_reviews ?? 0;
+    // Support staff answer customers and nothing else: Laravel refuses them the other pages,
+    // so the menu does not offer them.
+    const support = props.shop?.staff_role === 'support';
+    const nav = support
+        ? workNav.filter(({ href }) => href === '/admin/support-chat')
+        : workNav;
     const [menuOpen, setMenuOpen] = useState(false);
     const [signingOut, setSigningOut] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);
@@ -141,13 +147,17 @@ export default function AdminLayout({ children }: PropsWithChildren) {
                         <BrandMark size={30} />
                         <span>
                             Shop Cầu Lông
-                            <small>Quản trị cửa hàng</small>
+                            <small>
+                                {support
+                                    ? 'Hỗ trợ khách hàng'
+                                    : 'Quản trị cửa hàng'}
+                            </small>
                         </span>
                     </Link>
 
                     <nav aria-label="Công việc">
                         <div className="admin-nav">
-                            {workNav.map(({ href, label, icon: Icon }) => (
+                            {nav.map(({ href, label, icon: Icon }) => (
                                 <Link
                                     key={href}
                                     href={href}

@@ -1,18 +1,30 @@
 'use client';
 
 import { Head, Link, router, useForm } from '@/lib/page';
-import { Check, SendHorizontal } from 'lucide-react';
+import { Check, CheckCheck, SendHorizontal } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { FormEvent } from 'react';
-import { PageHeader } from './shared';
+import {
+    ChatStatus,
+    date,
+    money,
+    OrderStatus,
+    PageHeader,
+    SegmentBadge,
+} from './shared';
+import type { ChatState, ChatSummary } from './shared';
 
 type Conversation = {
     id: number;
-    status: 'open' | 'closed';
+    status: ChatState;
+    /** The customer's name when the conversation is on an account. */
+    customer_name: string | null;
     assigned_to: number | null;
     assigned_name: string | null;
     last_message_at: string | null;
+    /** The last thing a person wrote; the assistant's own lines are left out. */
     last_message: string | null;
+    last_from_staff: boolean;
     unread_count: number;
 };
 type Message = {
@@ -28,6 +40,36 @@ type Pagination = {
     prev_page_url: string | null;
     next_page_url: string | null;
 };
+type Filter = 'active' | ChatState | 'all';
+/** Who staff are answering, and what happened before (App\Services\SupportChat::context). */
+type Context = {
+    customer: {
+        id: number;
+        name: string;
+        email: string;
+        segment: string | null;
+        verified: boolean;
+        joined: string | null;
+    } | null;
+    overview: {
+        orders: number;
+        open: number;
+        spent: number;
+        last_order_at: string | null;
+    } | null;
+    orders: {
+        id: number;
+        code: string;
+        status: string;
+        payment_status: string;
+        total: number;
+        is_demo: boolean;
+        created_at: string;
+    }[];
+    purchased: { name: string; units: number }[];
+    viewed: { id: number; name: string }[];
+    conversations: ChatSummary[];
+};
 
 const dateTime = (value: string | null) =>
     value
@@ -37,24 +79,191 @@ const dateTime = (value: string | null) =>
           }).format(new Date(value))
         : '';
 
+/** A conversation on an account carries the customer's name; a visitor's only its number. */
+const who = (conversation: { id: number; customer_name: string | null }) =>
+    conversation.customer_name ?? 'Khách vãng lai #' + conversation.id;
+
+function ContextPanel({
+    context,
+    canManageShop,
+}: {
+    context: Context;
+    canManageShop: boolean;
+}) {
+    const { customer, overview } = context;
+    return (
+        <aside className="admin-chat-context" aria-label="Thông tin khách hàng">
+            <section>
+                <h2>Khách hàng</h2>
+                {customer ? (
+                    <>
+                        <p className="admin-chat-context-name">
+                            {canManageShop ? (
+                                <Link href={'/admin/customers/' + customer.id}>
+                                    {customer.name}
+                                </Link>
+                            ) : (
+                                <strong>{customer.name}</strong>
+                            )}{' '}
+                            <SegmentBadge segment={customer.segment} />
+                        </p>
+                        <p className="admin-muted">
+                            {customer.email}
+                            {!customer.verified && ' · chưa xác minh email'}
+                            <br />
+                            Tham gia {date(customer.joined)}
+                        </p>
+                        {overview && (
+                            <dl className="admin-chat-context-figures">
+                                <div>
+                                    <dt>Đã thu</dt>
+                                    <dd>{money(overview.spent)}</dd>
+                                </div>
+                                <div>
+                                    <dt>Đơn hàng</dt>
+                                    <dd>
+                                        {overview.orders}
+                                        {overview.open > 0 &&
+                                            ' · ' +
+                                                overview.open +
+                                                ' đang xử lý'}
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt>Mua gần nhất</dt>
+                                    <dd>{date(overview.last_order_at)}</dd>
+                                </div>
+                            </dl>
+                        )}
+                    </>
+                ) : (
+                    <p className="admin-muted">
+                        Khách chưa đăng nhập. Chỉ có thông tin của lượt truy cập
+                        này; hỏi mã đơn hoặc số điện thoại nếu cần tra đơn.
+                    </p>
+                )}
+            </section>
+            <section>
+                <h3>{customer ? 'Đơn gần đây' : 'Đơn đặt trong lượt này'}</h3>
+                {context.orders.length ? (
+                    <ul>
+                        {context.orders.map((order) => (
+                            <li key={order.id}>
+                                <span>
+                                    {canManageShop ? (
+                                        <Link
+                                            href={'/admin/orders/' + order.id}
+                                        >
+                                            {order.code}
+                                        </Link>
+                                    ) : (
+                                        <strong>{order.code}</strong>
+                                    )}
+                                    <small className="admin-muted">
+                                        {date(order.created_at)} ·{' '}
+                                        {money(order.total)}
+                                        {order.payment_status === 'paid' &&
+                                            ' · đã thu'}
+                                        {order.is_demo && ' · đơn mẫu'}
+                                    </small>
+                                </span>
+                                <OrderStatus status={order.status} />
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="admin-muted">Chưa có đơn nào.</p>
+                )}
+            </section>
+            {context.purchased.length > 0 && (
+                <section>
+                    <h3>Đã mua</h3>
+                    <ul>
+                        {context.purchased.map((product) => (
+                            <li key={product.name}>
+                                <span>{product.name}</span>
+                                <span className="admin-muted">
+                                    ×{product.units}
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+            {context.viewed.length > 0 && (
+                <section>
+                    <h3>Xem gần đây</h3>
+                    <ul>
+                        {context.viewed.map((product) => (
+                            <li key={product.id}>
+                                <span>{product.name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+            <section>
+                <h3>Cuộc trò chuyện trước</h3>
+                {context.conversations.length ? (
+                    <ul>
+                        {context.conversations.map((earlier) => (
+                            <li key={earlier.id}>
+                                <span>
+                                    <Link
+                                        href={
+                                            '/admin/support-chat?status=all&conversation=' +
+                                            earlier.id
+                                        }
+                                    >
+                                        {earlier.excerpt || 'Không có nội dung'}
+                                    </Link>
+                                    <small className="admin-muted">
+                                        {date(earlier.started_at)}
+                                        {!earlier.needs_human &&
+                                            ' · chỉ trợ lý tự động'}
+                                    </small>
+                                </span>
+                                <ChatStatus status={earlier.status} />
+                            </li>
+                        ))}
+                    </ul>
+                ) : (
+                    <p className="admin-muted">Đây là lần đầu khách nhắn.</p>
+                )}
+            </section>
+        </aside>
+    );
+}
+
 export default function SupportChat({
     conversations,
     selected,
     messages,
+    context,
     filters,
+    counts,
     unread_count,
+    can_manage_shop,
 }: {
     conversations: Pagination;
     selected: {
         id: number;
-        status: 'open' | 'closed';
+        status: ChatState;
+        /** Handed to the staff; a conversation the assistant handled alone can only be read. */
+        is_ticket: boolean;
+        customer_name: string | null;
         assigned_to: number | null;
         assigned_name: string | null;
         can_reply: boolean;
+        started_at: string;
     } | null;
     messages: Message[];
-    filters: { status: 'open' | 'closed' | 'all' };
+    context: Context | null;
+    filters: { status: Filter };
+    counts: Record<ChatState, number>;
     unread_count: number;
+    /** Support staff see the customer's details here but cannot open the shop's other pages. */
+    can_manage_shop: boolean;
 }) {
     const form = useForm({ message: '' });
     const thread = useRef<HTMLDivElement>(null);
@@ -67,6 +276,7 @@ export default function SupportChat({
                     'conversations',
                     'selected',
                     'messages',
+                    'counts',
                     'unread_count',
                     'shop',
                 ],
@@ -79,8 +289,10 @@ export default function SupportChat({
         thread.current?.scrollTo({ top: thread.current.scrollHeight });
     }, [messages]);
 
+    const writing = form.data.message.trim() !== '';
     useEffect(() => {
-        if (unread_count > previousUnread.current) {
+        // A new message elsewhere is shown at once, unless a reply is being written here.
+        if (unread_count > previousUnread.current && !writing) {
             const newestUnread = conversations.data.find(
                 (conversation) => conversation.unread_count > 0,
             );
@@ -91,7 +303,13 @@ export default function SupportChat({
             }
         }
         previousUnread.current = unread_count;
-    }, [conversations.data, filters.status, selected?.id, unread_count]);
+    }, [
+        conversations.data,
+        filters.status,
+        selected?.id,
+        unread_count,
+        writing,
+    ]);
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -102,58 +320,51 @@ export default function SupportChat({
         });
     };
 
-    const close = () => {
-        if (!selected?.can_reply) return;
+    const act = (action: 'claim' | 'resolve' | 'close') => {
+        if (!selected) return;
         router.post(
-            `/admin/support-chat/${selected.id}/close`,
+            `/admin/support-chat/${selected.id}/${action}`,
             {},
             { preserveScroll: true },
         );
     };
 
-    const claim = () => {
-        if (!selected || selected.status !== 'open' || selected.assigned_to)
-            return;
-        router.post(
-            `/admin/support-chat/${selected.id}/claim`,
-            {},
-            { preserveScroll: true },
-        );
-    };
-
-    const statusUrl = (status: 'open' | 'closed' | 'all') =>
-        `/admin/support-chat?status=${status}`;
+    const over = selected?.status === 'closed';
+    const tabs: [Filter, string, number | null][] = [
+        ['active', 'Đang xử lý', counts.open + counts.pending],
+        ['resolved', 'Đã giải quyết', counts.resolved],
+        ['closed', 'Đã đóng', counts.closed],
+        ['all', 'Tất cả', null],
+    ];
 
     return (
         <>
             <Head title="Chat hỗ trợ" />
             <PageHeader
                 title="Chat hỗ trợ"
-                description="Tin nhắn khách hàng và phản hồi tự động; trả lời trực tiếp để nhân viên tiếp nhận hội thoại."
+                description="Các cuộc trò chuyện trợ lý tự động đã chuyển cho nhân viên. Nhận ticket để trả lời; đánh dấu đã giải quyết khi xong, đóng khi cuộc trò chuyện kết thúc."
             />
             <nav className="admin-chat-tabs" aria-label="Lọc hội thoại">
-                {(
-                    [
-                        ['open', 'Đang mở'],
-                        ['closed', 'Đã đóng'],
-                        ['all', 'Tất cả'],
-                    ] as const
-                ).map(([value, label]) => (
+                {tabs.map(([value, label, count]) => (
                     <Link
                         key={value}
-                        href={statusUrl(value)}
+                        href={`/admin/support-chat?status=${value}`}
                         aria-current={
                             filters.status === value ? 'page' : undefined
                         }
                     >
                         {label}
+                        {count !== null && count > 0 && <span>{count}</span>}
                     </Link>
                 ))}
                 <span className="admin-chat-unread-total">
                     {unread_count.toLocaleString('vi-VN')} chưa đọc
                 </span>
             </nav>
-            <div className="admin-chat-layout">
+            <div
+                className="admin-chat-layout"
+                data-context={context ? 'shown' : undefined}
+            >
                 <aside
                     className="admin-chat-list"
                     aria-label="Danh sách hội thoại"
@@ -171,13 +382,15 @@ export default function SupportChat({
                                 }
                             >
                                 <span className="admin-chat-entry-top">
-                                    <strong>Khách #{conversation.id}</strong>
+                                    <strong>{who(conversation)}</strong>
                                     <time>
                                         {dateTime(conversation.last_message_at)}
                                     </time>
                                 </span>
                                 <span className="admin-chat-entry-bottom">
                                     <span>
+                                        {conversation.last_from_staff &&
+                                            'Shop: '}
                                         {conversation.last_message ??
                                             'Chưa có tin nhắn'}
                                     </span>
@@ -188,9 +401,9 @@ export default function SupportChat({
                                     )}
                                 </span>
                                 <span className="admin-chat-entry-status">
-                                    {conversation.status === 'open'
-                                        ? 'Đang mở'
-                                        : 'Đã đóng'}
+                                    <ChatStatus status={conversation.status} />
+                                    {conversation.assigned_name &&
+                                        ' ' + conversation.assigned_name}
                                 </span>
                             </Link>
                         ))
@@ -231,11 +444,10 @@ export default function SupportChat({
                         <>
                             <header className="admin-chat-conversation-head">
                                 <div>
-                                    <h2>Khách #{selected.id}</h2>
+                                    <h2>{who(selected)}</h2>
+                                    <ChatStatus status={selected.status} />{' '}
                                     <span>
-                                        {selected.status === 'open'
-                                            ? 'Đang mở'
-                                            : 'Đã đóng'}
+                                        Bắt đầu {dateTime(selected.started_at)}
                                     </span>
                                     {selected.assigned_to && (
                                         <span className="admin-chat-owner">
@@ -245,28 +457,42 @@ export default function SupportChat({
                                         </span>
                                     )}
                                 </div>
-                                {selected.status === 'open' &&
-                                    selected.assigned_to === null && (
-                                        <button
-                                            type="button"
-                                            className="admin-button"
-                                            onClick={claim}
-                                        >
-                                            <Check aria-hidden="true" />
-                                            Nhận xử lý
-                                        </button>
-                                    )}
-                                {selected.status === 'open' &&
-                                    selected.can_reply && (
+                                <div className="admin-chat-actions">
+                                    {selected.is_ticket &&
+                                        !over &&
+                                        selected.assigned_to === null && (
+                                            <button
+                                                type="button"
+                                                className="admin-button"
+                                                onClick={() => act('claim')}
+                                            >
+                                                <Check aria-hidden="true" />
+                                                Nhận xử lý
+                                            </button>
+                                        )}
+                                    {selected.can_reply &&
+                                        (selected.status === 'open' ||
+                                            selected.status === 'pending') && (
+                                            <button
+                                                type="button"
+                                                className="admin-button-secondary"
+                                                onClick={() => act('resolve')}
+                                            >
+                                                <Check aria-hidden="true" />
+                                                Đánh dấu đã giải quyết
+                                            </button>
+                                        )}
+                                    {selected.can_reply && !over && (
                                         <button
                                             type="button"
                                             className="admin-button-secondary"
-                                            onClick={close}
+                                            onClick={() => act('close')}
                                         >
-                                            <Check aria-hidden="true" />
+                                            <CheckCheck aria-hidden="true" />
                                             Đóng hội thoại
                                         </button>
                                     )}
+                                </div>
                             </header>
                             <div className="admin-chat-thread" ref={thread}>
                                 {messages.map((message) => (
@@ -296,8 +522,7 @@ export default function SupportChat({
                                     </p>
                                 )}
                             </div>
-                            {selected.status === 'open' &&
-                            selected.can_reply ? (
+                            {!over && selected.can_reply ? (
                                 <form
                                     className="admin-chat-reply"
                                     onSubmit={submit}
@@ -326,6 +551,12 @@ export default function SupportChat({
                                             {form.errors.message}
                                         </p>
                                     )}
+                                    {selected.status === 'resolved' && (
+                                        <p className="admin-muted">
+                                            Đã đánh dấu đã giải quyết. Trả lời
+                                            thêm thì ticket trở lại chờ khách.
+                                        </p>
+                                    )}
                                     <button
                                         type="submit"
                                         disabled={
@@ -339,16 +570,15 @@ export default function SupportChat({
                                             : 'Gửi phản hồi'}
                                     </button>
                                 </form>
-                            ) : selected.status === 'open' ? (
-                                <p className="admin-chat-closed-note">
-                                    {selected.assigned_to
-                                        ? `Ticket đang do ${selected.assigned_name ?? 'nhân viên khác'} tiếp nhận; bạn chưa thể gửi phản hồi.`
-                                        : 'Nhận ticket để bắt đầu phản hồi khách hàng.'}
-                                </p>
                             ) : (
                                 <p className="admin-chat-closed-note">
-                                    Hội thoại đã đóng. Khách gửi tin mới sẽ mở
-                                    hội thoại khác.
+                                    {over
+                                        ? 'Hội thoại đã đóng. Khách gửi tin mới sẽ mở hội thoại khác.'
+                                        : !selected.is_ticket
+                                          ? 'Cuộc trò chuyện này chỉ có trợ lý tự động trả lời: khách chưa cần tới nhân viên.'
+                                          : selected.assigned_to
+                                            ? `Ticket đang do ${selected.assigned_name ?? 'nhân viên khác'} tiếp nhận; bạn chưa thể gửi phản hồi.`
+                                            : 'Nhận ticket để bắt đầu phản hồi khách hàng.'}
                                 </p>
                             )}
                         </>
@@ -362,6 +592,12 @@ export default function SupportChat({
                         </div>
                     )}
                 </section>
+                {context && (
+                    <ContextPanel
+                        context={context}
+                        canManageShop={can_manage_shop}
+                    />
+                )}
             </div>
         </>
     );

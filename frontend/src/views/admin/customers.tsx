@@ -12,6 +12,7 @@ import {
     query,
     SegmentBadge,
     segments as segmentNames,
+    staffRoles,
     Tabs,
 } from './shared';
 import type { Pagination } from './shared';
@@ -22,6 +23,8 @@ type Customer = {
     email: string;
     verified: boolean;
     is_admin: boolean;
+    /** What a staff account may do; null for a customer. */
+    staff_role: string | null;
     segment: string | null;
     joined: string;
     orders: number;
@@ -86,7 +89,7 @@ export default function Customers({
                             ...filters,
                             role: 'admin',
                         }),
-                        label: 'Quản trị viên',
+                        label: 'Nhân viên',
                         count: counts.admins,
                         current: filters.role === 'admin',
                     },
@@ -203,7 +206,10 @@ export default function Customers({
                                                 className="admin-badge"
                                                 data-tone="accent"
                                             >
-                                                Quản trị viên
+                                                {staffRoles[
+                                                    customer.staff_role ??
+                                                        'admin'
+                                                ] ?? 'Nhân viên'}
                                             </span>
                                         ) : customer.verified ? (
                                             <span

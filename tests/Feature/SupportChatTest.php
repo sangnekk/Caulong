@@ -6,7 +6,9 @@ use App\Models\Order;
 use App\Models\SupportConversation;
 use App\Models\User;
 use App\Services\ShopSettings;
+use App\Services\SupportChat;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
@@ -61,7 +63,7 @@ class SupportChatTest extends TestCase
         $this->actingAs($admin)->get('/admin')
             ->assertInertia(fn (Assert $page) => $page->where('shop.pending_support_chats', 1));
 
-        $this->get('/admin/support-chat')
+        $this->followingRedirects()->get('/admin/support-chat')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('admin/support-chat')
@@ -196,6 +198,303 @@ class SupportChatTest extends TestCase
             'needs_human' => false,
             'status' => 'open',
         ]);
+    }
+
+    public function test_a_ticket_goes_back_and_forth_between_the_shop_and_the_customer_until_it_is_closed(): void
+    {
+        $conversation = $this->ticket();
+        $admin = User::factory()->create(['is_admin' => true]);
+        $other = User::factory()->create(['is_admin' => true]);
+        $status = fn (): string => $conversation->refresh()->status;
+        $staff = fn (User $who, string $action, array $data = []) => $this->actingAs($who)->post('/admin/support-chat/'.$conversation->id.'/'.$action, $data);
+
+        // Read, taken and answered: now the customer's turn.
+        // The list shows what a person said last, not the assistant's answer to it.
+        $this->actingAs($admin)->get('/admin/support-chat?conversation='.$conversation->id)->assertInertia(fn (Assert $page) => $page
+            ->where('conversations.data.0.last_message', 'Nhân viên xem giúp yêu cầu riêng này')
+            ->where('conversations.data.0.last_from_staff', false));
+        $staff($admin, 'claim');
+        $staff($admin, 'reply', ['message' => 'Bạn gửi giúp mình mã đơn nhé.'])->assertSessionHasNoErrors();
+        $this->assertSame('pending', $status());
+        $this->followingRedirects()->get('/admin/support-chat')->assertInertia(fn (Assert $page) => $page
+            ->where('conversations.data.0.last_message', 'Bạn gửi giúp mình mã đơn nhé.')
+            ->where('conversations.data.0.last_from_staff', true));
+        $this->getJson('/support-chat/messages')->assertJsonPath('status', 'pending')->assertJsonPath('can_request_code', false);
+
+        // The customer answers, even with a question the assistant knows: the shop's turn, and unread.
+        $this->postJson('/support-chat/messages', ['message' => 'Phí giao hàng'])->assertJsonPath('status', 'open');
+        $this->assertSame(1, $conversation->messages()->where('sender', 'customer')->whereNull('read_at')->count());
+
+        // Only whoever took the ticket marks it solved or closes it.
+        $staff($other, 'resolve')->assertSessionHasErrors('claim');
+        $staff($other, 'close')->assertSessionHasErrors('claim');
+        $staff($admin, 'resolve')->assertSessionHasNoErrors();
+        $this->assertSame('resolved', $status());
+        $this->assertNotNull($conversation->resolved_at);
+        $staff($admin, 'resolve')->assertSessionHasErrors('claim');
+
+        // Not solved after all: the customer writes again, in the same conversation.
+        $this->postJson('/support-chat/messages', ['message' => 'Mình vẫn chưa nhận được hàng'])->assertJsonPath('status', 'open');
+        $this->assertSame([1, null], [SupportConversation::count(), $conversation->refresh()->resolved_at]);
+
+        // Solved and left at that: it closes itself after three days, not before.
+        $staff($admin, 'resolve');
+        $this->travel(2)->days();
+        $this->artisan('support:close-resolved')->assertSuccessful();
+        $this->assertSame('resolved', $status());
+        $this->travel(2)->days();
+        $this->artisan('support:close-resolved')->expectsOutputToContain('Đã đóng 1 cuộc trò chuyện.')->assertSuccessful();
+        $this->assertSame('closed', $status());
+        $this->assertNotNull($conversation->closed_at);
+        $staff($admin, 'reply', ['message' => 'Còn đó không?'])->assertSessionHasErrors('message');
+
+        $this->postJson('/support-chat/messages', ['message' => 'Mình cần hỏi việc khác'])->assertJsonPath('status', 'open');
+        $this->assertSame(2, SupportConversation::count());
+    }
+
+    public function test_the_inbox_lists_tickets_by_where_they_stand(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        foreach (SupportChat::STATUSES as $status) {
+            SupportConversation::create(['session_key' => Str::random(64), 'needs_human' => true, 'status' => $status, 'assigned_to' => $admin->id])
+                ->messages()->create(['sender' => 'customer', 'body' => 'Tin '.$status, 'read_at' => now()]);
+        }
+        $listed = fn (string $query) => fn (Assert $page) => $page->where('conversations.data', fn ($rows) => collect($rows)->pluck('status')->sort()->values()->all() === explode(',', $query));
+
+        $this->actingAs($admin)->followingRedirects()->get('/admin/support-chat')->assertInertia(fn (Assert $page) => $page
+            ->where('filters.status', 'active')
+            ->where('counts', ['open' => 1, 'pending' => 1, 'resolved' => 1, 'closed' => 1])
+            ->where('conversations.data', fn ($rows) => collect($rows)->pluck('status')->sort()->values()->all() === ['open', 'pending']));
+        $this->followingRedirects()->get('/admin/support-chat?status=resolved')->assertInertia($listed('resolved'));
+        $this->followingRedirects()->get('/admin/support-chat?status=closed')->assertInertia($listed('closed'));
+        $this->followingRedirects()->get('/admin/support-chat?status=all')->assertInertia(fn (Assert $page) => $page->has('conversations.data', 4));
+        $this->get('/admin/support-chat?status=lost')->assertSessionHasErrors('status');
+    }
+
+    public function test_the_inbox_keeps_the_conversation_on_screen_while_the_list_changes(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $first = $this->ticketOf(User::factory()->create(), 'Ticket thứ nhất');
+        $first->forceFill(['assigned_to' => $admin->id])->save();
+
+        // Opened without a conversation: sent on to the first ticket of the list, by its number.
+        $url = '/admin/support-chat?status=active&conversation='.$first->id;
+        $this->actingAs($admin)->get('/admin/support-chat')->assertRedirect($url);
+
+        // Another customer writes while a reply is being written. The new ticket tops the list;
+        // the conversation on screen stays, and the reply comes back to it.
+        $this->travel(1)->minutes();
+        $second = $this->ticketOf(User::factory()->create(), 'Ticket thứ hai');
+        $this->get($url)->assertInertia(fn (Assert $page) => $page
+            ->where('conversations.data.0.id', $second->id)->where('selected.id', $first->id));
+        $this->from($url)->post('/admin/support-chat/'.$first->id.'/reply', ['message' => 'Shop trả lời ticket thứ nhất'])->assertRedirect($url);
+        $this->assertSame(0, $second->messages()->where('sender', 'admin')->count());
+
+        // An empty list has no ticket to open.
+        $this->get('/admin/support-chat?status=closed')->assertOk()->assertInertia(fn (Assert $page) => $page->where('selected', null));
+    }
+
+    public function test_a_signed_in_customers_conversation_is_on_their_account_and_nobody_elses(): void
+    {
+        $customer = User::factory()->create();
+        $this->actingAs($customer)->postJson('/support-chat/messages', ['message' => 'Vợt của mình bị nứt khung'])->assertOk();
+        $conversation = SupportConversation::sole();
+        $this->assertSame($customer->id, $conversation->user_id);
+
+        // Another device: a new session, the same account.
+        $this->flushSession();
+        $this->actingAs($customer)->getJson('/support-chat/messages')
+            ->assertJsonPath('status', 'open')->assertJsonFragment(['body' => 'Vợt của mình bị nứt khung']);
+        $this->postJson('/support-chat/messages', ['message' => 'Mình gửi thêm ảnh sau'])->assertOk();
+        $this->assertSame(1, SupportConversation::count());
+
+        // Nobody else reads it: not another customer, not a visitor holding its number.
+        $this->flushSession();
+        $this->actingAs(User::factory()->create())->withSession(['support_conversation_id' => $conversation->id])
+            ->getJson('/support-chat/messages')->assertExactJson(['status' => null, 'messages' => [], 'can_request_code' => false, 'code_expires_at' => null]);
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+        $this->withSession(['support_conversation_id' => $conversation->id])->getJson('/support-chat/messages')->assertJsonPath('messages', []);
+    }
+
+    public function test_a_guest_who_signs_in_keeps_the_conversation_they_started(): void
+    {
+        $conversation = $this->ticket();
+        $customer = User::factory()->create();
+        $this->post(route('login.store'), ['email' => $customer->email, 'password' => 'password'])->assertRedirect();
+
+        $this->assertSame($customer->id, $conversation->refresh()->user_id);
+        $this->getJson('/support-chat/messages')->assertJsonCount(2, 'messages');
+
+        // Staff answer customers; a conversation they tried the widget with is not put on their name.
+        $this->post(route('logout'));
+        $tried = $this->ticket();
+        $this->post(route('login.store'), ['email' => User::factory()->create(['is_admin' => true])->email, 'password' => 'password']);
+        $this->assertNull($tried->refresh()->user_id);
+    }
+
+    public function test_a_finished_conversation_is_read_again_with_a_code_that_is_never_stored(): void
+    {
+        $conversation = $this->ticket();
+        $admin = User::factory()->create(['is_admin' => true]);
+
+        // Not while it is still going on.
+        $this->postJson('/support-chat/code')->assertUnprocessable();
+        $this->actingAs($admin)->post('/admin/support-chat/'.$conversation->id.'/claim');
+        $this->post('/admin/support-chat/'.$conversation->id.'/reply', ['message' => 'Shop đã gửi lại hàng cho bạn.']);
+        $this->post('/admin/support-chat/'.$conversation->id.'/close')->assertSessionHasNoErrors();
+
+        $this->getJson('/support-chat/messages')->assertJsonPath('status', 'closed')
+            ->assertJsonPath('can_request_code', true)->assertJsonPath('code_expires_at', null);
+        $code = $this->postJson('/support-chat/code')->assertOk()->json('code');
+        $this->assertMatchesRegularExpression('/\A[A-HJ-NP-Z2-9]{5}-[A-HJ-NP-Z2-9]{5}\z/', $code);
+        $conversation->refresh();
+        $this->assertSame(64, strlen((string) $conversation->access_code_hash));
+        $this->assertStringNotContainsString(str_replace('-', '', $code), json_encode($conversation->getAttributes()));
+        $this->assertSame(now()->addDays(30)->toDateString(), $conversation->access_code_expires_at->toDateString());
+        $this->getJson('/support-chat/messages')->assertJsonPath('code_expires_at', $conversation->access_code_expires_at->toIso8601String());
+
+        // Another device, no account: the code alone, however it is typed.
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+        $this->postJson('/support-chat/lookup', ['code' => ' '.strtolower(str_replace('-', ' ', $code)).' '])->assertOk()
+            ->assertJsonPath('status', 'closed')->assertJsonCount(3, 'messages')
+            ->assertJsonFragment(['sender' => 'admin', 'body' => 'Shop đã gửi lại hàng cho bạn.']);
+        $this->postJson('/support-chat/lookup', ['code' => 'AAAAA-BBBBB'])->assertNotFound()->assertJsonPath('message', 'Mã không đúng hoặc đã hết hạn.');
+        $this->postJson('/support-chat/lookup', ['code' => ''])->assertUnprocessable();
+
+        // A new code replaces the old one; a code runs out after thirty days.
+        $second = app(SupportChat::class)->issueCode($conversation)['code'];
+        $this->postJson('/support-chat/lookup', ['code' => $code])->assertNotFound();
+        $this->postJson('/support-chat/lookup', ['code' => $second])->assertOk();
+        $this->travel(31)->days();
+        $this->postJson('/support-chat/lookup', ['code' => $second])->assertNotFound();
+    }
+
+    public function test_wrong_codes_are_counted_and_the_lookup_stops_answering_for_a_while(): void
+    {
+        $conversation = $this->ticket();
+        app(SupportChat::class)->close($conversation);
+        $code = $this->postJson('/support-chat/code')->assertOk()->json('code');
+
+        // A right code does not use up attempts.
+        $this->postJson('/support-chat/lookup', ['code' => $code])->assertOk();
+        foreach (range(1, 5) as $attempt) {
+            $this->postJson('/support-chat/lookup', ['code' => 'WRONG-CODE'.$attempt])->assertNotFound();
+        }
+        $this->postJson('/support-chat/lookup', ['code' => $code])->assertTooManyRequests()
+            ->assertJsonPath('message', 'Bạn đã nhập sai mã nhiều lần. Vui lòng thử lại sau 10 phút.');
+
+        $this->travel(11)->minutes();
+        $this->postJson('/support-chat/lookup', ['code' => $code])->assertOk();
+    }
+
+    public function test_a_customer_reads_their_past_conversations_from_their_account(): void
+    {
+        $customer = User::factory()->create();
+        $this->actingAs($customer)->postJson('/support-chat/messages', ['message' => 'Nhân viên xem giúp đơn của mình với, mình đặt hôm qua mà chưa thấy ai gọi xác nhận, mình cần gấp cho giải cuối tuần'])->assertOk();
+        $conversation = SupportConversation::sole();
+        $strangers = $this->ticketOf(User::factory()->create());
+
+        $this->get(route('account'))->assertInertia(fn (Assert $page) => $page
+            ->has('conversations', 1)
+            ->where('conversations.0.id', $conversation->id)
+            ->where('conversations.0.status', 'open')
+            ->where('conversations.0.messages', 2)
+            ->where('conversations.0.excerpt', fn (string $excerpt) => str_starts_with($excerpt, 'Nhân viên xem giúp đơn của mình') && str_ends_with($excerpt, '...'))
+            // What the shop keeps to itself stays there.
+            ->missing('conversations.0.assigned_name')->missing('conversations.0.needs_human'));
+
+        $this->getJson('/support-chat/conversations/'.$conversation->id)->assertOk()
+            ->assertJsonPath('status', 'open')->assertJsonCount(2, 'messages');
+        $this->getJson('/support-chat/conversations/'.$strangers->id)->assertNotFound();
+        $this->app['auth']->forgetGuards();
+        $this->getJson('/support-chat/conversations/'.$conversation->id)->assertUnauthorized();
+    }
+
+    public function test_staff_see_who_they_are_answering_and_what_came_before(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $customer = User::factory()->create(['name' => 'Lê Thu Hà', 'email' => 'ha@example.com']);
+        $customer->forceFill(['segment' => 'active'])->save();
+        $order = $this->orderWithProduct($customer, 'Vợt Astrox 88', ['status' => 'delivered', 'payment_status' => 'paid']);
+        $this->orderWithProduct(User::factory()->create(), 'Vợt Của Người Khác');
+        $earlier = $this->ticketOf($customer, 'Shop còn màu xanh không?', 'closed');
+        $conversation = $this->ticketOf($customer, 'Vợt mình mua bị lỏng cán');
+
+        $this->actingAs($admin)->get('/admin/support-chat?conversation='.$conversation->id)->assertInertia(fn (Assert $page) => $page
+            ->where('selected.customer_name', 'Lê Thu Hà')->where('selected.is_ticket', true)
+            ->where('can_manage_shop', true)
+            ->where('context.customer.email', 'ha@example.com')->where('context.customer.segment', 'active')
+            ->where('context.overview.orders', 1)->where('context.overview.spent', 500000)
+            ->has('context.orders', 1)->where('context.orders.0.code', $order->code)->where('context.orders.0.status', 'delivered')
+            ->where('context.purchased', [['name' => 'Vợt Astrox 88', 'units' => 1]])
+            // The conversation on screen is not listed among the earlier ones.
+            ->has('context.conversations', 1)->where('context.conversations.0.id', $earlier->id)
+            ->where('context.conversations.0.status', 'closed')->where('context.conversations.0.excerpt', 'Shop còn màu xanh không?'));
+
+        // A visitor without an account: nothing is known but the visit itself.
+        $guest = $this->ticket();
+        $this->get('/admin/support-chat?conversation='.$guest->id)->assertInertia(fn (Assert $page) => $page
+            ->where('selected.customer_name', null)
+            ->where('context.customer', null)->where('context.overview', null)
+            ->where('context.orders', [])->where('context.purchased', [])->where('context.conversations', []));
+
+        // The customer's page lists every conversation of theirs.
+        $this->get('/admin/customers/'.$customer->id.'?tab=conversations')->assertInertia(fn (Assert $page) => $page
+            ->where('tab', 'conversations')->has('conversations', 2)
+            ->where('conversations.0.id', $conversation->id)->where('conversations.1.status', 'closed'));
+    }
+
+    public function test_the_open_widget_asking_for_new_messages_does_not_use_up_what_else_the_visitor_may_do(): void
+    {
+        // The widget asks every few seconds: a minute of it is more requests than a visitor may
+        // send messages, enter coupons or place orders in that minute. Each has its own count.
+        foreach (range(1, 20) as $poll) {
+            $this->getJson('/support-chat/messages')->assertOk();
+        }
+
+        $this->postJson('/support-chat/messages', ['message' => 'Nhân viên xem giúp yêu cầu riêng này'])->assertOk();
+        $this->post(route('cart.coupon.store'), ['code' => 'KHONG-CO'])->assertSessionHasErrors('coupon');
+        $this->post(route('checkout.store'), [])->assertSessionHasErrors('checkout_token');
+        app(SupportChat::class)->close(SupportConversation::sole());
+        $this->postJson('/support-chat/code')->assertOk();
+
+        // No route of the shop is left on the counter every unnamed limit shares.
+        foreach (Route::getRoutes() as $route) {
+            if (str_starts_with((string) $route->getActionName(), 'App\\')) {
+                $this->assertSame([], preg_grep('/^throttle:\d+,\d+$/', $route->gatherMiddleware()), $route->uri());
+            }
+        }
+    }
+
+    public function test_a_long_conversation_shows_its_latest_messages(): void
+    {
+        $conversation = $this->ticket();
+        foreach (range(1, 110) as $number) {
+            $conversation->messages()->create(['sender' => 'admin', 'body' => 'Tin '.$number]);
+        }
+
+        $this->getJson('/support-chat/messages')->assertJsonCount(100, 'messages')
+            ->assertJsonPath('messages.99.body', 'Tin 110')->assertJsonPath('messages.0.body', 'Tin 11');
+    }
+
+    /** A visitor's message the assistant could not answer: a ticket for the staff. */
+    private function ticket(): SupportConversation
+    {
+        $this->postJson('/support-chat/messages', ['message' => 'Nhân viên xem giúp yêu cầu riêng này'])->assertOk();
+
+        return SupportConversation::query()->latest('id')->firstOrFail();
+    }
+
+    private function ticketOf(User $customer, string $message = 'Cần nhân viên hỗ trợ', string $status = 'open'): SupportConversation
+    {
+        $conversation = SupportConversation::create([
+            'session_key' => Str::random(64), 'user_id' => $customer->id, 'needs_human' => true, 'status' => $status, 'last_message_at' => now(),
+        ]);
+        $conversation->messages()->create(['sender' => 'customer', 'body' => $message]);
+
+        return $conversation;
     }
 
     private function orderWithProduct(User $user, string $productName, array $attributes = []): Order

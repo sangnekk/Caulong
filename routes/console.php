@@ -18,6 +18,9 @@ Schedule::command('model:prune', ['--model' => [CustomerEvent::class, EmailLog::
 // once a day, in the shop's night, so the morning's emails go by the day's groups.
 Schedule::command('crm:segment')->dailyAt('03:00')->timezone((string) config('shop.timezone'));
 
+// A support conversation marked as solved closes itself when the customer leaves it at that.
+Schedule::command('support:close-resolved')->daily();
+
 // The automatic emails that are switched on in /admin/settings, at hours people read email
 // (shop time): cart reminders through the day, the rest once in the morning after the groups
 // were worked out. Each email is queued; "php artisan queue:work" sends it.

@@ -28,19 +28,25 @@ class SignedInResponse implements LoginResponse, TwoFactorLoginResponse
 
     public static function destination(Request $request): string
     {
-        $admin = (bool) $request->user()?->is_admin;
+        // Only those who run the shop are sent back into /admin: anyone else would meet a 403
+        // there, or (support staff) be sent on to their inbox anyway.
+        $manages = (bool) $request->user()?->can('manage-shop');
         $intended = $request->session()->pull('url.intended');
-        if (is_string($intended) && ($admin || ! self::isAdminUrl($intended))) {
+        if (is_string($intended) && ($manages || ! self::isAdminUrl($intended))) {
             return $intended;
         }
 
         return self::home($request);
     }
 
-    /** Admins work in /admin; customers land on their account (orders, details, sign-out). */
+    /** Staff work in /admin (support staff in its inbox); customers land on their account. */
     public static function home(Request $request): string
     {
-        return $request->user()?->is_admin ? route('admin.dashboard') : route('account');
+        return match ($request->user()?->staffRole()) {
+            'admin' => route('admin.dashboard'),
+            'support' => route('admin.support-chat.index'),
+            default => route('account'),
+        };
     }
 
     private static function isAdminUrl(string $url): bool

@@ -21,7 +21,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('account', [AccountController::class, 'show'])->name('account');
     Route::patch('account', [AccountController::class, 'update'])->name('account.update');
-    Route::put('account/password', [AccountController::class, 'password'])->middleware('throttle:6,1')->name('account.password');
+    Route::put('account/password', [AccountController::class, 'password'])->middleware('throttle:6,1,account-password')->name('account.password');
 });
 
 require __DIR__.'/settings.php';

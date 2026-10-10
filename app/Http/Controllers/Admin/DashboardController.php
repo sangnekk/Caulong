@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\CatalogImporter;
 use App\Support\DemoData;
 use Carbon\CarbonImmutable;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -18,8 +19,12 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, CatalogImporter $importer): Response
+    public function __invoke(Request $request, CatalogImporter $importer): Response|RedirectResponse
     {
+        // Support staff work in the inbox: the shop's figures are not theirs to see.
+        if ($request->user()?->cannot('manage-shop')) {
+            return redirect()->route('admin.support-chat.index');
+        }
         $demo = (bool) ($request->validate(['demo' => ['nullable', 'boolean']])['demo'] ?? DemoData::shownByDefault());
         // Demo orders and products are labelled everywhere; they only count when the demo switch is on.
         $orders = fn () => Order::query()->when(! $demo, fn ($query) => $query->where('is_demo', false));

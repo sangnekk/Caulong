@@ -243,6 +243,43 @@ export const emailTypes: Record<string, string> = {
     vip: 'Cảm ơn khách VIP',
 };
 
+/** Staff roles (App\Models\User::ROLES), as the admin names them. */
+export const staffRoles: Record<string, string> = {
+    admin: 'Quản trị viên',
+    support: 'Nhân viên hỗ trợ',
+};
+
+/** Where a support conversation stands (App\Services\SupportChat::STATUSES). */
+export type ChatState = 'open' | 'pending' | 'resolved' | 'closed';
+const chatStates: Record<ChatState, [string, string | undefined]> = {
+    open: ['Chờ shop trả lời', 'warning'],
+    pending: ['Chờ khách', 'info'],
+    resolved: ['Đã giải quyết', 'success'],
+    closed: ['Đã đóng', undefined],
+};
+
+export function ChatStatus({ status }: { status: ChatState }) {
+    const [label, tone] = chatStates[status] ?? [status, undefined];
+    return (
+        <span className="admin-badge" data-tone={tone}>
+            {label}
+        </span>
+    );
+}
+
+/** One support conversation in a list: how it began and where it stands. */
+export type ChatSummary = {
+    id: number;
+    status: ChatState;
+    /** Handed to the staff; false while only the automatic assistant answered. */
+    needs_human: boolean;
+    started_at: string;
+    last_message_at: string | null;
+    excerpt: string;
+    messages: number;
+    assigned_name: string | null;
+};
+
 export type ReviewState = 'pending' | 'published' | 'hidden';
 const reviewStates: Record<ReviewState, [string, string | undefined]> = {
     pending: ['Chờ duyệt', 'warning'],
