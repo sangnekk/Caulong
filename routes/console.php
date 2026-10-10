@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\CustomerEvent;
+use App\Models\EmailLog;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -9,9 +10,16 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Browsing history is kept for CustomerEvent::KEEP_DAYS. Needs "php artisan schedule:work"
-// (or the server's cron) to run.
-Schedule::command('model:prune', ['--model' => [CustomerEvent::class]])->daily();
+// Browsing history and the email log are kept for a year (KEEP_DAYS on each model). Needs
+// "php artisan schedule:work" (or the server's cron) to run.
+Schedule::command('model:prune', ['--model' => [CustomerEvent::class, EmailLog::class]])->daily();
 
-// Time alone moves customers between groups (new, inactive, lost): every account is looked at once a day.
-Schedule::command('crm:segment')->dailyAt('03:00');
+// Time alone moves customers between groups (new, inactive, lost): every account is looked at
+// once a day, in the shop's night, so the morning's emails go by the day's groups.
+Schedule::command('crm:segment')->dailyAt('03:00')->timezone((string) config('shop.timezone'));
+
+// The automatic emails that are switched on in /admin/settings, at hours people read email
+// (shop time): cart reminders through the day, the rest once in the morning after the groups
+// were worked out. Each email is queued; "php artisan queue:work" sends it.
+Schedule::command('marketing:run abandoned_cart')->hourly()->between('8:00', '21:00')->timezone((string) config('shop.timezone'));
+Schedule::command('marketing:run')->dailyAt('09:30')->timezone((string) config('shop.timezone'));

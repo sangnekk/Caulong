@@ -6,6 +6,7 @@ import orders from './orders'
 import taxonomies from './taxonomies'
 import customers from './customers'
 import coupons from './coupons'
+import emails from './emails'
 import reviews from './reviews'
 import brands from './brands'
 import categories from './categories'
@@ -176,6 +177,7 @@ orders: Object.assign(orders, orders),
 taxonomies: Object.assign(taxonomies, taxonomies),
 customers: Object.assign(customers, customers),
 coupons: Object.assign(coupons, coupons),
+emails: Object.assign(emails, emails),
 reviews: Object.assign(reviews, reviews),
 brands: Object.assign(brands, brands),
 categories: Object.assign(categories, categories),

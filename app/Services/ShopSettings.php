@@ -14,11 +14,34 @@ class ShopSettings
     /** The thresholds of the customer groups, as keys of config('shop.segments'). */
     public const SEGMENT_RULES = ['vip_spend', 'inactive_days', 'lost_days', 'new_days', 'potential_events'];
 
+    /** The switches of the automatic emails, as keys of config('shop.marketing'). */
+    public const MARKETING_SWITCHES = ['abandoned_cart', 'winback', 'post_purchase', 'vip'];
+
+    /** Their numbers: hours, days and percentages. */
+    public const MARKETING_NUMBERS = [
+        'abandoned_cart_hours', 'winback_percent', 'winback_valid_days', 'post_purchase_days', 'vip_percent', 'vip_valid_days',
+    ];
+
     /** @var array<string, string>|null */
     private ?array $saved = null;
 
     /**
-     * Everything the settings page edits. The group thresholds are saved as "segment_<rule>".
+     * Everything the settings page edits: all(), and the automatic emails as "marketing_<rule>".
+     *
+     * @return array<string, int|string|bool>
+     */
+    public function page(): array
+    {
+        $page = $this->all();
+        foreach ($this->marketing() as $rule => $value) {
+            $page['marketing_'.$rule] = $value;
+        }
+
+        return $page;
+    }
+
+    /**
+     * Delivery, contact and the customer groups' thresholds (saved as "segment_<rule>").
      *
      * @return array{shipping_fee: int, free_shipping_threshold: int, hotline: string, contact_email: string, contact_address: string, contact_chat_url: string, segment_vip_spend: int, segment_inactive_days: int, segment_lost_days: int, segment_new_days: int, segment_potential_events: int}
      */
@@ -67,6 +90,29 @@ class ShopSettings
     public function freeShippingThreshold(): int
     {
         return (int) ($this->saved()['free_shipping_threshold'] ?? config('shop.free_shipping_threshold'));
+    }
+
+    /**
+     * Which emails send themselves, and their numbers (App\Services\MarketingAutomation).
+     *
+     * @return array{abandoned_cart: bool, abandoned_cart_hours: int, winback: bool, winback_percent: int, winback_valid_days: int, post_purchase: bool, post_purchase_days: int, vip: bool, vip_percent: int, vip_valid_days: int}
+     */
+    public function marketing(): array
+    {
+        $rule = fn (string $key): int => (int) ($this->saved()['marketing_'.$key] ?? config('shop.marketing.'.$key));
+
+        return [
+            'abandoned_cart' => $rule('abandoned_cart') === 1,
+            'abandoned_cart_hours' => $rule('abandoned_cart_hours'),
+            'winback' => $rule('winback') === 1,
+            'winback_percent' => $rule('winback_percent'),
+            'winback_valid_days' => $rule('winback_valid_days'),
+            'post_purchase' => $rule('post_purchase') === 1,
+            'post_purchase_days' => $rule('post_purchase_days'),
+            'vip' => $rule('vip') === 1,
+            'vip_percent' => $rule('vip_percent'),
+            'vip_valid_days' => $rule('vip_valid_days'),
+        ];
     }
 
     /** @param  array<string, int|string|null>  $values  by the keys of all() */

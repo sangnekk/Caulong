@@ -7,6 +7,7 @@ import OrderController from './OrderController'
 import TaxonomyController from './TaxonomyController'
 import CustomerController from './CustomerController'
 import CouponController from './CouponController'
+import EmailController from './EmailController'
 import ReviewController from './ReviewController'
 import ImportController from './ImportController'
 const Admin = {
@@ -19,6 +20,7 @@ OrderController: Object.assign(OrderController, OrderController),
 TaxonomyController: Object.assign(TaxonomyController, TaxonomyController),
 CustomerController: Object.assign(CustomerController, CustomerController),
 CouponController: Object.assign(CouponController, CouponController),
+EmailController: Object.assign(EmailController, EmailController),
 ReviewController: Object.assign(ReviewController, ReviewController),
 ImportController: Object.assign(ImportController, ImportController),
 }

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonInterface|null $delivered_at
  * @property CarbonInterface|null $cancelled_at
  * @property CarbonInterface|null $paid_at
+ * @property-read string $code the short order code customers see (first 8 characters of public_id)
  */
 class Order extends Model
 {
@@ -28,6 +30,16 @@ class Order extends Model
             'confirmed_at' => 'datetime', 'shipped_at' => 'datetime', 'delivered_at' => 'datetime',
             'cancelled_at' => 'datetime', 'paid_at' => 'datetime',
         ];
+    }
+
+    /**
+     * The same code the store pages show (shortOrderCode in the front end).
+     *
+     * @return Attribute<uppercase-string, never>
+     */
+    protected function code(): Attribute
+    {
+        return Attribute::get(fn (): string => strtoupper(substr(str_replace('-', '', (string) $this->public_id), 0, 8)));
     }
 
     /** @return HasMany<OrderItem, $this> */

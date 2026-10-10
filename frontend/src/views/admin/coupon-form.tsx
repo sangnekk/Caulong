@@ -195,6 +195,7 @@ export default function CouponForm({
     const [products, setProducts] = useState<Named[]>(coupon?.products ?? []);
     const [removing, setRemoving] = useState(false);
     const [removeError, setRemoveError] = useState('');
+    const [emailing, setEmailing] = useState(false);
     const data = form.data;
     const errors = form.errors as Record<string, string | undefined>;
     const percent = data.type === 'percent';
@@ -209,6 +210,21 @@ export default function CouponForm({
                 ...saved,
             });
         else form.post('/admin/coupons', saved);
+    };
+    const sendToCustomer = () => {
+        if (!coupon) return;
+        setEmailing(true);
+        setRemoveError('');
+        router.post(
+            '/admin/coupons/' + coupon.id + '/email',
+            {},
+            {
+                preserveScroll: true,
+                onError: (failed) =>
+                    setRemoveError(failed.coupon ?? 'Chưa gửi được email.'),
+                onFinish: () => setEmailing(false),
+            },
+        );
     };
     const remove = () => {
         if (!coupon || !window.confirm('Xóa mã ' + coupon.code + '?')) return;
@@ -691,6 +707,24 @@ export default function CouponForm({
                 </section>
 
                 <div className="admin-form-actions">
+                    {coupon?.customer && coupon.is_active && (
+                        <button
+                            type="button"
+                            className="admin-button-secondary"
+                            disabled={
+                                emailing || form.processing || form.isDirty
+                            }
+                            data-busy={emailing}
+                            title={
+                                form.isDirty
+                                    ? 'Lưu thay đổi trước khi gửi'
+                                    : undefined
+                            }
+                            onClick={sendToCustomer}
+                        >
+                            Gửi mã qua email cho khách
+                        </button>
+                    )}
                     {coupon && (
                         <button
                             type="button"

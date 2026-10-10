@@ -227,6 +227,22 @@ export function CouponState({ state }: { state: CouponStateName }) {
     );
 }
 
+/** What each email is, by its type in the email log (App\Services\EmailService::TYPES). */
+export const emailTypes: Record<string, string> = {
+    welcome: 'Chào mừng',
+    verify_email: 'Xác minh email',
+    reset_password: 'Đặt lại mật khẩu',
+    order_placed: 'Đã nhận đơn',
+    order_shipped: 'Đơn đang giao',
+    order_delivered: 'Đơn đã giao',
+    order_cancelled: 'Đơn đã hủy',
+    coupon: 'Tặng mã giảm giá',
+    abandoned_cart: 'Nhắc giỏ hàng',
+    winback: 'Mời khách quay lại',
+    post_purchase: 'Mời đánh giá',
+    vip: 'Cảm ơn khách VIP',
+};
+
 export type ReviewState = 'pending' | 'published' | 'hidden';
 const reviewStates: Record<ReviewState, [string, string | undefined]> = {
     pending: ['Chờ duyệt', 'warning'],

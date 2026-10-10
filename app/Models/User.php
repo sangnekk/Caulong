@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Notifications\ResetPassword;
+use App\Notifications\VerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -31,10 +33,12 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property bool $is_admin
  * @property string|null $segment one of App\Services\CustomerSegmentation::SEGMENTS, once worked out
  * @property Carbon|null $segment_updated_at
+ * @property Carbon|null $marketing_opt_in_at when they agreed to promotional email; null: they have not
  */
 #[Fillable(['name', 'email', 'password'])]
 // The group is the shop's own reading of the customer: staff see it, the customer's browser does not.
-#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'segment', 'segment_updated_at'])]
+// Their choice about promotional email reaches the pages that show it by name (account.marketing).
+#[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token', 'segment', 'segment_updated_at', 'marketing_opt_in_at'])]
 class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
 {
     /** @use HasFactory<UserFactory> */
@@ -52,10 +56,23 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'segment_updated_at' => 'datetime',
+            'marketing_opt_in_at' => 'datetime',
             /* @chisel-2fa */
             'two_factor_confirmed_at' => 'datetime',
             /* @end-chisel-2fa */
         ];
+    }
+
+    /** Queued, like every email of the shop (see App\Services\EmailService). */
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new VerifyEmail);
+    }
+
+    /** @param  string  $token */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPassword($token));
     }
 
     /** @return HasMany<Order, $this> */

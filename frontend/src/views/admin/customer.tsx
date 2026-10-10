@@ -298,6 +298,14 @@ export default function CustomerDetail({
                         · Tham gia {date(customer.joined)}
                     </>
                 }
+                actions={
+                    <Link
+                        href={query('/admin/emails', { q: customer.email })}
+                        className="admin-button admin-button-secondary"
+                    >
+                        Email đã gửi
+                    </Link>
+                }
             />
             {demo && (
                 <p className="admin-notice" role="status">

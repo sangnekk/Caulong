@@ -73,7 +73,10 @@ class CheckoutController extends Controller
     public function show(Request $request, Order $order): Response
     {
         $ownsOrder = $request->user() && $order->user_id !== null && (int) $request->user()->id === (int) $order->user_id;
-        abort_unless($ownsOrder || in_array($order->public_id, $request->session()->get('order_access', []), true), 404);
+        // The link in the order's emails carries a signature that opens this one order for a
+        // limited time (App\Support\Frontend::order), on any device and without an account.
+        abort_unless($ownsOrder || in_array($order->public_id, $request->session()->get('order_access', []), true)
+            || $request->hasValidRelativeSignature(), 404);
         $data = $order->only([
             'public_id', 'name', 'phone', 'address', 'email', 'notes', 'status',
             'payment_status', 'payment_method', 'subtotal', 'shipping_fee', 'discount_total', 'coupon_code', 'total', 'is_demo', 'created_at',

@@ -2267,6 +2267,29 @@
     }
 }
 
+/* ───── Automatic emails (settings) ───── */
+.admin-automation {
+    margin: 0;
+    padding: 0.9rem 0;
+    border: 0;
+    border-top: 1px solid var(--line);
+}
+.admin-automation > p {
+    max-width: 70ch;
+    margin: 0 0 0.2rem 1.6rem;
+    font-size: 0.9rem;
+}
+.admin-automation-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 1rem;
+    margin-left: 1.6rem;
+}
+.admin-automation-numbers .admin-field {
+    width: 11rem;
+    margin: 0.5rem 0 0;
+}
+
 /* ───── Coupon form ───── */
 .admin-fieldset {
     margin: 0.7rem 0;

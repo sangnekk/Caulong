@@ -5,6 +5,7 @@ import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -90,6 +91,25 @@ export default function Register({ passwordRules }: Props) {
                                 <InputError
                                     message={errors.password_confirmation}
                                 />
+                            </div>
+
+                            {/* Promotional email is the customer's choice: never ticked for them. */}
+                            <div className="flex items-start space-x-3">
+                                <Checkbox
+                                    id="marketing_opt_in"
+                                    name="marketing_opt_in"
+                                    value="1"
+                                    tabIndex={5}
+                                    className="mt-0.5"
+                                />
+                                <Label
+                                    htmlFor="marketing_opt_in"
+                                    className="leading-snug font-normal"
+                                >
+                                    Gửi tôi email ưu đãi của cửa hàng (mã giảm
+                                    giá, nhắc giỏ hàng). Không bắt buộc, tắt
+                                    được bất cứ lúc nào.
+                                </Label>
                             </div>
 
                             <Button

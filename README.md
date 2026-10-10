@@ -6,10 +6,11 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 
 - **Trang giới thiệu:** vợt Hyper Core8000 bằng Three.js, sáu chương xoay và phóng theo cuộn, màn mở đầu “căng dây” chạy theo tiến độ tải mô hình thật, bản đọc tĩnh cho máy yếu hoặc khi tắt chuyển động.
 - **Cửa hàng:** danh sách vợt có lọc theo hãng, lối chơi, mức giá và hàng còn; trang sản phẩm theo phiên bản; giỏ hàng; đặt hàng COD không cần tài khoản; gợi ý chọn vợt theo ngân sách, lối chơi, trình độ (theo quy tắc, không dùng AI).
-- **Tài khoản:** khách xem đơn của mình, lưu sản phẩm yêu thích, viết đánh giá cho sản phẩm đã nhận, sửa hồ sơ, đổi mật khẩu; đăng nhập có xác minh email, xác thực hai lớp và passkey.
+- **Tài khoản:** khách xem đơn của mình, lưu sản phẩm yêu thích, viết đánh giá cho sản phẩm đã nhận, sửa hồ sơ, đổi mật khẩu, bật/tắt email ưu đãi; đăng nhập có xác minh email, xác thực hai lớp và passkey.
 - **Quản trị:** sản phẩm, tồn kho, đơn hàng, khách hàng (hồ sơ từng khách: số liệu, đơn, dòng hoạt động, sản phẩm, đánh giá), duyệt đánh giá, báo cáo doanh số và lãi gộp, cài đặt phí giao và liên hệ, xuất đơn ra CSV, trả lời chat hỗ trợ.
 - **Hành vi khách hàng:** cửa hàng tự ghi các sự kiện mua sắm (xem, tìm, thêm giỏ, đặt đơn…) vào database của mình; Microsoft Clarity là tùy chọn, chỉ chạy khi có project ID và khách đồng ý.
 - **Nhóm khách và mã giảm giá:** mỗi khách được xếp vào một nhóm (Mới, Tiềm năng, Đang mua, VIP, Không hoạt động, Đã mất) theo ngưỡng chủ shop đặt; mã giảm giá cho mọi khách, cho riêng một khách hoặc cho một nhóm, có hạn dùng, giới hạn lượt và điều kiện đơn.
+- **Email:** chào mừng, xác minh/đặt lại mật khẩu, cập nhật đơn và mã riêng qua queue; nhật ký ở `/admin/emails`. Bốn automation (nhắc giỏ, mời quay lại, mời đánh giá, quà VIP) mặc định tắt, chỉ gửi marketing cho khách đã đồng ý và xác minh email. Resend gọi HTTP, không cần thêm package PHP; local chỉ ghi log.
 - **Nhập hàng:** từ CSV hoặc Excel kèm ZIP ảnh, có xem trước và khớp theo SKU; đồng bộ danh mục vợt từ shopvnb.com (đã được cho phép) bằng `scripts/vnb-catalog.mjs`.
 - **Chưa có:** thanh toán online, kết nối hãng vận chuyển.
 
@@ -50,7 +51,7 @@ php artisan dev
 
 Lệnh này mở Laravel ở cổng 8000, hàng đợi và Next.js ở cổng 3000 trong cùng một cửa sổ. Mở **http://localhost:3000**. Cửa hàng ở `/products`, gợi ý chọn vợt ở `/advisor`, quản trị ở `/admin`.
 
-Muốn chạy riêng từng phần thì dùng hai cửa sổ: `php artisan serve` và `npm run dev`. Trên Windows có sẵn `scripts/start-local.ps1`, kiểm tra `.env`, các gói đã cài và hai cổng rồi mới chạy:
+Muốn chạy riêng từng phần thì dùng `php artisan serve` và `npm run dev`; thêm `php artisan queue:work` để gửi email và `php artisan schedule:work` để chạy automation. Trên Windows có sẵn `scripts/start-local.ps1`, kiểm tra `.env`, các gói đã cài và hai cổng rồi mới chạy:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1
@@ -65,22 +66,24 @@ php artisan shop:demo-sales                     # một năm đơn mẫu có nh�
 
 Khi `APP_ENV=local`, trang đăng nhập tự tạo hai tài khoản và có nút đăng nhập một lần bấm: `admin@test.local` (quản trị) và `khach@test.local` (khách), mật khẩu `Test-Cau-Long-2026!`. Xóa hai tài khoản này trước khi dùng database đó cho hàng thật.
 
-Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (ở local thư nằm trong `storage/logs/laravel.log`), rồi chạy `php artisan shop:make-admin email-cua-ban`.
+Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (ở local thư nằm trong `storage/logs/laravel.log` sau khi queue worker xử lý), rồi chạy `php artisan shop:make-admin email-cua-ban`.
 
 ## Lệnh thường dùng
 
-| Lệnh                                  | Việc                                                                        |
-| ------------------------------------- | --------------------------------------------------------------------------- |
-| `php artisan dev`                     | Chạy Laravel, hàng đợi và Next.js                                           |
-| `npm run build` rồi `npm run start`   | Build và chạy bản production của giao diện                                  |
-| `npm run check` / `npm run check:fix` | Kiểm tra / tự sửa định dạng và lint cho TypeScript, script, tài liệu        |
-| `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                      |
-| `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel |
-| `php artisan test --compact`          | Chạy test của Laravel                                                       |
-| `php artisan schedule:work`           | Chạy việc định kỳ: xếp lại nhóm khách hàng, xóa sự kiện cũ hơn 365 ngày     |
-| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)  |
-| `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                     |
-| `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                           |
+| Lệnh                                  | Việc                                                                                              |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `php artisan dev`                     | Chạy Laravel, hàng đợi và Next.js                                                                 |
+| `npm run build` rồi `npm run start`   | Build và chạy bản production của giao diện                                                        |
+| `npm run check` / `npm run check:fix` | Kiểm tra / tự sửa định dạng và lint cho TypeScript, script, tài liệu                              |
+| `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                                            |
+| `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel                       |
+| `php artisan test --compact`          | Chạy test của Laravel                                                                             |
+| `php artisan queue:work`              | Xử lý email đã xếp hàng; local ghi vào log, Resend gửi thật khi cấu hình                          |
+| `php artisan schedule:work`           | Chạy marketing, xếp nhóm khách, xóa sự kiện và nhật ký email cũ hơn 365 ngày                      |
+| `php artisan marketing:run`           | Chạy các automation đang bật; có thể thêm `abandoned_cart`, `winback`, `post_purchase` hoặc `vip` |
+| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)                        |
+| `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                                           |
+| `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                                                 |
 
 Sau khi thêm hoặc đổi route ở Laravel, chạy `npm run routes` để giao diện có hàm gọi route mới.
 
@@ -140,7 +143,8 @@ Lệnh chép chỉ chạy khi database mới còn trống và không chép phiê
 - **Địa chỉ:** `APP_URL` và `FRONTEND_URL` là địa chỉ công khai của shop (app Next.js), vì đường dẫn ảnh và liên kết trong email dựng từ đó.
 - **Next.js:** `npm run build` rồi `npm run start`, với `LARAVEL_URL` trong `frontend/.env.local` trỏ tới Laravel. Laravel chỉ cần Next.js gọi tới được, không cần mở ra Internet.
 - **Proxy:** Laravel hiện chỉ tin header chuyển tiếp từ `127.0.0.1` (`bootstrap/app.php`). Nếu Next.js chạy ở máy khác, thêm địa chỉ máy đó.
-- **Việc định kỳ:** thêm cron chạy `php artisan schedule:run` mỗi phút (hoặc giữ `php artisan schedule:work` chạy).
+- **Email:** đặt `MAIL_MAILER=resend`, `RESEND_API_KEY`, `MAIL_FROM_ADDRESS` thuộc domain đã xác minh trên Resend và `MAIL_FROM_NAME` trong `.env`; giữ `php artisan queue:work` chạy dưới process manager. `MAIL_MAILER=log` chỉ ghi file, không chứng minh email đã tới hộp thư. Transport HTTP đã kiểm thử bằng API giả; cần kiểm tra gửi thật trước khi mở bán.
+- **Việc định kỳ:** thêm cron chạy `php artisan schedule:run` mỗi phút (hoặc giữ `php artisan schedule:work` chạy). Bật từng automation ở `/admin/settings`; lịch marketing dùng giờ Việt Nam. Giữ các tùy chọn tắt khi chưa có chính sách và cấu hình gửi thật.
 - **Clarity (tùy chọn):** đặt `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` trước khi build. Cần có trang chính sách quyền riêng tư nói rõ cửa hàng ghi lại gì trước khi bật.
 - Dùng HTTPS, và xác nhận chính sách giao, đổi, trả trước khi nhận đơn thật.
 

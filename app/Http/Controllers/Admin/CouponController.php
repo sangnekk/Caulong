@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\CouponService;
 use App\Services\CustomerSegmentation;
+use App\Services\EmailService;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -99,6 +100,21 @@ class CouponController extends Controller
         $coupon->delete();
 
         return redirect()->route('admin.coupons.index')->with('success', 'Đã xóa mã '.$coupon->code.'.');
+    }
+
+    /** Emails a customer the coupon that was made for them. */
+    public function email(Coupon $coupon, EmailService $emails): RedirectResponse
+    {
+        if ($coupon->user === null || ! $coupon->is_active) {
+            throw ValidationException::withMessages(['coupon' => 'Chỉ gửi được mã đang bật và được tạo riêng cho một khách hàng.']);
+        }
+        if ($emails->coupon($coupon) === null) {
+            throw ValidationException::withMessages(['coupon' => $emails->couponReason($coupon) === 'gift'
+                ? 'Tài khoản của khách không có địa chỉ email gửi được.'
+                : 'Đây là mã của email ưu đãi tự động, mà khách này chưa đồng ý nhận email ưu đãi hoặc đã tắt.']);
+        }
+
+        return back()->with('success', 'Đã xếp email gửi mã '.$coupon->code.' tới '.$coupon->user->email.'.');
     }
 
     /** Products for the form's "only these products" picker, by name or SKU. */

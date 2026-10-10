@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\EmailController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
@@ -37,6 +38,8 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->na
     Route::get('coupons/{coupon}/edit', [CouponController::class, 'edit'])->whereNumber('coupon')->name('coupons.edit');
     Route::put('coupons/{coupon}', [CouponController::class, 'update'])->whereNumber('coupon')->name('coupons.update');
     Route::delete('coupons/{coupon}', [CouponController::class, 'destroy'])->whereNumber('coupon')->name('coupons.destroy');
+    Route::post('coupons/{coupon}/email', [CouponController::class, 'email'])->whereNumber('coupon')->middleware('throttle:10,1')->name('coupons.email');
+    Route::get('emails', EmailController::class)->name('emails.index');
     Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
     Route::patch('reviews/{review}', [ReviewController::class, 'update'])->whereNumber('review')->name('reviews.update');
     Route::post('brands', [TaxonomyController::class, 'brand'])->name('brands.store');

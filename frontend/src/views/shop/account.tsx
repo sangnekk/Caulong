@@ -70,6 +70,8 @@ export default function Account({
         verified: boolean;
         is_admin: boolean;
         joined: string;
+        /** They agreed to promotional email. */
+        marketing: boolean;
     };
     orders: Page<AccountOrder>;
     wishlist: WishlistItem[];
@@ -86,6 +88,7 @@ export default function Account({
     const [signingOut, setSigningOut] = useState(false);
     const [resent, setResent] = useState(false);
     const [removing, setRemoving] = useState<string | null>(null);
+    const [switching, setSwitching] = useState(false);
     const unsave = (slug: string) => {
         setRemoving(slug);
         router.delete('/wishlist/' + slug, {
@@ -489,6 +492,29 @@ export default function Account({
                                     : 'Lưu thông tin'}
                             </button>
                         </form>
+                        <label className="store-check store-account-marketing">
+                            <input
+                                type="checkbox"
+                                checked={account.marketing}
+                                disabled={switching}
+                                onChange={(event) => {
+                                    setSwitching(true);
+                                    router.patch(
+                                        '/account/marketing',
+                                        { opt_in: event.target.checked },
+                                        {
+                                            preserveScroll: true,
+                                            onFinish: () => setSwitching(false),
+                                        },
+                                    );
+                                }}
+                            />
+                            <span>
+                                Nhận email ưu đãi của cửa hàng: mã giảm giá,
+                                nhắc giỏ hàng, mời đánh giá. Email về đơn hàng
+                                và tài khoản luôn được gửi.
+                            </span>
+                        </label>
                     </section>
 
                     <section

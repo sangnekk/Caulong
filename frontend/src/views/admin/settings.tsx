@@ -16,11 +16,87 @@ type Settings = {
     segment_lost_days: number;
     segment_new_days: number;
     segment_potential_events: number;
+    marketing_abandoned_cart: boolean;
+    marketing_abandoned_cart_hours: number;
+    marketing_winback: boolean;
+    marketing_winback_percent: number;
+    marketing_winback_valid_days: number;
+    marketing_post_purchase: boolean;
+    marketing_post_purchase_days: number;
+    marketing_vip: boolean;
+    marketing_vip_percent: number;
+    marketing_vip_valid_days: number;
 };
+type NumberSetting = {
+    [Key in keyof Settings]: Settings[Key] extends number ? Key : never;
+}[keyof Settings];
+
+/** The emails that send themselves: a switch each, and the numbers that go with it. */
+const automations: {
+    key:
+        | 'marketing_abandoned_cart'
+        | 'marketing_winback'
+        | 'marketing_post_purchase'
+        | 'marketing_vip';
+    title: string;
+    about: string;
+    numbers: { key: NumberSetting; label: string; max: number }[];
+}[] = [
+    {
+        key: 'marketing_abandoned_cart',
+        title: 'Nhắc giỏ hàng bỏ dở',
+        about: 'Khách đã đăng nhập thêm vợt vào giỏ rồi không đặt. Email nêu các cây còn hàng. Mỗi khách nhiều nhất một lần mỗi tuần.',
+        numbers: [
+            {
+                key: 'marketing_abandoned_cart_hours',
+                label: 'Gửi sau (giờ)',
+                max: 72,
+            },
+        ],
+    },
+    {
+        key: 'marketing_winback',
+        title: 'Mời khách cũ quay lại',
+        about: 'Khách đã mua nay thuộc nhóm Không hoạt động được tặng một mã giảm giá riêng, dùng một lần. Mỗi khách nhiều nhất một lần trong nửa năm.',
+        numbers: [
+            { key: 'marketing_winback_percent', label: 'Giảm (%)', max: 50 },
+            {
+                key: 'marketing_winback_valid_days',
+                label: 'Mã dùng trong (ngày)',
+                max: 90,
+            },
+        ],
+    },
+    {
+        key: 'marketing_post_purchase',
+        title: 'Mời đánh giá sau khi mua',
+        about: 'Vài ngày sau khi đơn đã giao: mời khách đánh giá cây vợt đã nhận, kèm vài cây cùng lối chơi.',
+        numbers: [
+            {
+                key: 'marketing_post_purchase_days',
+                label: 'Gửi sau khi giao (ngày)',
+                max: 60,
+            },
+        ],
+    },
+    {
+        key: 'marketing_vip',
+        title: 'Cảm ơn khách VIP',
+        about: 'Khách vừa vào nhóm VIP nhận một lần duy nhất một mã giảm giá riêng.',
+        numbers: [
+            { key: 'marketing_vip_percent', label: 'Giảm (%)', max: 50 },
+            {
+                key: 'marketing_vip_valid_days',
+                label: 'Mã dùng trong (ngày)',
+                max: 90,
+            },
+        ],
+    },
+];
 
 /** The customer groups' thresholds, in the order the form shows them. */
 const segmentRules: {
-    key: keyof Settings;
+    key: NumberSetting;
     label: string;
     help: (value: number) => string;
     step?: number;
@@ -343,6 +419,83 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
                             </Field>
                         ))}
                     </div>
+                </section>
+
+                <section
+                    className="admin-form-section"
+                    aria-labelledby="automation-title"
+                >
+                    <h2 id="automation-title">Email tự động</h2>
+                    <p className="admin-lead">
+                        Các email cửa hàng tự gửi theo lịch. Mỗi loại chỉ chạy
+                        khi bạn bật, và chỉ gửi cho khách{' '}
+                        <strong>đã đồng ý nhận email ưu đãi</strong> (ô chọn khi
+                        đăng ký hoặc ở trang tài khoản); email nào cũng có liên
+                        kết để khách ngừng nhận. Xem những gì đã gửi ở{' '}
+                        <Link href="/admin/emails">Email đã gửi</Link>. Email về
+                        đơn hàng và tài khoản luôn được gửi, không phụ thuộc các
+                        công tắc này.
+                    </p>
+                    {automations.map(({ key, title, about, numbers }) => (
+                        <fieldset key={key} className="admin-automation">
+                            <legend className="sr-only">{title}</legend>
+                            <label className="admin-check">
+                                <input
+                                    type="checkbox"
+                                    checked={data[key]}
+                                    onChange={(e) =>
+                                        form.setData(key, e.target.checked)
+                                    }
+                                />
+                                {title}
+                            </label>
+                            <p className="admin-muted">{about}</p>
+                            <div className="admin-automation-numbers">
+                                {numbers.map((number) => (
+                                    <Field
+                                        key={number.key}
+                                        name={number.key}
+                                        label={number.label}
+                                        error={
+                                            (
+                                                form.errors as Record<
+                                                    string,
+                                                    string | undefined
+                                                >
+                                            )[number.key]
+                                        }
+                                    >
+                                        <input
+                                            id={number.key}
+                                            type="number"
+                                            inputMode="numeric"
+                                            min={1}
+                                            max={number.max}
+                                            required
+                                            disabled={!data[key]}
+                                            value={data[number.key]}
+                                            onChange={(e) =>
+                                                form.setData(
+                                                    number.key,
+                                                    e.target.value === ''
+                                                        ? 0
+                                                        : Math.max(
+                                                              0,
+                                                              Math.floor(
+                                                                  Number(
+                                                                      e.target
+                                                                          .value,
+                                                                  ),
+                                                              ),
+                                                          ),
+                                                )
+                                            }
+                                        />
+                                    </Field>
+                                ))}
+                            </div>
+                        </fieldset>
+                    ))}
                 </section>
 
                 <section

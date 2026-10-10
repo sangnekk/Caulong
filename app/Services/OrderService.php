@@ -18,6 +18,7 @@ class OrderService
         private CustomerEvents $events,
         private CouponService $coupons,
         private CustomerSegmentation $segments,
+        private EmailService $emails,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -155,6 +156,7 @@ class OrderService
             $this->events->record($request, 'order_placed', orderId: $order->id, metadata: [
                 'items' => (int) $order->items()->sum('quantity'), 'total' => (int) $order->total,
             ]);
+            $this->emails->order($order, 'placed');
         }
         $completed[$token] = $order->public_id;
         $request->session()->put('checkout_orders', array_slice($completed, -25, null, true));
@@ -168,7 +170,11 @@ class OrderService
 
     public function transition(Order $order, string $status): Order
     {
-        $order = DB::transaction(function () use ($order, $status) {
+        // Whether this call is the one that moved the order: the caller's copy may be out of date.
+        $moved = false;
+        $order = DB::transaction(function () use ($order, $status, &$moved) {
+            // A transaction that is tried again starts over.
+            $moved = false;
             $locked = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
             $allowed = [
                 'pending' => ['confirmed', 'cancelled'],
@@ -198,10 +204,15 @@ class OrderService
                 $this->coupons->release($locked);
             }
             $locked->update(['status' => $status, $status.'_at' => now()]);
+            $moved = true;
 
             return $locked;
         }, 3);
         $this->regroup($order);
+        // The customer hears about the steps that matter to them, once each.
+        if ($moved && in_array($order->status, ['shipped', 'delivered', 'cancelled'], true)) {
+            $this->emails->order($order, $order->status);
+        }
 
         return $order;
     }

@@ -22,12 +22,19 @@ class CreateNewUser implements CreatesNewUsers
         Validator::make($input, [
             ...$this->profileRules(),
             'password' => $this->passwordRules(),
+            // Promotional email is opt-in: a box the customer ticks, never ticked for them.
+            'marketing_opt_in' => ['nullable', 'boolean'],
         ])->validate();
 
-        return User::create([
+        $user = User::create([
             'name' => $input['name'],
             'email' => $input['email'],
             'password' => $input['password'],
         ]);
+        if (filter_var($input['marketing_opt_in'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+            $user->forceFill(['marketing_opt_in_at' => now()])->save();
+        }
+
+        return $user;
     }
 }

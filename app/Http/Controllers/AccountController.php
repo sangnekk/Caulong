@@ -40,6 +40,8 @@ class AccountController extends Controller
                 'verified' => $user->hasVerifiedEmail(),
                 'is_admin' => $user->is_admin,
                 'joined' => $user->created_at,
+                // Whether they agreed to promotional email (they switch it here).
+                'marketing' => $user->marketing_opt_in_at !== null,
             ],
             'orders' => $orders,
             // Saved products, the latest first. One no longer sold stays listed so it can be removed.

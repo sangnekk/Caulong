@@ -250,6 +250,15 @@
     gap: 2.75rem;
     min-width: 0;
 }
+.store-account-marketing {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    font-size: 0.92rem;
+}
+.store-unsubscribe {
+    max-width: 38rem;
+}
 .store-coupons {
     list-style: none;
     margin: 0 0 0.6rem;

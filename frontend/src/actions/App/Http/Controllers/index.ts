@@ -5,6 +5,7 @@ import RecommendationController from './RecommendationController'
 import CartController from './CartController'
 import CheckoutController from './CheckoutController'
 import CustomerEventController from './CustomerEventController'
+import MarketingConsentController from './MarketingConsentController'
 import WishlistController from './WishlistController'
 import ReviewController from './ReviewController'
 import SupportChatController from './SupportChatController'
@@ -18,6 +19,7 @@ RecommendationController: Object.assign(RecommendationController, Recommendation
 CartController: Object.assign(CartController, CartController),
 CheckoutController: Object.assign(CheckoutController, CheckoutController),
 CustomerEventController: Object.assign(CustomerEventController, CustomerEventController),
+MarketingConsentController: Object.assign(MarketingConsentController, MarketingConsentController),
 WishlistController: Object.assign(WishlistController, WishlistController),
 ReviewController: Object.assign(ReviewController, ReviewController),
 SupportChatController: Object.assign(SupportChatController, SupportChatController),

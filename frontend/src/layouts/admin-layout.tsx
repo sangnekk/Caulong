@@ -8,6 +8,7 @@ import {
     FileUp,
     LayoutDashboard,
     LogOut,
+    Mail,
     Menu,
     MessageCircle,
     Package,
@@ -43,6 +44,7 @@ const workNav = [
     { href: '/admin/customers', label: 'Khách hàng', icon: Users },
     { href: '/admin/coupons', label: 'Mã giảm giá', icon: TicketPercent },
     { href: '/admin/reviews', label: 'Đánh giá', icon: Star },
+    { href: '/admin/emails', label: 'Email đã gửi', icon: Mail },
     { href: '/admin/settings', label: 'Cài đặt', icon: Settings },
 ];
 
