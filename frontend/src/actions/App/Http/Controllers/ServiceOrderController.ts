@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition, applyUrlDefaults } from './../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
 export const index = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ index.definition = {
 
 /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
 index.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ index.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
 index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ index.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
 index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
     const indexForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
         indexForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\ServiceOrderController::index
- * @see app/Http/Controllers/ServiceOrderController.php:20
+ * @see app/Http/Controllers/ServiceOrderController.php:21
  * @route '/services'
  */
         indexForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -79,7 +79,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     index.form = indexForm
 /**
 * @see \App\Http\Controllers\ServiceOrderController::store
- * @see app/Http/Controllers/ServiceOrderController.php:30
+ * @see app/Http/Controllers/ServiceOrderController.php:34
  * @route '/service-orders'
  */
 export const store = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -94,7 +94,7 @@ store.definition = {
 
 /**
 * @see \App\Http\Controllers\ServiceOrderController::store
- * @see app/Http/Controllers/ServiceOrderController.php:30
+ * @see app/Http/Controllers/ServiceOrderController.php:34
  * @route '/service-orders'
  */
 store.url = (options?: RouteQueryOptions) => {
@@ -103,7 +103,7 @@ store.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\ServiceOrderController::store
- * @see app/Http/Controllers/ServiceOrderController.php:30
+ * @see app/Http/Controllers/ServiceOrderController.php:34
  * @route '/service-orders'
  */
 store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
@@ -113,7 +113,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
     /**
 * @see \App\Http\Controllers\ServiceOrderController::store
- * @see app/Http/Controllers/ServiceOrderController.php:30
+ * @see app/Http/Controllers/ServiceOrderController.php:34
  * @route '/service-orders'
  */
     const storeForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -123,7 +123,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
 
             /**
 * @see \App\Http\Controllers\ServiceOrderController::store
- * @see app/Http/Controllers/ServiceOrderController.php:30
+ * @see app/Http/Controllers/ServiceOrderController.php:34
  * @route '/service-orders'
  */
         storeForm.post = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -134,7 +134,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
 export const show = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -149,7 +149,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
 show.url = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions) => {
@@ -182,7 +182,7 @@ show.url = (args: { serviceOrder: string | { public_id: string } } | [serviceOrd
 
 /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
 show.get = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -191,7 +191,7 @@ show.get = (args: { serviceOrder: string | { public_id: string } } | [serviceOrd
 })
 /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
 show.head = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -201,7 +201,7 @@ show.head = (args: { serviceOrder: string | { public_id: string } } | [serviceOr
 
     /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
     const showForm = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -211,7 +211,7 @@ show.head = (args: { serviceOrder: string | { public_id: string } } | [serviceOr
 
             /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
         showForm.get = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -220,7 +220,7 @@ show.head = (args: { serviceOrder: string | { public_id: string } } | [serviceOr
         })
             /**
 * @see \App\Http\Controllers\ServiceOrderController::show
- * @see app/Http/Controllers/ServiceOrderController.php:74
+ * @see app/Http/Controllers/ServiceOrderController.php:78
  * @route '/service-orders/{serviceOrder}'
  */
         showForm.head = (args: { serviceOrder: string | { public_id: string } } | [serviceOrder: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

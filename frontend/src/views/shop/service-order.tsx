@@ -86,9 +86,7 @@ export default function ServiceOrderPage({
 
     return (
         <>
-            <Head title={'Yêu cầu đan dây ' + order.code}>
-                <meta name="robots" content="noindex, nofollow" />
-            </Head>
+            <Head title={'Yêu cầu đan dây ' + order.code} />
             <header className="store-page-heading">
                 <div>
                     <h1>

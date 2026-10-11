@@ -11,6 +11,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\RecommendationService;
 use App\Services\ReviewService;
+use App\Services\SeoService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,7 @@ class CatalogController extends Controller
         'over-4m' => [4000000, PHP_INT_MAX],
     ];
 
-    public function index(Request $request): Response
+    public function index(Request $request, SeoService $seo): Response
     {
         $validated = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
@@ -102,16 +103,25 @@ class CatalogController extends Controller
             ->whereHas('products', fn ($query) => $query->active())
             ->orWhere('slug', $selected);
 
+        $categories = Category::query()->where($offered($filters['category']))->orderBy('name')->get(['id', 'name', 'slug']);
+        $brands = Brand::query()->where($offered($filters['brand']))->orderBy('name')->get(['id', 'name', 'slug']);
+
         return Inertia::render('shop/products', [
             'products' => $products,
             'filters' => $filters,
             'inStock' => Product::query()->active()->whereHas('variants', $sellable)->count(),
-            'categories' => Category::query()->where($offered($filters['category']))->orderBy('name')->get(['id', 'name', 'slug']),
-            'brands' => Brand::query()->where($offered($filters['brand']))->orderBy('name')->get(['id', 'name', 'slug']),
+            'categories' => $categories,
+            'brands' => $brands,
+            // For search engines and link previews (the storefront puts it in the page's head).
+            'seo' => $seo->catalog(
+                $filters, $products->total(), $products->currentPage(),
+                $filters['brand'] !== '' ? $brands->firstWhere('slug', $filters['brand']) : null,
+                $filters['category'] !== '' ? $categories->firstWhere('slug', $filters['category']) : null,
+            ),
         ]);
     }
 
-    public function show(Request $request, Product $product, RecommendationService $recommendations, ReviewService $reviews): Response
+    public function show(Request $request, Product $product, RecommendationService $recommendations, ReviewService $reviews, SeoService $seo): Response
     {
         abort_unless($product->is_active, 404);
         $product->load(['brand', 'category', 'images', 'variants' => fn ($query) => $query->active()->orderBy('id')]);
@@ -123,6 +133,7 @@ class CatalogController extends Controller
         $similar = $recommendations->similar($product, except: $shown);
         /** @var User|null $user */
         $user = $request->user();
+        $rating = $reviews->summary($product);
 
         return Inertia::render('shop/product', [
             'product' => (new ProductResource($product))->resolve($request),
@@ -132,7 +143,8 @@ class CatalogController extends Controller
             'related' => $cards($related),
             'similar' => $cards($similar),
             // Published reviews only: the average and the latest ones.
-            'reviews' => [...$reviews->summary($product), 'items' => $reviews->published($product)],
+            'reviews' => [...$rating, 'items' => $reviews->published($product)],
+            'seo' => $seo->product($product, $rating),
             // What a signed-in customer has saved and may write here; null for a guest.
             'viewer' => $user ? [
                 'wishlisted' => $user->wishlist()->whereKey($product->id)->exists(),

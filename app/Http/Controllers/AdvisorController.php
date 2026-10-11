@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\ProductResource;
 use App\Models\Product;
+use App\Services\SeoService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -11,7 +12,7 @@ use Inertia\Response;
 
 class AdvisorController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request, SeoService $seo): Response
     {
         $submitted = $request->hasAny(['budget', 'style', 'level']);
         $validated = $request->validate([
@@ -58,6 +59,6 @@ class AdvisorController extends Controller
             }
         }
 
-        return Inertia::render('shop/advisor', compact('recommendations', 'filters'));
+        return Inertia::render('shop/advisor', [...compact('recommendations', 'filters'), 'seo' => $seo->advisor()]);
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ServiceOrder;
+use App\Services\SeoService;
 use App\Services\ShopSettings;
 use App\Services\StringingService;
 use Carbon\CarbonImmutable;
@@ -17,10 +18,13 @@ use Inertia\Response;
 /** The stringing service as customers use it: the page with its form, and a request's own page. */
 class ServiceOrderController extends Controller
 {
-    public function index(StringingService $stringing): Response
+    public function index(StringingService $stringing, SeoService $seo): Response
     {
+        $offer = $stringing->offer();
+
         return Inertia::render('shop/services', [
-            'service' => $stringing->offer(),
+            'service' => $offer,
+            'seo' => $seo->services($offer['enabled']),
             // Sent back with the form, so that sending it twice makes one request. Nothing is
             // kept here: a first-time visitor's browser has no session yet when this page is built.
             'bookingToken' => (string) Str::uuid(),

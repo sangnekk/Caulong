@@ -211,8 +211,7 @@ register.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     register.form = registerForm
 /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
 export const home = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -226,8 +225,7 @@ home.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
 home.url = (options?: RouteQueryOptions) => {
@@ -235,8 +233,7 @@ home.url = (options?: RouteQueryOptions) => {
 }
 
 /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
 home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -244,8 +241,7 @@ home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
 home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -254,8 +250,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
     const homeForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -264,8 +259,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
         homeForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -273,8 +267,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
-* @see \Inertia\Controller::__invoke
- * @see vendor/inertiajs/inertia-laravel/src/Controller.php:13
+ * @see routes/web.php:11
  * @route '/'
  */
         homeForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -289,7 +282,163 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     home.form = homeForm
 /**
- * @see routes/web.php:17
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+export const sitemap = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: sitemap.url(options),
+    method: 'get',
+})
+
+sitemap.definition = {
+    methods: ["get","head"],
+    url: '/sitemap.xml',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+sitemap.url = (options?: RouteQueryOptions) => {
+    return sitemap.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+sitemap.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: sitemap.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+sitemap.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: sitemap.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+    const sitemapForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: sitemap.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+        sitemapForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: sitemap.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\SeoController::sitemap
+ * @see app/Http/Controllers/SeoController.php:11
+ * @route '/sitemap.xml'
+ */
+        sitemapForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: sitemap.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    sitemap.form = sitemapForm
+/**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+export const robots = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: robots.url(options),
+    method: 'get',
+})
+
+robots.definition = {
+    methods: ["get","head"],
+    url: '/robots.txt',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+robots.url = (options?: RouteQueryOptions) => {
+    return robots.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+robots.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: robots.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+robots.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: robots.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+    const robotsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: robots.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+        robotsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: robots.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\SeoController::robots
+ * @see app/Http/Controllers/SeoController.php:16
+ * @route '/robots.txt'
+ */
+        robotsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: robots.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    robots.form = robotsForm
+/**
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -303,7 +452,7 @@ dashboard.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:17
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -311,7 +460,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:17
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -319,7 +468,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:17
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -328,7 +477,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:17
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
     const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -337,7 +486,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:17
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
         dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -345,7 +494,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:17
+ * @see routes/web.php:24
  * @route '/dashboard'
  */
         dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

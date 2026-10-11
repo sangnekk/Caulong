@@ -430,7 +430,7 @@ collected.post = (args: { order: number | { id: number } } | [order: number | { 
  * @see app/Http/Controllers/Admin/OrderController.php:178
  * @route '/admin/orders/{order}/payments/{payment}/confirm'
  */
-export const paymentReceived = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const paymentReceived = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: paymentReceived.url(args, options),
     method: 'post',
 })
@@ -445,7 +445,7 @@ paymentReceived.definition = {
  * @see app/Http/Controllers/Admin/OrderController.php:178
  * @route '/admin/orders/{order}/payments/{payment}/confirm'
  */
-paymentReceived.url = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+paymentReceived.url = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
                     order: args[0],
@@ -475,7 +475,7 @@ paymentReceived.url = (args: { order: number | { id: number }, payment: string |
  * @see app/Http/Controllers/Admin/OrderController.php:178
  * @route '/admin/orders/{order}/payments/{payment}/confirm'
  */
-paymentReceived.post = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+paymentReceived.post = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: paymentReceived.url(args, options),
     method: 'post',
 })
@@ -485,7 +485,7 @@ paymentReceived.post = (args: { order: number | { id: number }, payment: string 
  * @see app/Http/Controllers/Admin/OrderController.php:178
  * @route '/admin/orders/{order}/payments/{payment}/confirm'
  */
-    const paymentReceivedForm = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    const paymentReceivedForm = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
         action: paymentReceived.url(args, options),
         method: 'post',
     })
@@ -495,7 +495,7 @@ paymentReceived.post = (args: { order: number | { id: number }, payment: string 
  * @see app/Http/Controllers/Admin/OrderController.php:178
  * @route '/admin/orders/{order}/payments/{payment}/confirm'
  */
-        paymentReceivedForm.post = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        paymentReceivedForm.post = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
             action: paymentReceived.url(args, options),
             method: 'post',
         })
@@ -506,7 +506,7 @@ paymentReceived.post = (args: { order: number | { id: number }, payment: string 
  * @see app/Http/Controllers/Admin/OrderController.php:186
  * @route '/admin/orders/{order}/payments/{payment}/refund'
  */
-export const paymentRefunded = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+export const paymentRefunded = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: paymentRefunded.url(args, options),
     method: 'post',
 })
@@ -521,7 +521,7 @@ paymentRefunded.definition = {
  * @see app/Http/Controllers/Admin/OrderController.php:186
  * @route '/admin/orders/{order}/payments/{payment}/refund'
  */
-paymentRefunded.url = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions) => {
+paymentRefunded.url = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions) => {
     if (Array.isArray(args)) {
         args = {
                     order: args[0],
@@ -551,7 +551,7 @@ paymentRefunded.url = (args: { order: number | { id: number }, payment: string |
  * @see app/Http/Controllers/Admin/OrderController.php:186
  * @route '/admin/orders/{order}/payments/{payment}/refund'
  */
-paymentRefunded.post = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
+paymentRefunded.post = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     url: paymentRefunded.url(args, options),
     method: 'post',
 })
@@ -561,7 +561,7 @@ paymentRefunded.post = (args: { order: number | { id: number }, payment: string 
  * @see app/Http/Controllers/Admin/OrderController.php:186
  * @route '/admin/orders/{order}/payments/{payment}/refund'
  */
-    const paymentRefundedForm = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    const paymentRefundedForm = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
         action: paymentRefunded.url(args, options),
         method: 'post',
     })
@@ -571,7 +571,7 @@ paymentRefunded.post = (args: { order: number | { id: number }, payment: string 
  * @see app/Http/Controllers/Admin/OrderController.php:186
  * @route '/admin/orders/{order}/payments/{payment}/refund'
  */
-        paymentRefundedForm.post = (args: { order: number | { id: number }, payment: string | number | { id: string | number } } | [order: number | { id: number }, payment: string | number | { id: string | number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        paymentRefundedForm.post = (args: { order: number | { id: number }, payment: number | { id: number } } | [order: number | { id: number }, payment: number | { id: number } ], options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
             action: paymentRefunded.url(args, options),
             method: 'post',
         })

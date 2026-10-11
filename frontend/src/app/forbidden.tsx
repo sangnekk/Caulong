@@ -4,6 +4,7 @@ export default function Forbidden() {
     return (
         <main className="mx-auto flex min-h-svh max-w-md flex-col items-start justify-center gap-4 p-6">
             <title>Không có quyền truy cập - Shop Cầu Lông</title>
+            <meta name="robots" content="noindex, nofollow" />
             <p className="text-sm text-muted-foreground">Lỗi 403</p>
             <h1 className="text-2xl font-semibold">
                 Tài khoản này không mở được trang bạn yêu cầu

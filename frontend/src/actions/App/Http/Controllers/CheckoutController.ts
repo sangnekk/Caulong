@@ -134,7 +134,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
     store.form = storeForm
 /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
 export const show = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -149,7 +149,7 @@ show.definition = {
 
 /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
 show.url = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions) => {
@@ -182,7 +182,7 @@ show.url = (args: { order: string | { public_id: string } } | [order: string | {
 
 /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
 show.get = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -191,7 +191,7 @@ show.get = (args: { order: string | { public_id: string } } | [order: string | {
 })
 /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
 show.head = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -201,7 +201,7 @@ show.head = (args: { order: string | { public_id: string } } | [order: string | 
 
     /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
     const showForm = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -211,7 +211,7 @@ show.head = (args: { order: string | { public_id: string } } | [order: string | 
 
             /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
         showForm.get = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -220,7 +220,7 @@ show.head = (args: { order: string | { public_id: string } } | [order: string | 
         })
             /**
 * @see \App\Http\Controllers\CheckoutController::show
- * @see app/Http/Controllers/CheckoutController.php:81
+ * @see app/Http/Controllers/CheckoutController.php:82
  * @route '/orders/{order}'
  */
         showForm.head = (args: { order: string | { public_id: string } } | [order: string | { public_id: string } ] | string | { public_id: string }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

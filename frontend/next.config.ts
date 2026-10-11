@@ -9,14 +9,17 @@ const nextConfig: NextConfig = {
         authInterrupts: true,
     },
     // Laravel's own routes that never become a page: uploaded images, links from emails,
-    // file downloads, and the JSON endpoints two widgets call by their Laravel path (the
-    // support chat, and the passkey package). Everything else is either a page or /api.
+    // file downloads, what search engines ask for (the site map and robots.txt), and the
+    // JSON endpoints two widgets call by their Laravel path (the support chat, and the
+    // passkey package). Everything else is either a page or /api.
     async rewrites() {
         return [
             '/storage/:path*',
             '/email/verify/:path*',
             '/admin/orders/export',
             '/admin/imports/template',
+            '/sitemap.xml',
+            '/robots.txt',
             '/support-chat/:path*',
             '/passkeys/:path*',
             '/user/passkeys/:path*',

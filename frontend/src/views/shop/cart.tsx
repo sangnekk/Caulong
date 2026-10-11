@@ -245,9 +245,7 @@ export default function Cart({ cart }: { cart: CartData }) {
         );
     return (
         <>
-            <Head title="Giỏ hàng">
-                <meta name="robots" content="noindex, nofollow" />
-            </Head>
+            <Head title="Giỏ hàng" />
             <header className="store-page-heading">
                 <div>
                     <h1>Giỏ hàng của bạn</h1>

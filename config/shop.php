@@ -106,6 +106,12 @@ return [
         '546035' => 'Ubank by VPBank',
         '963388' => 'Timo',
     ],
+    // Search engines (App\Services\SeoService). Only the live site may be indexed: a copy on a
+    // developer's machine or a staging server tells them to stay away (robots.txt and a
+    // "noindex" on every page). SHOP_SEO_INDEX overrides the guess from APP_ENV.
+    'seo' => [
+        'index' => (bool) env('SHOP_SEO_INDEX', env('APP_ENV') === 'production'),
+    ],
     // The support chat (App\Services\SupportChat).
     'support' => [
         // Days a conversation staff marked as solved waits for the customer before it closes itself.

@@ -16,6 +16,6 @@ export function proxy(request: NextRequest) {
 export const config = {
     // Pages only: /api talks to Laravel itself, the rest are files.
     matcher: [
-        '/((?!api/|_next/|fonts/|models/|storage/|favicon|apple-touch-icon|robots.txt).*)',
+        '/((?!api/|_next/|fonts/|models/|storage/|favicon|apple-touch-icon|robots.txt|sitemap.xml).*)',
     ],
 };

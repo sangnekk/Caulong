@@ -173,9 +173,7 @@ export default function OrderPage({
     }, [justPlaced]);
     return (
         <>
-            <Head title={'Đơn hàng ' + code}>
-                <meta name="robots" content="noindex, nofollow" />
-            </Head>
+            <Head title={'Đơn hàng ' + code} />
             <header className="store-page-heading">
                 <div>
                     <h1>

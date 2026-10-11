@@ -241,6 +241,22 @@ Cạnh tên khách là nhóm của họ, tính lại ngay lúc mở trang. Trên
 - **Phân quyền:** chỉ quản trị viên xử lý yêu cầu và sửa danh sách dây; nhân viên hỗ trợ thấy 3 yêu cầu gần nhất của khách trong bảng thông tin cạnh cuộc chat.
 - Giới hạn mức căng, số vợt và số ngày đặt trước ở `config/shop.php` → `stringing`.
 
+**Công cụ tìm kiếm (SEO)** (`app/Services/SeoService.php`, `frontend/src/lib/laravel/seo.tsx`): Laravel nói về mỗi trang công khai những gì công cụ tìm kiếm và khung xem trước liên kết (Zalo, Facebook) cần; Next.js ghi chúng vào `<head>` của HTML máy chủ trả về, nên trình thu thập không chạy JavaScript vẫn đọc được.
+
+| Trang            | Tiêu đề và mô tả                                                             | Dữ liệu có cấu trúc (schema.org)                                   |
+| ---------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Trang giới thiệu | Tên shop và câu giới thiệu                                                   | `WebSite` (kèm ô tìm kiếm), cửa hàng với liên hệ đã nhập ở Cài đặt |
+| Danh sách vợt    | “Cửa hàng vợt cầu lông”, hoặc theo hãng, danh mục, lối chơi; số vợt đang bán | `BreadcrumbList`                                                   |
+| Một cây vợt      | Tên vợt; 160 ký tự đầu của mô tả sản phẩm                                    | `Product` (giá, còn hàng hay hết, hãng, ảnh), `BreadcrumbList`     |
+| Gợi ý chọn vợt   | Cố định                                                                      | `BreadcrumbList`                                                   |
+| Dịch vụ đan dây  | Cố định; không lập chỉ mục khi cửa hàng tạm ngưng nhận yêu cầu               | `BreadcrumbList`                                                   |
+
+- **Một địa chỉ cho mỗi trang (canonical):** hãng, danh mục và lối chơi là trang riêng (`/products?brand=yonex`), trang 2 trở đi cũng vậy. Sắp xếp, mức giá và “chỉ hàng còn” là cùng một trang nhìn theo cách khác, nên canonical bỏ các tham số đó. Kết quả tìm kiếm (`?q=`) và danh sách rỗng không cho lập chỉ mục.
+- **Không bịa:** điểm đánh giá chỉ xuất hiện khi đã có đánh giá của khách được hiện ở cửa hàng. Giá và tình trạng hàng lấy từ các phiên bản đang bán. Sản phẩm mẫu không cho lập chỉ mục, không có `Product`, không vào sitemap. Liên hệ của cửa hàng chỉ gồm những gì chủ shop đã nhập ở Cài đặt.
+- **Trang riêng tư:** trang nào Laravel không gửi dữ liệu SEO (giỏ hàng, thanh toán, đơn hàng, tài khoản, đăng nhập, quản trị) đều có `noindex, nofollow`. Trang thêm sau này cũng vậy cho tới khi được khai báo.
+- **`/sitemap.xml`:** trang giới thiệu, danh sách vợt, gợi ý chọn vợt, đan dây (khi đang nhận yêu cầu), từng hãng và danh mục có hàng thật đang bán, và mọi cây vợt thật đang bán kèm ngày sửa gần nhất. **`/robots.txt`:** chặn các đường dẫn riêng tư và chỉ tới sitemap. Cả hai do Laravel trả, Next.js chuyển tiếp, không tạo phiên cho trình thu thập.
+- **Chỉ trang chạy thật mới được lập chỉ mục:** khi `APP_ENV` không phải `production`, `robots.txt` là `Disallow: /` và mọi trang có `noindex`, để bản chạy thử hay máy của lập trình viên không lọt vào kết quả tìm kiếm. `SHOP_SEO_INDEX` trong `.env` ghi đè lựa chọn này. Mọi địa chỉ tuyệt đối dựng từ `FRONTEND_URL`.
+
 **Microsoft Clarity** (`frontend/src/lib/analytics.ts`, `frontend/src/components/shop-analytics.tsx`): đặt project ID vào `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` rồi build lại; để trống thì không có gì được tải.
 
 - Cửa hàng hỏi mỗi khách một lần (góc dưới bên trái); chỉ khi khách bấm “Đồng ý” script của Clarity mới được tải. Chân trang có dòng cho khách đổi lựa chọn.
@@ -259,6 +275,7 @@ Cạnh tên khách là nhóm của họ, tính lại ngay lúc mở trang. Trên
 - Khách vãng lai xem đơn trong phiên đã đặt; mất phiên không thể mở lại chỉ bằng mã đơn. Ngoại lệ duy nhất là liên kết có chữ ký trong email của đơn (60 ngày), nên khách muốn theo dõi đơn về sau cần ghi email lúc đặt.
 - Email: giữ `php artisan queue:work` và scheduler chạy; `MAIL_MAILER=log` không gửi gì ra ngoài. Trước khi bật automation cần gửi thử thật qua Resend và có chính sách về email ưu đãi.
 - Phí giao hàng là một mức cố định chỉnh ở Cài đặt, chưa kết nối hãng vận chuyển.
+- Tìm kiếm: đặt `FRONTEND_URL` là địa chỉ `https` công khai và `APP_ENV=production` thì trang mới được lập chỉ mục. Sau đó khai báo sitemap trong Google Search Console và thử một trang sản phẩm bằng Rich Results Test của Google; dữ liệu có cấu trúc chưa được thử bằng công cụ đó vì cần địa chỉ công khai.
 - Đan dây: nhập danh sách dây và giá thật của cửa hàng, đặt phí công đan ở Cài đặt; chưa nhập thì trang chỉ nhận dây khách mang tới và ghi “Báo khi nhận vợt”. Tiền đan dây thu tại quầy: chuyển yêu cầu sang “Đã trả vợt” nghĩa là đã thu. Tiền đan dây chưa được tính vào Tổng quan và Báo cáo.
 - Trước mở bán: chính sách giao/đổi/trả, liên hệ cửa hàng, bảo vệ dữ liệu cá nhân, nghĩa vụ website bán hàng và hóa đơn cần chủ shop xác nhận.
 - Không lưu dữ liệu thẻ. Thêm cổng thanh toán/AI khi có yêu cầu và tài khoản dịch vụ.

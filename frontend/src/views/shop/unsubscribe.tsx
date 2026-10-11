@@ -21,9 +21,7 @@ export default function Unsubscribe({
     const [sending, setSending] = useState(false);
     return (
         <>
-            <Head title="Email ưu đãi">
-                <meta name="robots" content="noindex, nofollow" />
-            </Head>
+            <Head title="Email ưu đãi" />
             <header className="store-page-heading">
                 <div>
                     <h1>Email ưu đãi</h1>

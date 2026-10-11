@@ -1,11 +1,18 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\SeoController;
 use App\Http\Responses\SignedInResponse;
+use App\Services\SeoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', fn (SeoService $seo) => Inertia::render('welcome', ['seo' => $seo->home()]))->name('home');
+
+// What search engines ask a site for. No session and no cookies: a crawler is not a visitor.
+Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->withoutMiddleware('web')->name('sitemap');
+Route::get('robots.txt', [SeoController::class, 'robots'])->withoutMiddleware('web')->name('robots');
 
 // The Next.js front end renders pages on its own server, where the session cookie renewed
 // with each answer cannot reach the browser. The browser asks here now and then instead, so

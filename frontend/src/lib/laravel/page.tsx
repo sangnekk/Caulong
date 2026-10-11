@@ -1,6 +1,7 @@
 import { ViewTransition, type ComponentType, type ReactNode } from 'react';
 import { PageRoot } from '@/lib/page/page-root';
 import { PAGE_MOTION } from '@/lib/page/transition';
+import { SeoHead, seoOf } from './seo';
 import { currentPage } from './server';
 
 // Views and layouts take whatever props Laravel sends for their page.
@@ -22,6 +23,9 @@ export function laravelPage(view: View, ...layouts: Layout[]) {
             page.component === 'welcome' || page.component.startsWith('shop/');
         return (
             <>
+                {/* The page's title, description, address and structured data for search
+                    engines, or "keep out" for a page that is a visitor's own business. */}
+                <SeoHead seo={seoOf(page.props)} siteName={page.props.name} />
                 {/* The landing and the store keep their own colours in dark mode: painting the
                     page's own background first avoids a flash before the styles apply. */}
                 <style>{`html{background-color:${page.component === 'welcome' ? 'oklch(0.145 0.032 262)' : 'oklch(1 0 0)'}}${store ? '' : 'html.dark{background-color:oklch(0.145 0 0)}'}`}</style>

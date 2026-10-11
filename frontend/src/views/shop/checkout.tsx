@@ -52,9 +52,7 @@ export default function Checkout({
     const fieldErrors = form.errors as Record<string, string | undefined>;
     return (
         <>
-            <Head title="Đặt hàng">
-                <meta name="robots" content="noindex, nofollow" />
-            </Head>
+            <Head title="Đặt hàng" />
             <header className="store-page-heading">
                 <div>
                     <h1>Thông tin đặt hàng</h1>

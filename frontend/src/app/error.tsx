@@ -11,6 +11,7 @@ export default function PageError({
     return (
         <main className="mx-auto flex min-h-svh max-w-md flex-col items-start justify-center gap-4 p-6">
             <title>Có lỗi xảy ra - Shop Cầu Lông</title>
+            <meta name="robots" content="noindex, nofollow" />
             <h1 className="text-2xl font-semibold">Trang chưa tải được</h1>
             <p className="text-muted-foreground">
                 Máy chủ đang gặp sự cố. Vui lòng thử lại sau ít phút.

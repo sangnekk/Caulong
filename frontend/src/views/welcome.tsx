@@ -176,11 +176,9 @@ export default function Welcome() {
                 }}
                 onDone={() => setIntro('done')}
             />
+            {/* The title and description search engines read come with the page from Laravel
+                (SeoService::home); this title is what shows if that is ever missing. */}
             <Head title="Shop Cầu Lông — Hiểu cây vợt trước khi chọn">
-                <meta
-                    name="description"
-                    content="Xem gần từng phần của một cây vợt cầu lông qua mô hình 3D, rồi chọn vợt hợp với lối chơi của bạn. Thanh toán khi nhận hàng."
-                />
                 <meta name="theme-color" content="#0d1424" />
             </Head>
             {/* Honours a yes given in the store; the question itself is asked there. */}
