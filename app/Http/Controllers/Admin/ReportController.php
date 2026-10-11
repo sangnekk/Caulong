@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use App\Services\ShopInsights;
 use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -30,7 +31,7 @@ class ReportController extends Controller
     /** Profit of order lines with a known cost; SUM skips the unknown ones (NULL). */
     private const PROFIT = 'sum(case when order_items.unit_cost is null then null else order_items.line_total - order_items.unit_cost * order_items.quantity end)';
 
-    public function __invoke(Request $request): Response
+    public function __invoke(Request $request, ShopInsights $insights): Response
     {
         $validated = $request->validate([
             'period' => ['nullable', Rule::in(self::PERIODS)],
@@ -75,6 +76,16 @@ class ReportController extends Controller
                     ->when(! $demo, fn ($query) => DemoData::withoutDemoCustomers($query))->count(),
                 'buyers' => $orders()->whereBetween('created_at', $this->utc($start, $now))->where('status', '!=', 'cancelled')
                     ->distinct()->count('phone'),
+            ],
+            // Besides sales, over the same period: from looking to buying, the customer groups,
+            // coupons, ways of paying, the stringing counter and the support inbox.
+            'insights' => [
+                'funnel' => $insights->funnel($start, $now, $demo),
+                'segments' => $insights->segments($demo),
+                'coupons' => $insights->coupons($orders, $start, $now),
+                'payments' => $insights->payments($orders, $start, $now),
+                'services' => $insights->services($start, $now),
+                'support' => $insights->support($start, $now),
             ],
         ]);
     }

@@ -10,6 +10,7 @@ use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\CatalogImporter;
 use App\Services\PaymentService;
+use App\Services\ShopInsights;
 use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,7 @@ use Inertia\Response;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, CatalogImporter $importer): Response|RedirectResponse
+    public function __invoke(Request $request, CatalogImporter $importer, ShopInsights $insights): Response|RedirectResponse
     {
         // Support staff work in the inbox: the shop's figures are not theirs to see.
         if ($request->user()?->cannot('manage-shop')) {
@@ -54,6 +55,8 @@ class DashboardController extends Controller
                 'sold_out' => $products()->where('is_active', true)->whereDoesntHave('variants', $sellable)->count(),
                 'stocked_hidden' => $importer->stockedHidden()->count(),
                 'demo_visible' => Product::where('is_demo', true)->where('is_active', true)->count(),
+                // Besides orders and stock: the stringing counter, the support inbox, reviews, emails.
+                ...$insights->waiting(),
             ],
             'stats' => [
                 'today_sales' => (int) $kept($today)->sum('total'),
@@ -67,6 +70,8 @@ class DashboardController extends Controller
                         : 0),
                 'week_costed' => (int) (clone $costed)->sum('line_total'),
                 'week_collected' => (int) $orders()->where('paid_at', '>=', $week->utc())->sum('total'),
+                // Paid at the stringing counter in the same seven days; not part of the orders' money.
+                'week_service' => $insights->serviceCollected($week),
                 'orders_open' => $orders()->whereIn('status', ['pending', 'confirmed', 'shipped'])->count(),
                 'products_active' => $products()->where('is_active', true)->count(),
                 'products_in_stock' => $products()->where('is_active', true)->whereHas('variants', $sellable)->count(),

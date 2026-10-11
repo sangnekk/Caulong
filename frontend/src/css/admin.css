@@ -1768,6 +1768,14 @@
     font-size: 0.8rem;
     text-align: right;
 }
+/* Bars read against each other (the steps of a funnel, the customer groups): the column beside
+   them has one width, so the same value is the same length whatever its note says. */
+.admin-ranked-even li {
+    grid-template-columns: minmax(0, 1fr) 9.75rem;
+}
+.admin-facts + h3 {
+    margin: 1.1rem 0 0.6rem;
+}
 
 .admin-stack {
     display: flex;

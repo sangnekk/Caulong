@@ -15,6 +15,14 @@ type Todo = {
     sold_out: number;
     stocked_hidden: number;
     demo_visible: number;
+    /** Stringing requests the shop has not answered, and rackets strung and not collected. */
+    service_pending: number;
+    service_ready: number;
+    /** Support tickets waiting for the shop's reply. */
+    support_open: number;
+    reviews_pending: number;
+    /** Emails of the last seven days that could not be sent. */
+    emails_failed: number;
 };
 type Stats = {
     today_sales: number;
@@ -24,6 +32,8 @@ type Stats = {
     week_profit: number;
     week_costed: number;
     week_collected: number;
+    /** Paid at the stringing counter in the same seven days. */
+    week_service: number;
     orders_open: number;
     products_active: number;
     products_in_stock: number;
@@ -96,6 +106,46 @@ export default function Dashboard({
                 payment: 'unpaid',
             }),
             action: 'Ghi nhận',
+        },
+        {
+            count: todo.service_pending,
+            title: 'yêu cầu đan dây chờ xác nhận',
+            done: 'Không có yêu cầu đan dây chờ xác nhận',
+            hint: 'Gọi khách để hẹn lúc mang vợt tới.',
+            href: '/admin/service-orders?status=pending',
+            action: 'Xem yêu cầu',
+        },
+        {
+            count: todo.service_ready,
+            title: 'cây vợt đan xong chờ khách lấy',
+            done: 'Không có vợt đan xong chờ khách lấy',
+            hint: 'Khách tới lấy và trả tiền thì chuyển sang “Đã trả vợt”.',
+            href: '/admin/service-orders?status=ready',
+            action: 'Xem yêu cầu',
+        },
+        {
+            count: todo.support_open,
+            title: 'ticket hỗ trợ chờ shop trả lời',
+            done: 'Không có ticket hỗ trợ chờ trả lời',
+            hint: 'Khách đang chờ trong khung chat.',
+            href: '/admin/support-chat?status=open',
+            action: 'Trả lời',
+        },
+        {
+            count: todo.reviews_pending,
+            title: 'đánh giá chờ duyệt',
+            done: 'Không có đánh giá chờ duyệt',
+            hint: 'Đánh giá có lời bình chỉ hiện ở cửa hàng sau khi bạn đọc.',
+            href: '/admin/reviews?status=pending',
+            action: 'Duyệt',
+        },
+        {
+            count: todo.emails_failed,
+            title: 'email gửi lỗi trong 7 ngày qua',
+            done: 'Không có email gửi lỗi trong 7 ngày qua',
+            hint: 'Xem lý do; mã giảm giá riêng có thể gửi lại từ trang sửa mã.',
+            href: '/admin/emails?status=failed',
+            action: 'Xem nhật ký',
         },
         {
             count: todo.low_stock,
@@ -216,7 +266,12 @@ export default function Dashboard({
                         <dt>Đã thu 7 ngày</dt>
                         <dd>
                             {money(stats.week_collected)}
-                            <small>tiền COD ghi nhận</small>
+                            <small>
+                                COD và chuyển khoản
+                                {stats.week_service > 0 &&
+                                    ' · đan dây thu thêm ' +
+                                        money(stats.week_service)}
+                            </small>
                         </dd>
                     </div>
                     <div>

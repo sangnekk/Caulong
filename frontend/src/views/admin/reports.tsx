@@ -11,6 +11,7 @@ import {
     money,
     PageHeader,
     query,
+    segments,
     statuses,
     styles,
     Tabs,
@@ -34,6 +35,51 @@ type Share = {
     revenue: number;
     quantity: number;
     profit?: number | null;
+};
+
+/** Besides sales, over the same period (App\Services\ShopInsights). */
+type Insights = {
+    /** Visitors who got each step further; each step holds only those who took the ones before. */
+    funnel: { key: keyof typeof funnelSteps; visitors: number }[];
+    /** Customer accounts per group, as they stand now. */
+    segments: { segment: string; customers: number }[];
+    coupons: {
+        orders: number;
+        /** All orders placed in the period and not cancelled. */
+        of: number;
+        discount: number;
+        sales: number;
+        top: {
+            code: string;
+            orders: number;
+            discount: number;
+            sales: number;
+        }[];
+    };
+    payments: {
+        methods: { method: string; orders: number; sales: number }[];
+        awaiting: { orders: number; amount: number };
+        refunded: { payments: number; amount: number };
+        expired: number;
+    };
+    services: {
+        received: number;
+        cancelled: number;
+        completed: { requests: number; rackets: number; collected: number };
+        waiting: { pending: number; ready: number };
+    };
+    support: {
+        conversations: number;
+        tickets: number;
+        solved: number;
+        waiting: { open: number; pending: number };
+    };
+};
+const funnelSteps = {
+    viewed: 'Xem một cây vợt',
+    carted: 'Thêm vào giỏ',
+    checkout: 'Mở trang thanh toán',
+    ordered: 'Đặt hàng',
 };
 
 const periods: { key: Period; label: string; previous: string }[] = [
@@ -160,6 +206,47 @@ function Ranked({
     );
 }
 
+/**
+ * Bars of one colour for counts and amounts that are not revenue: the length is the value
+ * against the largest, the text beside it the exact figure.
+ */
+function Bars({
+    rows,
+}: {
+    rows: {
+        key: string;
+        name: string;
+        href?: string;
+        value: number;
+        text: string;
+        note: string;
+    }[];
+}) {
+    const top = Math.max(...rows.map((row) => row.value), 1);
+    return (
+        <ol className="admin-ranked admin-ranked-even">
+            {rows.map((row) => (
+                <li key={row.key}>
+                    <span className="admin-ranked-name" title={row.name}>
+                        {row.href ? (
+                            <Link href={row.href}>{row.name}</Link>
+                        ) : (
+                            row.name
+                        )}
+                    </span>
+                    <span className="admin-ranked-value">{row.text}</span>
+                    <span className="admin-ranked-bar" aria-hidden="true">
+                        <span
+                            style={{ width: (row.value / top) * 100 + '%' }}
+                        />
+                    </span>
+                    <small>{row.note}</small>
+                </li>
+            ))}
+        </ol>
+    );
+}
+
 export default function Reports({
     filters,
     range,
@@ -172,6 +259,7 @@ export default function Reports({
     byStyle,
     stock,
     customers,
+    insights,
     demoDefault,
 }: {
     filters: { period: Period; demo: boolean };
@@ -195,6 +283,7 @@ export default function Reports({
         low: number;
     };
     customers: { new: number; buyers: number };
+    insights: Insights;
 }) {
     // Keep the current numbers on screen, dimmed, while the next period loads.
     const [loading, setLoading] = useState(false);
@@ -219,6 +308,13 @@ export default function Reports({
     // Margin is measured on goods with a known cost; coverage says how much of the goods that is.
     const marginRate = rate(totals.profit, totals.costed);
     const coverage = rate(totals.costed, totals.goods);
+    // The funnel's first and last step, and all the accounts the groups hold.
+    const viewed = insights.funnel[0]?.visitors ?? 0;
+    const ordered = insights.funnel.at(-1)?.visitors ?? 0;
+    const grouped = insights.segments.reduce(
+        (sum, group) => sum + group.customers,
+        0,
+    );
 
     return (
         <>
@@ -614,6 +710,374 @@ export default function Reports({
                             {filters.demo
                                 ? 'Đang tính cả sản phẩm demo.'
                                 : 'Không tính sản phẩm demo.'}
+                        </p>
+                    </section>
+                </div>
+
+                <h2 className="admin-list-title">Khách hàng và vận hành</h2>
+                <div className="admin-two-columns">
+                    <section
+                        className="admin-panel"
+                        aria-labelledby="funnel-title"
+                    >
+                        <div className="admin-section-heading">
+                            <h2 id="funnel-title">Từ xem tới đặt hàng</h2>
+                            <span className="admin-muted">
+                                số khách trong kỳ
+                            </span>
+                        </div>
+                        {viewed > 0 ? (
+                            <Bars
+                                rows={insights.funnel.map((step, index) => ({
+                                    key: step.key,
+                                    name: funnelSteps[step.key],
+                                    value: step.visitors,
+                                    text: number(step.visitors) + ' khách',
+                                    note:
+                                        index === 0
+                                            ? 'điểm bắt đầu'
+                                            : percent(
+                                                  rate(
+                                                      step.visitors,
+                                                      insights.funnel[index - 1]
+                                                          .visitors,
+                                                  ),
+                                              ) + ' của bước trước',
+                                }))}
+                            />
+                        ) : (
+                            <p className="admin-muted">
+                                Chưa có khách nào xem sản phẩm trong kỳ này.
+                            </p>
+                        )}
+                        <p className="admin-footnote admin-muted">
+                            {viewed > 0 &&
+                                percent(rate(ordered, viewed)) +
+                                    ' số khách đã xem một cây vợt thì đặt hàng. '}
+                            Một khách là một tài khoản, hoặc một lượt truy cập
+                            của người chưa đăng nhập. Mỗi bước chỉ đếm khách đã
+                            qua các bước trước đó trong kỳ; không tính nhân
+                            viên.
+                        </p>
+                    </section>
+
+                    <section
+                        className="admin-panel"
+                        aria-labelledby="segments-title"
+                    >
+                        <div className="admin-section-heading">
+                            <h2 id="segments-title">Nhóm khách hàng</h2>
+                            <span className="admin-muted">
+                                hiện tại · không theo kỳ
+                            </span>
+                        </div>
+                        {grouped > 0 ? (
+                            <Bars
+                                rows={insights.segments.map((group) => ({
+                                    key: group.segment,
+                                    name:
+                                        segments[group.segment]?.[0] ??
+                                        'Chưa xếp nhóm',
+                                    href:
+                                        group.segment in segments
+                                            ? query('/admin/customers', {
+                                                  segment: group.segment,
+                                                  demo,
+                                              })
+                                            : undefined,
+                                    value: group.customers,
+                                    text: number(group.customers) + ' khách',
+                                    note: percent(
+                                        rate(group.customers, grouped),
+                                    ),
+                                }))}
+                            />
+                        ) : (
+                            <p className="admin-muted">
+                                Chưa có tài khoản khách hàng nào.
+                            </p>
+                        )}
+                        <p className="admin-footnote admin-muted">
+                            Ngưỡng của từng nhóm chỉnh ở{' '}
+                            <Link href="/admin/settings">Cài đặt</Link>.
+                        </p>
+                    </section>
+                </div>
+
+                <div className="admin-two-columns admin-section">
+                    <section
+                        className="admin-panel"
+                        aria-labelledby="coupons-title"
+                    >
+                        <div className="admin-section-heading">
+                            <h2 id="coupons-title">Mã giảm giá</h2>
+                            <Link href="/admin/coupons">Quản lý mã</Link>
+                        </div>
+                        <dl className="admin-facts">
+                            <div>
+                                <dt>Đơn dùng mã</dt>
+                                <dd>
+                                    {number(insights.coupons.orders)} /{' '}
+                                    {number(insights.coupons.of)} đơn
+                                    <small>
+                                        {percent(
+                                            rate(
+                                                insights.coupons.orders,
+                                                insights.coupons.of,
+                                            ),
+                                        )}
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Đã giảm cho khách</dt>
+                                <dd>{money(insights.coupons.discount)}</dd>
+                            </div>
+                            <div>
+                                <dt>Doanh số của các đơn dùng mã</dt>
+                                <dd>{money(insights.coupons.sales)}</dd>
+                            </div>
+                        </dl>
+                        {insights.coupons.top.length > 0 && (
+                            <h3>Mã đã giảm nhiều nhất trong kỳ</h3>
+                        )}
+                        {insights.coupons.top.length > 0 && (
+                            <Bars
+                                rows={insights.coupons.top.map((coupon) => ({
+                                    key: coupon.code,
+                                    name: coupon.code,
+                                    value: coupon.discount,
+                                    text: 'giảm ' + money(coupon.discount),
+                                    note:
+                                        number(coupon.orders) +
+                                        ' đơn · doanh số ' +
+                                        compact(coupon.sales),
+                                }))}
+                            />
+                        )}
+                    </section>
+
+                    <section
+                        className="admin-panel"
+                        aria-labelledby="payments-title"
+                    >
+                        <h2 id="payments-title">Thanh toán</h2>
+                        <dl className="admin-facts">
+                            {insights.payments.methods.map((method) => (
+                                <div key={method.method}>
+                                    <dt>
+                                        {method.method === 'cod'
+                                            ? 'Trả khi nhận hàng (COD)'
+                                            : 'Chuyển khoản'}
+                                    </dt>
+                                    <dd>
+                                        {money(method.sales)}
+                                        <small>
+                                            {number(method.orders)} đơn đặt
+                                            trong kỳ
+                                        </small>
+                                    </dd>
+                                </div>
+                            ))}
+                            <div>
+                                <dt>Đang chờ chuyển khoản (hiện tại)</dt>
+                                <dd>
+                                    <Link
+                                        href={query('/admin/orders', {
+                                            payment: 'transfer',
+                                            demo,
+                                        })}
+                                        data-tone={
+                                            insights.payments.awaiting.orders
+                                                ? 'warning'
+                                                : undefined
+                                        }
+                                    >
+                                        {number(
+                                            insights.payments.awaiting.orders,
+                                        )}{' '}
+                                        đơn
+                                    </Link>
+                                    {insights.payments.awaiting.orders > 0 && (
+                                        <small>
+                                            {money(
+                                                insights.payments.awaiting
+                                                    .amount,
+                                            )}
+                                        </small>
+                                    )}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Hoàn tiền trong kỳ</dt>
+                                <dd>
+                                    {money(insights.payments.refunded.amount)}
+                                    <small>
+                                        {number(
+                                            insights.payments.refunded.payments,
+                                        )}{' '}
+                                        khoản
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Tự hủy vì quá hạn chuyển khoản</dt>
+                                <dd>{number(insights.payments.expired)} đơn</dd>
+                            </div>
+                        </dl>
+                        <p className="admin-footnote admin-muted">
+                            Khoản đã hoàn không còn nằm trong “Đã thu”, kể cả
+                            của kỳ trước.
+                        </p>
+                    </section>
+                </div>
+
+                <div className="admin-two-columns admin-section">
+                    <section
+                        className="admin-panel"
+                        aria-labelledby="services-title"
+                    >
+                        <div className="admin-section-heading">
+                            <h2 id="services-title">Đan dây</h2>
+                            <Link href="/admin/service-orders">
+                                Xem yêu cầu
+                            </Link>
+                        </div>
+                        <dl className="admin-facts">
+                            <div>
+                                <dt>Yêu cầu nhận trong kỳ</dt>
+                                <dd>
+                                    {number(insights.services.received)}
+                                    {insights.services.cancelled > 0 && (
+                                        <small>
+                                            {number(
+                                                insights.services.cancelled,
+                                            )}{' '}
+                                            đã hủy
+                                        </small>
+                                    )}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Đã trả vợt trong kỳ</dt>
+                                <dd>
+                                    {number(
+                                        insights.services.completed.requests,
+                                    )}{' '}
+                                    yêu cầu
+                                    <small>
+                                        {number(
+                                            insights.services.completed.rackets,
+                                        )}{' '}
+                                        cây vợt
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Thu tại quầy trong kỳ</dt>
+                                <dd>
+                                    {money(
+                                        insights.services.completed.collected,
+                                    )}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Chờ xác nhận (hiện tại)</dt>
+                                <dd>
+                                    <Link
+                                        href="/admin/service-orders?status=pending"
+                                        data-tone={
+                                            insights.services.waiting.pending
+                                                ? 'warning'
+                                                : undefined
+                                        }
+                                    >
+                                        {number(
+                                            insights.services.waiting.pending,
+                                        )}{' '}
+                                        yêu cầu
+                                    </Link>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Đan xong, chờ khách lấy (hiện tại)</dt>
+                                <dd>
+                                    <Link href="/admin/service-orders?status=ready">
+                                        {number(
+                                            insights.services.waiting.ready,
+                                        )}{' '}
+                                        yêu cầu
+                                    </Link>
+                                </dd>
+                            </div>
+                        </dl>
+                        <p className="admin-footnote admin-muted">
+                            Tiền đan dây thu tại quầy, không nằm trong doanh số
+                            và “Đã thu” của đơn hàng ở trên.
+                        </p>
+                    </section>
+
+                    <section
+                        className="admin-panel"
+                        aria-labelledby="support-title"
+                    >
+                        <div className="admin-section-heading">
+                            <h2 id="support-title">Chat hỗ trợ</h2>
+                            <Link href="/admin/support-chat">Mở hộp thư</Link>
+                        </div>
+                        <dl className="admin-facts">
+                            <div>
+                                <dt>Cuộc trò chuyện bắt đầu trong kỳ</dt>
+                                <dd>
+                                    {number(insights.support.conversations)}
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Cần nhân viên trả lời (ticket)</dt>
+                                <dd>
+                                    {number(insights.support.tickets)}
+                                    <small>
+                                        {percent(
+                                            rate(
+                                                insights.support.tickets,
+                                                insights.support.conversations,
+                                            ),
+                                        )}{' '}
+                                        số cuộc trò chuyện
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Ticket đã giải quyết trong kỳ</dt>
+                                <dd>{number(insights.support.solved)}</dd>
+                            </div>
+                            <div>
+                                <dt>Đang chờ shop (hiện tại)</dt>
+                                <dd>
+                                    <Link
+                                        href="/admin/support-chat?status=open"
+                                        data-tone={
+                                            insights.support.waiting.open
+                                                ? 'warning'
+                                                : undefined
+                                        }
+                                    >
+                                        {number(insights.support.waiting.open)}{' '}
+                                        ticket
+                                    </Link>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Đang chờ khách (hiện tại)</dt>
+                                <dd>
+                                    {number(insights.support.waiting.pending)}{' '}
+                                    ticket
+                                </dd>
+                            </div>
+                        </dl>
+                        <p className="admin-footnote admin-muted">
+                            Cuộc trò chuyện chỉ có trợ lý tự động trả lời không
+                            thành ticket.
                         </p>
                     </section>
                 </div>

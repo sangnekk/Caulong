@@ -81,6 +81,18 @@ Sau khi đăng nhập: quản trị viên vào `/admin`, nhân viên hỗ trợ 
 
 **Báo cáo** (`/admin/reports`): chọn 7, 30, 90 ngày hoặc 12 tháng (theo tháng), so với kỳ liền trước cùng độ dài. _Doanh số_ = tổng tiền đơn đặt trong kỳ, không tính đơn hủy, tính vào ngày đặt; _Đã thu_ = tiền COD và tiền chuyển khoản đã ghi nhận, tính vào ngày ghi nhận; khoản đã hoàn lại cho khách không còn được tính. Ngày tính theo giờ Việt Nam (`config/shop.php` → `timezone`), database lưu UTC. Có số đơn, giá trị trung bình, tỉ lệ hủy, khách đặt hàng (theo số điện thoại), biểu đồ theo ngày/tháng kèm bảng số liệu, 8 sản phẩm doanh số cao nhất, doanh số theo hãng và lối chơi, đơn theo trạng thái, kho hiện tại (giá trị tồn kho theo giá bán). Mặc định chỉ tính đơn thật; bật “Tính cả đơn mẫu” thì trang ghi rõ đó là dữ liệu thử. **Xuất đơn trong kỳ (CSV)** tải đúng các ngày đang xem. Đơn lưu thời điểm xác nhận, giao, hoàn tất, hủy, thu tiền (`confirmed_at`, `shipped_at`, `delivered_at`, `cancelled_at`, `paid_at`); đơn cũ trước khi có các cột này lấy tạm `updated_at`.
 
+**Báo cáo: khách hàng và vận hành** (`app/Services/ShopInsights.php`, nửa dưới trang `/admin/reports`, cùng kỳ và cùng công tắc “Tính cả đơn mẫu” với phần doanh thu):
+
+- _Từ xem tới đặt hàng:_ số khách xem một cây vợt, thêm vào giỏ, mở trang thanh toán rồi đặt hàng trong kỳ, kèm tỉ lệ đi tiếp ở từng bước. Một khách là một tài khoản, hoặc một lượt truy cập của người chưa đăng nhập. Mỗi bước chỉ đếm khách đã qua mọi bước trước đó trong kỳ, nên số chỉ giảm dần; khách xem từ trước kỳ rồi mới đặt trong kỳ không được tính. Lấy từ sự kiện khách hàng (có từ Phase 2, giữ 365 ngày), không tính nhân viên, không tính sản phẩm mẫu và đơn mẫu trừ khi bật công tắc.
+- _Nhóm khách hàng:_ số tài khoản đang ở từng nhóm lúc mở trang (không theo kỳ), bấm để mở danh sách khách của nhóm.
+- _Mã giảm giá:_ trong các đơn đặt trong kỳ và không hủy, bao nhiêu đơn dùng mã, đã giảm bao nhiêu, doanh số của các đơn đó, và năm mã giảm nhiều nhất.
+- _Thanh toán:_ doanh số và số đơn theo cách trả (COD, chuyển khoản); đơn đang chờ chuyển khoản lúc này; khoản đã hoàn trong kỳ; đơn tự hủy vì quá hạn chuyển khoản trong kỳ.
+- _Đan dây:_ yêu cầu nhận trong kỳ, yêu cầu và số vợt đã trả trong kỳ, tiền thu tại quầy cho các yêu cầu đó, và số yêu cầu đang chờ xác nhận, đang chờ khách lấy lúc này. Tiền đan dây không cộng vào doanh số hay “Đã thu” của đơn hàng.
+- _Chat hỗ trợ:_ cuộc trò chuyện bắt đầu trong kỳ, bao nhiêu trong đó cần nhân viên (ticket), ticket đã giải quyết hoặc đóng trong kỳ, và ticket đang chờ shop, chờ khách lúc này. Chưa đo thời gian trả lời.
+- Mọi con số đếm thẳng từ dữ liệu đã ghi; kỳ không có gì thì là 0, không ước lượng.
+
+**Tổng quan** (`/admin`) liệt kê thêm việc ngoài đơn hàng và kho: yêu cầu đan dây chờ xác nhận, vợt đan xong chờ khách lấy, ticket hỗ trợ chờ shop trả lời, đánh giá chờ duyệt, email gửi lỗi trong 7 ngày qua; mỗi dòng dẫn tới đúng danh sách cần xử lý. Ô “Đã thu 7 ngày” ghi riêng tiền đan dây thu tại quầy trong cùng 7 ngày.
+
 **Giá nhập và lãi gộp**: mỗi phiên bản có thể có giá nhập (`product_variants.cost_price`, không bắt buộc, chỉ admin thấy; nhập ở form sản phẩm, sửa nhanh trong danh sách, hoặc cột `gia_nhap` khi nhập file, để trống thì giữ giá đang lưu). Khi đặt hàng, mỗi dòng đơn lưu giá nhập lúc bán (`order_items.unit_cost`), nên đổi giá nhập sau này không làm sai lãi của đơn cũ. Báo cáo tính _lãi gộp_ = tiền hàng − giá nhập, chỉ trên các dòng có giá nhập, ghi rõ tính trên bao nhiêu phần trăm tiền hàng; không trừ phí giao hay chi phí vận hành. Giá trị tồn kho có thêm cột theo giá nhập.
 
 **Dữ liệu mẫu cho báo cáo**: `php artisan shop:demo-sales` tạo khoảng một năm đơn mẫu cho các vợt demo (có giá nhập mẫu), tên “Khách mẫu …”, `is_demo`, ghi chú rõ là đơn mẫu; chỉ hiện trong báo cáo khi bật “Tính cả đơn mẫu”, không vào Tổng quan, không vào file CSV. Chạy lại thì thay bộ cũ (cùng kết quả); `php artisan shop:demo-sales --clear` xóa đúng các đơn do lệnh này tạo. Xóa trước khi dùng database làm dữ liệu thật.
@@ -276,7 +288,7 @@ Cạnh tên khách là nhóm của họ, tính lại ngay lúc mở trang. Trên
 - Email: giữ `php artisan queue:work` và scheduler chạy; `MAIL_MAILER=log` không gửi gì ra ngoài. Trước khi bật automation cần gửi thử thật qua Resend và có chính sách về email ưu đãi.
 - Phí giao hàng là một mức cố định chỉnh ở Cài đặt, chưa kết nối hãng vận chuyển.
 - Tìm kiếm: đặt `FRONTEND_URL` là địa chỉ `https` công khai và `APP_ENV=production` thì trang mới được lập chỉ mục. Sau đó khai báo sitemap trong Google Search Console và thử một trang sản phẩm bằng Rich Results Test của Google; dữ liệu có cấu trúc chưa được thử bằng công cụ đó vì cần địa chỉ công khai.
-- Đan dây: nhập danh sách dây và giá thật của cửa hàng, đặt phí công đan ở Cài đặt; chưa nhập thì trang chỉ nhận dây khách mang tới và ghi “Báo khi nhận vợt”. Tiền đan dây thu tại quầy: chuyển yêu cầu sang “Đã trả vợt” nghĩa là đã thu. Tiền đan dây chưa được tính vào Tổng quan và Báo cáo.
+- Đan dây: nhập danh sách dây và giá thật của cửa hàng, đặt phí công đan ở Cài đặt; chưa nhập thì trang chỉ nhận dây khách mang tới và ghi “Báo khi nhận vợt”. Tiền đan dây thu tại quầy: chuyển yêu cầu sang “Đã trả vợt” nghĩa là đã thu. Tổng quan và Báo cáo ghi khoản này riêng, không cộng vào doanh số và “Đã thu” của đơn hàng.
 - Trước mở bán: chính sách giao/đổi/trả, liên hệ cửa hàng, bảo vệ dữ liệu cá nhân, nghĩa vụ website bán hàng và hóa đơn cần chủ shop xác nhận.
 - Không lưu dữ liệu thẻ. Thêm cổng thanh toán/AI khi có yêu cầu và tài khoản dịch vụ.
 
