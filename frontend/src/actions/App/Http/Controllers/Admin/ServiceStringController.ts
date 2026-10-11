@@ -137,7 +137,7 @@ store.post = (options?: RouteQueryOptions): RouteDefinition<'post'> => ({
  * @see app/Http/Controllers/Admin/ServiceStringController.php:38
  * @route '/admin/service-strings/{serviceString}'
  */
-export const update = (args: { serviceString: string | number | { id: string | number } } | [serviceString: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+export const update = (args: { serviceString: number | { id: number } } | [serviceString: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -152,7 +152,7 @@ update.definition = {
  * @see app/Http/Controllers/Admin/ServiceStringController.php:38
  * @route '/admin/service-strings/{serviceString}'
  */
-update.url = (args: { serviceString: string | number | { id: string | number } } | [serviceString: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+update.url = (args: { serviceString: number | { id: number } } | [serviceString: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { serviceString: args }
     }
@@ -185,7 +185,7 @@ update.url = (args: { serviceString: string | number | { id: string | number } }
  * @see app/Http/Controllers/Admin/ServiceStringController.php:38
  * @route '/admin/service-strings/{serviceString}'
  */
-update.put = (args: { serviceString: string | number | { id: string | number } } | [serviceString: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
+update.put = (args: { serviceString: number | { id: number } } | [serviceString: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'put'> => ({
     url: update.url(args, options),
     method: 'put',
 })
@@ -195,7 +195,7 @@ update.put = (args: { serviceString: string | number | { id: string | number } }
  * @see app/Http/Controllers/Admin/ServiceStringController.php:38
  * @route '/admin/service-strings/{serviceString}'
  */
-    const updateForm = (args: { serviceString: string | number | { id: string | number } } | [serviceString: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    const updateForm = (args: { serviceString: number | { id: number } } | [serviceString: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
         action: update.url(args, {
                     [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                         _method: 'PUT',
@@ -210,7 +210,7 @@ update.put = (args: { serviceString: string | number | { id: string | number } }
  * @see app/Http/Controllers/Admin/ServiceStringController.php:38
  * @route '/admin/service-strings/{serviceString}'
  */
-        updateForm.put = (args: { serviceString: string | number | { id: string | number } } | [serviceString: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        updateForm.put = (args: { serviceString: number | { id: number } } | [serviceString: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
             action: update.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'PUT',

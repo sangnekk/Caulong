@@ -53,7 +53,7 @@ export default function Orders({
             <Head title="Đơn hàng" />
             <PageHeader
                 title="Đơn hàng"
-                description="Xác nhận đơn mới, theo dõi giao hàng và ghi nhận tiền COD khi đã thu."
+                description="Xác nhận đơn mới, đối chiếu tiền chuyển khoản, theo dõi giao hàng và ghi nhận tiền COD khi đã thu."
                 actions={
                     <a
                         className="admin-button admin-button-secondary"
@@ -97,7 +97,7 @@ export default function Orders({
                         type="search"
                         value={q}
                         onChange={(event) => setQ(event.target.value)}
-                        placeholder="Mã đơn (#12), tên khách hoặc số điện thoại"
+                        placeholder="Mã đơn (#12), tên, số điện thoại hoặc nội dung chuyển khoản"
                     />
                 </label>
                 <label>
@@ -111,6 +111,7 @@ export default function Orders({
                     >
                         <option value="">Tất cả</option>
                         <option value="unpaid">Chưa thu</option>
+                        <option value="transfer">Chờ chuyển khoản</option>
                         <option value="paid">Đã thu tiền</option>
                     </select>
                 </label>

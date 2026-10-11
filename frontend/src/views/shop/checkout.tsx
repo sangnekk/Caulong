@@ -4,12 +4,13 @@ import { Head, Link, useForm, usePage } from '@/lib/page';
 import { useEffect } from 'react';
 import { DemoBadge, FormErrors, OrderTotals } from '@/layouts/shop-layout';
 import { report } from '@/lib/analytics';
-import { vnd, type Cart } from '@/types/commerce';
+import { vnd, type Cart, type PaymentMethod } from '@/types/commerce';
 
 type Props = {
     cart: Cart;
     checkoutToken: string;
-    paymentMethods: { id: 'cod'; label: string }[];
+    /** The ways this cart can be paid for; a bank transfer only when the shop takes them. */
+    paymentMethods: PaymentMethod[];
 };
 type CheckoutFields = {
     checkout_token: string;
@@ -18,7 +19,7 @@ type CheckoutFields = {
     address: string;
     email: string;
     notes: string;
-    payment_method: 'cod';
+    payment_method: PaymentMethod['id'] | '';
     accept_terms: boolean;
 };
 
@@ -36,13 +37,14 @@ export default function Checkout({
         address: '',
         email: user?.email ?? '',
         notes: '',
-        payment_method: 'cod',
+        // The first way offered (cash on delivery) until the customer picks another.
+        payment_method: paymentMethods[0]?.id ?? '',
         accept_terms: false,
     });
     const unavailable = cart.items.some(
         (item) => item.is_available === false || item.stock < item.quantity,
     );
-    const cod = paymentMethods.find((method) => method.id === 'cod');
+    const transfer = form.data.payment_method === 'bank_transfer';
     const hasItems = cart.items.length > 0;
     useEffect(() => {
         if (hasItems) report({ name: 'checkout_started' });
@@ -260,22 +262,40 @@ export default function Checkout({
                         </fieldset>
                         <fieldset disabled={form.processing}>
                             <legend>Thanh toán</legend>
-                            {cod ? (
-                                <label className="store-payment">
-                                    <input
-                                        type="radio"
-                                        name="payment_method"
-                                        value="cod"
-                                        checked
-                                        readOnly
-                                    />
-                                    <span>
-                                        {cod.label}
-                                        <small>
-                                            Không cần chuyển khoản trước.
-                                        </small>
-                                    </span>
-                                </label>
+                            {paymentMethods.length > 0 ? (
+                                <div className="store-choice">
+                                    {paymentMethods.map((method) => (
+                                        <label
+                                            key={method.id}
+                                            className="store-payment"
+                                        >
+                                            <input
+                                                type="radio"
+                                                name="payment_method"
+                                                value={method.id}
+                                                checked={
+                                                    form.data.payment_method ===
+                                                    method.id
+                                                }
+                                                onChange={() =>
+                                                    form.setData(
+                                                        'payment_method',
+                                                        method.id,
+                                                    )
+                                                }
+                                            />
+                                            <span>
+                                                {method.label}
+                                                <small>{method.hint}</small>
+                                            </span>
+                                        </label>
+                                    ))}
+                                    {fieldErrors.payment_method && (
+                                        <p className="store-field-error">
+                                            {fieldErrors.payment_method}
+                                        </p>
+                                    )}
+                                </div>
                             ) : (
                                 <p className="store-error">
                                     Hiện chưa có phương thức thanh toán khả
@@ -290,9 +310,11 @@ export default function Checkout({
                             <h2 id="terms-heading">Trước khi đặt hàng</h2>
                             <p>
                                 Kiểm tra tên người nhận, số điện thoại, địa chỉ
-                                và tổng tiền. Bạn thanh toán số tiền hiển thị
-                                khi nhận hàng. Thông tin người nhận được dùng để
-                                xử lý đơn.
+                                và tổng tiền.{' '}
+                                {transfer
+                                    ? 'Sau khi đặt, trang đơn hàng hiện số tài khoản, số tiền và nội dung chuyển khoản. Cửa hàng giao hàng khi đã nhận được tiền; đơn chưa thanh toán trong thời hạn ghi ở đó sẽ tự hủy.'
+                                    : 'Bạn thanh toán số tiền hiển thị khi nhận hàng.'}{' '}
+                                Thông tin người nhận được dùng để xử lý đơn.
                             </p>
                             <label className="store-check">
                                 <input
@@ -356,7 +378,7 @@ export default function Checkout({
                             disabled={
                                 form.processing ||
                                 unavailable ||
-                                !cod ||
+                                !form.data.payment_method ||
                                 !form.data.accept_terms
                             }
                         >
@@ -367,7 +389,9 @@ export default function Checkout({
                         <p className="store-hint" role="status">
                             {form.processing
                                 ? 'Vui lòng chờ. Không đóng trang trong khi gửi đơn.'
-                                : 'Tổng tiền đã bao gồm phí giao hàng hiển thị ở trên.'}
+                                : transfer
+                                  ? 'Chưa cần chuyển khoản ngay: hướng dẫn hiện sau khi bạn đặt hàng.'
+                                  : 'Tổng tiền đã bao gồm phí giao hàng hiển thị ở trên.'}
                         </p>
                     </aside>
                 </form>

@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Services\CustomerSegmentation;
 use App\Services\MarketingAutomation;
 use App\Services\ShopSettings;
+use App\Support\VietQr;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -15,7 +17,18 @@ class SettingsController extends Controller
 {
     public function edit(ShopSettings $settings): Response
     {
-        return Inertia::render('admin/settings', ['settings' => $settings->page()]);
+        $bank = $settings->bankTransfer();
+
+        return Inertia::render('admin/settings', [
+            'settings' => $settings->page(),
+            // The banks a transfer by QR code can go to (config/shop.php).
+            'banks' => $settings->banks(),
+            // The saved account as a QR code without an amount: scanned with a banking app, it
+            // shows the owner whose account customers would pay into.
+            'bankQr' => $bank['bank'] !== '' && $bank['account_number'] !== ''
+                ? VietQr::image(VietQr::payload($bank['bin'], $bank['account_number']))
+                : null,
+        ]);
     }
 
     public function update(Request $request, ShopSettings $settings, CustomerSegmentation $segments): RedirectResponse
@@ -49,6 +62,13 @@ class SettingsController extends Controller
             // The stringing service: taken online or not, and the fee for one racket.
             'stringing_enabled' => ['sometimes', 'required', 'boolean'],
             'stringing_fee' => ['sometimes', 'required', 'integer', 'min:0', 'max:5000000'],
+            // Paying by bank transfer: offered only with an account to pay into.
+            'bank_transfer_enabled' => ['sometimes', 'required', 'boolean'],
+            'bank_transfer_hold_hours' => ['sometimes', 'required', 'integer', 'between:1,168'],
+            'bank_bin' => ['sometimes', 'nullable', 'required_if_accepted:bank_transfer_enabled', Rule::in(array_column($settings->banks(), 'bin'))],
+            // As the bank prints it: digits, or the letters and digits of an account alias.
+            'bank_account_number' => ['sometimes', 'nullable', 'required_if_accepted:bank_transfer_enabled', 'string', 'regex:/^[0-9A-Za-z]{4,19}$/'],
+            'bank_account_name' => ['sometimes', 'nullable', 'required_if_accepted:bank_transfer_enabled', 'string', 'max:60', 'regex:/^[\pL\pN .,&\-]+$/u'],
         ], [
             'shipping_fee.*' => 'Phí giao hàng phải là số tiền từ 0 đến 5.000.000 ₫.',
             'free_shipping_threshold.*' => 'Mức miễn phí giao hàng phải là số tiền hợp lệ.',
@@ -70,6 +90,14 @@ class SettingsController extends Controller
             'marketing_*' => 'Lựa chọn email tự động không hợp lệ.',
             'stringing_fee.*' => 'Phí công đan phải là số tiền từ 0 đến 5.000.000 ₫.',
             'stringing_enabled.*' => 'Lựa chọn nhận đặt lịch đan dây không hợp lệ.',
+            'bank_transfer_enabled.*' => 'Lựa chọn nhận chuyển khoản không hợp lệ.',
+            'bank_transfer_hold_hours.*' => 'Thời gian giữ hàng chờ chuyển khoản phải từ 1 đến 168 giờ.',
+            'bank_bin.required_if_accepted' => 'Chọn ngân hàng nhận tiền trước khi bật chuyển khoản.',
+            'bank_bin.*' => 'Chọn một ngân hàng trong danh sách.',
+            'bank_account_number.required_if_accepted' => 'Nhập số tài khoản nhận tiền trước khi bật chuyển khoản.',
+            'bank_account_number.*' => 'Số tài khoản gồm 4 đến 19 chữ số hoặc chữ cái, không có dấu cách.',
+            'bank_account_name.required_if_accepted' => 'Nhập tên chủ tài khoản trước khi bật chuyển khoản.',
+            'bank_account_name.*' => 'Tên chủ tài khoản tối đa 60 ký tự, chỉ gồm chữ, số và dấu . , & -',
         ]);
         $settings->save([
             'shipping_fee' => (int) $data['shipping_fee'],
@@ -80,9 +108,16 @@ class SettingsController extends Controller
             'contact_chat_url' => $data['contact_chat_url'] ?? null,
             ...array_map('intval', array_filter(
                 $data,
-                fn (string $key) => str_starts_with($key, 'segment_') || str_starts_with($key, 'marketing_') || str_starts_with($key, 'stringing_'),
+                fn (string $key) => str_starts_with($key, 'segment_') || str_starts_with($key, 'marketing_') || str_starts_with($key, 'stringing_')
+                    || str_starts_with($key, 'bank_transfer_'),
                 ARRAY_FILTER_USE_KEY,
             )),
+            ...array_map(
+                fn (?string $value) => trim((string) $value),
+                array_intersect_key($data, array_flip(['bank_bin', 'bank_account_number'])),
+            ),
+            // The holder's name in capitals, as banking apps show it.
+            ...(array_key_exists('bank_account_name', $data) ? ['bank_account_name' => mb_strtoupper(trim((string) $data['bank_account_name']))] : []),
         ]);
         if ($settings->segments() !== $before) {
             // New thresholds move customers between groups: redone once this answer is on its way.

@@ -371,10 +371,11 @@ class MarketingAutomationTest extends TestCase
 
     public function test_the_groups_are_worked_out_before_the_morning_emails_go(): void
     {
-        // Midnight in the shop (UTC+7).
+        // Midnight in the shop (UTC+7). The scheduler is asked from that moment, not from the
+        // machine's clock: between 03:00 and 09:30 the real "next" runs come in the other order.
         $this->travelTo(CarbonImmutable::parse('2026-10-09 17:00:00'));
         $next = fn (string $command): CarbonInterface => collect(app(Schedule::class)->events())
-            ->sole(fn (Event $event) => str_ends_with((string) $event->command, $command))->nextRunDate();
+            ->sole(fn (Event $event) => str_ends_with((string) $event->command, $command))->nextRunDate(now());
 
         $this->assertTrue($next('crm:segment')->lt($next('marketing:run')));
     }

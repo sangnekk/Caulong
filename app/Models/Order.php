@@ -54,6 +54,22 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
+    /** @return HasMany<Payment, $this> */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    /**
+     * The bank transfer asked for this order; none for cash on delivery.
+     *
+     * @return HasOne<Payment, $this>
+     */
+    public function payment(): HasOne
+    {
+        return $this->hasOne(Payment::class)->latestOfMany();
+    }
+
     /**
      * The coupon use this order counts as, while the order stands.
      *

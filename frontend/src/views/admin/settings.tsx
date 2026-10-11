@@ -30,6 +30,14 @@ type Settings = {
     stringing_enabled: boolean;
     /** Dong for stringing one racket, besides the string; 0: said when the racket is handed in. */
     stringing_fee: number;
+    /** Customers may pay by bank transfer; needs the account below. */
+    bank_transfer_enabled: boolean;
+    /** Hours an unpaid order keeps its goods before it is cancelled. */
+    bank_transfer_hold_hours: number;
+    /** The receiving bank's NAPAS code, one of `banks`. */
+    bank_bin: string;
+    bank_account_number: string;
+    bank_account_name: string;
 };
 type NumberSetting = {
     [Key in keyof Settings]: Settings[Key] extends number ? Key : never;
@@ -147,7 +155,17 @@ const feeFor = (subtotal: number, settings: Settings) =>
         ? 0
         : settings.shipping_fee;
 
-export default function ShopSettings({ settings }: { settings: Settings }) {
+export default function ShopSettings({
+    settings,
+    banks,
+    bankQr = null,
+}: {
+    settings: Settings;
+    /** The banks a transfer by QR code can go to. */
+    banks: { bin: string; name: string }[];
+    /** The saved account as a QR code without an amount, for the owner to check it. */
+    bankQr?: string | null;
+}) {
     const form = useForm<Settings>(settings);
     const data = form.data;
     const submit = (event: FormEvent) => {
@@ -578,16 +596,164 @@ export default function ShopSettings({ settings }: { settings: Settings }) {
                 >
                     <h2 id="payment-title">Thanh toán</h2>
                     <p className="admin-lead">
-                        Cửa hàng đang nhận{' '}
-                        <strong>thanh toán khi nhận hàng (COD)</strong>. Thanh
-                        toán online chưa được kết nối, nên không có lựa chọn nào
-                        để bật ở đây. Khi đã thu tiền từ đơn vị giao hàng, ghi
-                        nhận ở{' '}
+                        Khách luôn chọn được{' '}
+                        <strong>thanh toán khi nhận hàng (COD)</strong>; khi đã
+                        thu tiền từ đơn vị giao hàng, ghi nhận ở{' '}
                         <Link href="/admin/orders?status=delivered&payment=unpaid">
                             đơn đã giao chưa thu
                         </Link>
+                        . Bật chuyển khoản để khách trả trước vào tài khoản của
+                        cửa hàng: trang đơn hàng hiện số tài khoản, số tiền, nội
+                        dung và mã QR. Chưa có cổng đối soát tự động, nên bạn
+                        kiểm tra tài khoản rồi xác nhận từng đơn ở{' '}
+                        <Link href="/admin/orders?payment=transfer">
+                            đơn chờ chuyển khoản
+                        </Link>
                         .
                     </p>
+                    <label className="admin-check">
+                        <input
+                            type="checkbox"
+                            checked={data.bank_transfer_enabled}
+                            onChange={(e) =>
+                                form.setData(
+                                    'bank_transfer_enabled',
+                                    e.target.checked,
+                                )
+                            }
+                        />
+                        Nhận chuyển khoản ngân hàng
+                    </label>
+                    <div className="admin-form-grid">
+                        <Field
+                            name="bank_bin"
+                            label="Ngân hàng nhận tiền"
+                            error={form.errors.bank_bin}
+                        >
+                            <select
+                                id="bank_bin"
+                                value={data.bank_bin}
+                                onChange={(e) =>
+                                    form.setData('bank_bin', e.target.value)
+                                }
+                                aria-invalid={!!form.errors.bank_bin}
+                            >
+                                <option value="">Chọn ngân hàng</option>
+                                {banks.map((bank) => (
+                                    <option key={bank.bin} value={bank.bin}>
+                                        {bank.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </Field>
+                        <Field
+                            name="bank_account_number"
+                            label="Số tài khoản"
+                            error={form.errors.bank_account_number}
+                        >
+                            <input
+                                id="bank_account_number"
+                                type="text"
+                                inputMode="numeric"
+                                autoComplete="off"
+                                maxLength={19}
+                                value={data.bank_account_number}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'bank_account_number',
+                                        e.target.value.trim(),
+                                    )
+                                }
+                                aria-invalid={!!form.errors.bank_account_number}
+                            />
+                        </Field>
+                        <Field
+                            name="bank_account_name"
+                            label="Chủ tài khoản"
+                            error={form.errors.bank_account_name}
+                        >
+                            <input
+                                id="bank_account_name"
+                                type="text"
+                                autoComplete="off"
+                                maxLength={60}
+                                placeholder="NGUYEN VAN A"
+                                value={data.bank_account_name}
+                                onChange={(e) =>
+                                    // In capitals, as it is saved and as banking apps show it.
+                                    form.setData(
+                                        'bank_account_name',
+                                        e.target.value.toLocaleUpperCase('vi'),
+                                    )
+                                }
+                                aria-describedby="bank_account_name-help"
+                                aria-invalid={!!form.errors.bank_account_name}
+                            />
+                            <small id="bank_account_name-help">
+                                Đúng như ngân hàng hiển thị, để khách đối chiếu
+                                trước khi chuyển.
+                            </small>
+                        </Field>
+                        <Field
+                            name="bank_transfer_hold_hours"
+                            label="Giữ hàng chờ tiền (giờ)"
+                            error={form.errors.bank_transfer_hold_hours}
+                        >
+                            <input
+                                id="bank_transfer_hold_hours"
+                                type="number"
+                                inputMode="numeric"
+                                min={1}
+                                max={168}
+                                required
+                                value={data.bank_transfer_hold_hours}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'bank_transfer_hold_hours',
+                                        e.target.value === ''
+                                            ? 0
+                                            : Math.max(
+                                                  0,
+                                                  Math.floor(
+                                                      Number(e.target.value),
+                                                  ),
+                                              ),
+                                    )
+                                }
+                                aria-describedby="bank_transfer_hold_hours-help"
+                                aria-invalid={
+                                    !!form.errors.bank_transfer_hold_hours
+                                }
+                            />
+                            <small id="bank_transfer_hold_hours-help">
+                                Sau {data.bank_transfer_hold_hours} giờ, đơn
+                                chưa được xác nhận đã nhận tiền sẽ tự hủy và
+                                hoàn tồn kho, kể cả khi khách đã chuyển mà bạn
+                                chưa kịp xác nhận. Đặt đủ dài để bạn kịp kiểm
+                                tra tài khoản.
+                            </small>
+                        </Field>
+                    </div>
+                    {bankQr && (
+                        <div className="admin-example admin-bank-check">
+                            <img
+                                src={bankQr}
+                                width={160}
+                                height={160}
+                                alt="Mã QR của tài khoản nhận tiền đã lưu"
+                            />
+                            <div>
+                                <strong>Kiểm tra tài khoản đã lưu</strong>
+                                <p>
+                                    Quét mã này bằng ứng dụng ngân hàng của bạn,
+                                    không cần chuyển tiền: ứng dụng phải hiện
+                                    đúng ngân hàng và tên chủ tài khoản. Mã ứng
+                                    với tài khoản đã lưu; sau khi sửa, bấm Lưu
+                                    cài đặt để mã đổi theo.
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </section>
 
                 <div className="admin-form-actions">

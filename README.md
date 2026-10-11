@@ -1,21 +1,22 @@
 # Shop Cầu Lông
 
-Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng với giỏ và đặt hàng trả tiền khi nhận (COD), tài khoản khách và trang quản trị. Dữ liệu và nghiệp vụ do Laravel 13 xử lý; giao diện là một app Next.js 16.
+Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng với giỏ và đặt hàng trả tiền khi nhận (COD) hoặc chuyển khoản ngân hàng, tài khoản khách và trang quản trị. Dữ liệu và nghiệp vụ do Laravel 13 xử lý; giao diện là một app Next.js 16.
 
 ## Có gì
 
 - **Trang giới thiệu:** vợt Hyper Core8000 bằng Three.js, sáu chương xoay và phóng theo cuộn, màn mở đầu “căng dây” chạy theo tiến độ tải mô hình thật, bản đọc tĩnh cho máy yếu hoặc khi tắt chuyển động.
-- **Cửa hàng:** danh sách vợt có lọc theo hãng, lối chơi, mức giá và hàng còn; trang sản phẩm theo phiên bản; giỏ hàng; đặt hàng COD không cần tài khoản; gợi ý chọn vợt theo ngân sách, lối chơi, trình độ (theo quy tắc, không dùng AI).
+- **Cửa hàng:** danh sách vợt có lọc theo hãng, lối chơi, mức giá và hàng còn; trang sản phẩm theo phiên bản; giỏ hàng; đặt hàng không cần tài khoản, trả tiền khi nhận (COD) hoặc chuyển khoản; gợi ý chọn vợt theo ngân sách, lối chơi, trình độ (theo quy tắc, không dùng AI).
 - **Tài khoản:** khách xem đơn và yêu cầu đan dây của mình, lưu sản phẩm yêu thích, viết đánh giá cho sản phẩm đã nhận, sửa hồ sơ, đổi mật khẩu, bật/tắt email ưu đãi, xem lại các lần nhắn với cửa hàng; đăng nhập có xác minh email, xác thực hai lớp và passkey.
 - **Quản trị:** sản phẩm, tồn kho, đơn hàng, yêu cầu đan dây, khách hàng (hồ sơ từng khách: số liệu, đơn, dòng hoạt động, sản phẩm, đánh giá), duyệt đánh giá, báo cáo doanh số và lãi gộp, cài đặt phí giao và liên hệ, xuất đơn ra CSV, trả lời chat hỗ trợ.
 - **Hành vi khách hàng:** cửa hàng tự ghi các sự kiện mua sắm (xem, tìm, thêm giỏ, đặt đơn…) vào database của mình; Microsoft Clarity là tùy chọn, chỉ chạy khi có project ID và khách đồng ý.
 - **Nhóm khách và mã giảm giá:** mỗi khách được xếp vào một nhóm (Mới, Tiềm năng, Đang mua, VIP, Không hoạt động, Đã mất) theo ngưỡng chủ shop đặt; mã giảm giá cho mọi khách, cho riêng một khách hoặc cho một nhóm, có hạn dùng, giới hạn lượt và điều kiện đơn.
 - **Email:** chào mừng, xác minh/đặt lại mật khẩu, cập nhật đơn và mã riêng qua queue; nhật ký ở `/admin/emails`. Bốn automation (nhắc giỏ, mời quay lại, mời đánh giá, quà VIP) mặc định tắt, chỉ gửi marketing cho khách đã đồng ý và xác minh email. Resend gọi HTTP, không cần thêm package PHP; local chỉ ghi log.
 - **Chat hỗ trợ:** trợ lý tự động trả lời câu hỏi thường gặp (theo từ khóa, không dùng AI) và chuyển cho nhân viên khi cần. Nhân viên thấy khách là ai, đơn và sản phẩm của họ ngay cạnh cuộc trò chuyện. Mỗi cuộc trò chuyện đi qua bốn trạng thái: chờ shop, chờ khách, đã giải quyết, đã đóng. Khách có tài khoản xem lại ở trang tài khoản; khách vãng lai xem lại bằng một mã lấy khi cuộc trò chuyện kết thúc.
+- **Chuyển khoản ngân hàng:** chủ shop nhập tài khoản nhận tiền ở Cài đặt và bật lên; chưa bật thì cửa hàng chỉ nhận COD. Khách chọn chuyển khoản lúc đặt, trang đơn hàng hiện số tài khoản, số tiền, nội dung chuyển khoản và mã QR (VietQR). Cửa hàng kiểm tra tài khoản rồi bấm xác nhận ở trang đơn; đơn chưa được xác nhận trong thời hạn giữ hàng (mặc định 24 giờ) tự hủy và hoàn tồn kho. Đơn đã thanh toán chỉ hủy được bằng cách ghi nhận đã hoàn tiền.
 - **Dịch vụ đan dây:** khách gửi yêu cầu ở `/services` (vợt, dây của cửa hàng hoặc dây tự mang, mức căng, lúc định mang vợt tới), không cần tài khoản và không trả tiền online. Cửa hàng xử lý ở `/admin/service-orders`: hẹn, nhận vợt, đan, báo khách tới lấy, thu tiền tại quầy. Danh sách dây và giá do chủ shop nhập; phí công đan và công tắc nhận yêu cầu ở Cài đặt.
 - **Hai vai trò nhân viên:** quản trị viên dùng toàn bộ `/admin`; nhân viên hỗ trợ chỉ vào được Chat hỗ trợ.
 - **Nhập hàng:** từ CSV hoặc Excel kèm ZIP ảnh, có xem trước và khớp theo SKU; đồng bộ danh mục vợt từ shopvnb.com (đã được cho phép) bằng `scripts/vnb-catalog.mjs`.
-- **Chưa có:** thanh toán online, kết nối hãng vận chuyển.
+- **Chưa có:** cổng thanh toán tự đối soát (tiền chuyển khoản do cửa hàng tự kiểm tra và xác nhận), kết nối hãng vận chuyển.
 
 ## Hai phần của project
 
@@ -73,21 +74,21 @@ Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (�
 
 ## Lệnh thường dùng
 
-| Lệnh                                  | Việc                                                                                                             |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `php artisan dev`                     | Chạy Laravel, hàng đợi và Next.js                                                                                |
-| `npm run build` rồi `npm run start`   | Build và chạy bản production của giao diện                                                                       |
-| `npm run check` / `npm run check:fix` | Kiểm tra / tự sửa định dạng và lint cho TypeScript, script, tài liệu                                             |
-| `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                                                           |
-| `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel                                      |
-| `php artisan test --compact`          | Chạy test của Laravel                                                                                            |
-| `php artisan queue:work`              | Xử lý email đã xếp hàng; local ghi vào log, Resend gửi thật khi cấu hình                                         |
-| `php artisan schedule:work`           | Chạy marketing, xếp nhóm khách, đóng cuộc trò chuyện đã giải quyết, xóa sự kiện và nhật ký email cũ hơn 365 ngày |
-| `php artisan shop:make-admin email`   | Cấp quyền quản trị cho một tài khoản đã xác minh; `--role=support` cho nhân viên hỗ trợ                          |
-| `php artisan marketing:run`           | Chạy các automation đang bật; có thể thêm `abandoned_cart`, `winback`, `post_purchase` hoặc `vip`                |
-| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)                                       |
-| `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                                                          |
-| `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                                                                |
+| Lệnh                                  | Việc                                                                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `php artisan dev`                     | Chạy Laravel, hàng đợi và Next.js                                                                                                              |
+| `npm run build` rồi `npm run start`   | Build và chạy bản production của giao diện                                                                                                     |
+| `npm run check` / `npm run check:fix` | Kiểm tra / tự sửa định dạng và lint cho TypeScript, script, tài liệu                                                                           |
+| `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                                                                                         |
+| `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel                                                                    |
+| `php artisan test --compact`          | Chạy test của Laravel                                                                                                                          |
+| `php artisan queue:work`              | Xử lý email đã xếp hàng; local ghi vào log, Resend gửi thật khi cấu hình                                                                       |
+| `php artisan schedule:work`           | Chạy marketing, xếp nhóm khách, hủy đơn chuyển khoản quá hạn, đóng cuộc trò chuyện đã giải quyết, xóa sự kiện và nhật ký email cũ hơn 365 ngày |
+| `php artisan shop:make-admin email`   | Cấp quyền quản trị cho một tài khoản đã xác minh; `--role=support` cho nhân viên hỗ trợ                                                        |
+| `php artisan marketing:run`           | Chạy các automation đang bật; có thể thêm `abandoned_cart`, `winback`, `post_purchase` hoặc `vip`                                              |
+| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)                                                                     |
+| `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                                                                                        |
+| `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                                                                                              |
 
 Sau khi thêm hoặc đổi route ở Laravel, chạy `npm run routes` để giao diện có hàm gọi route mới.
 

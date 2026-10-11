@@ -49,7 +49,11 @@ class SupportChatResponder
         }
 
         if ($includes('thanh toan', 'cod', 'tra tien', 'chuyen khoan')) {
-            return ['body' => 'Hiện shop hỗ trợ thanh toán khi nhận hàng (COD); thanh toán online chưa được kết nối.', ...$action('/cart', 'Xem giỏ hàng'), 'needs_human' => false];
+            $body = app(ShopSettings::class)->bankTransfer()['ready']
+                ? 'Shop nhận thanh toán khi nhận hàng (COD) hoặc chuyển khoản ngân hàng. Chọn chuyển khoản ở bước đặt hàng: trang đơn hàng sẽ hiện số tài khoản, số tiền, nội dung chuyển khoản và mã QR; shop giao hàng khi đã nhận được tiền.'
+                : 'Hiện shop hỗ trợ thanh toán khi nhận hàng (COD); thanh toán online chưa được kết nối.';
+
+            return ['body' => $body, ...$action('/cart', 'Xem giỏ hàng'), 'needs_human' => false];
         }
 
         if ($includes('don hang', 'theo doi', 'ma don', 'kiem tra don')) {

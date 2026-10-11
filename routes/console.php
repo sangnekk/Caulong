@@ -21,6 +21,10 @@ Schedule::command('crm:segment')->dailyAt('03:00')->timezone((string) config('sh
 // A support conversation marked as solved closes itself when the customer leaves it at that.
 Schedule::command('support:close-resolved')->daily();
 
+// An order paid by bank transfer holds its goods while it waits for the money; when the time
+// set in /admin/settings runs out it is cancelled and the goods go back on sale.
+Schedule::command('orders:cancel-unpaid')->everyFifteenMinutes();
+
 // The automatic emails that are switched on in /admin/settings, at hours people read email
 // (shop time): cart reminders through the day, the rest once in the morning after the groups
 // were worked out. Each email is queued; "php artisan queue:work" sends it.

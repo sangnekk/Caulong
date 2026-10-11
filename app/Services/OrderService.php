@@ -19,6 +19,7 @@ class OrderService
         private CouponService $coupons,
         private CustomerSegmentation $segments,
         private EmailService $emails,
+        private ShopSettings $settings,
     ) {}
 
     /** @param array<string, mixed> $data */
@@ -117,6 +118,14 @@ class OrderService
             if ($discount !== $shown) {
                 throw ValidationException::withMessages(['cart' => 'Mức giảm giá đã thay đổi. Vui lòng tải lại trang thanh toán, xem lại tổng tiền rồi đặt hàng lại.']);
             }
+            $total = $subtotal - $discount + $shipping;
+            $method = (string) ($data['payment_method'] ?? 'cod');
+            // A transfer needs an account to pay into and something to pay: never for sample
+            // goods (PaymentService::methods offers it by the same rules).
+            $bank = $this->settings->bankTransfer();
+            if ($method === PaymentService::METHOD && (! $bank['ready'] || $hasDemo || $total <= 0)) {
+                throw ValidationException::withMessages(['payment_method' => 'Cửa hàng không nhận chuyển khoản cho đơn này. Vui lòng chọn thanh toán khi nhận hàng.']);
+            }
             $order = Order::create([
                 'public_id' => (string) Str::uuid(),
                 'checkout_token' => $token,
@@ -126,16 +135,25 @@ class OrderService
                 'address' => $data['address'],
                 'email' => $data['email'] ?? null,
                 'notes' => $data['notes'] ?? null,
-                'payment_method' => 'cod',
+                'payment_method' => $method,
                 'payment_status' => 'unpaid',
                 'status' => 'pending',
                 'subtotal' => $subtotal,
                 'shipping_fee' => $shipping,
                 'discount_total' => $discount,
                 'coupon_code' => $discount > 0 ? $quote['coupon']->code : null,
-                'total' => $subtotal - $discount + $shipping,
+                'total' => $total,
                 'is_demo' => $hasDemo,
             ]);
+            if ($method === PaymentService::METHOD) {
+                // The goods are held for the transfer until then (PaymentService::expireOverdue).
+                $order->payments()->create([
+                    'method' => $method,
+                    'amount' => $total,
+                    'reference' => PaymentService::reference($order),
+                    'expires_at' => now()->addHours($bank['hold_hours']),
+                ]);
+            }
             if ($quote !== null && $discount > 0) {
                 $this->coupons->redeem($quote['coupon'], $order, $discount);
             }
@@ -189,9 +207,16 @@ class OrderService
             if (! in_array($status, $allowed[$locked->status] ?? [], true)) {
                 throw ValidationException::withMessages(['status' => 'Không thể chuyển đơn hàng sang trạng thái này.']);
             }
+            $transfer = $locked->payment_method === PaymentService::METHOD;
+            // A transfer is confirmed by its money, not by a call: PaymentService::settle.
+            if ($status === 'confirmed' && $transfer && $locked->payment_status !== 'paid') {
+                throw ValidationException::withMessages(['status' => 'Đơn chuyển khoản chưa nhận được tiền. Bấm “Xác nhận đã nhận tiền” khi tiền đã về tài khoản.']);
+            }
             if ($status === 'cancelled') {
                 if ($locked->payment_status === 'paid') {
-                    throw ValidationException::withMessages(['status' => 'Đơn hàng đã thu tiền không thể hủy. Vui lòng xử lý hoàn tiền riêng.']);
+                    throw ValidationException::withMessages(['status' => $transfer
+                        ? 'Đơn đã thanh toán. Hoàn tiền cho khách rồi bấm “Đã hoàn tiền, hủy đơn”.'
+                        : 'Đơn hàng đã thu tiền không thể hủy. Vui lòng xử lý hoàn tiền riêng.']);
                 }
                 $items = $locked->items()->orderBy('variant_id')->get();
                 ProductVariant::whereIn('id', $items->pluck('variant_id')->filter())->orderBy('id')->lockForUpdate()->get();
@@ -202,6 +227,8 @@ class OrderService
                 }
                 // The coupon was not used after all: its use goes back to the customer.
                 $this->coupons->release($locked);
+                // A transfer still awaited is no longer wanted.
+                $locked->payments()->where('status', 'pending')->update(['status' => 'cancelled']);
             }
             $locked->update(['status' => $status, $status.'_at' => now()]);
             $moved = true;

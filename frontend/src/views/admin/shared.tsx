@@ -158,10 +158,29 @@ export function OrderStatus({ status }: { status: string }) {
     );
 }
 
-export function PaymentStatus({ status }: { status: string }) {
-    return status === 'paid' ? (
-        <span className="admin-badge" data-tone="success">
-            Đã thu tiền
+/**
+ * How an order's money stands. With the order, an unpaid bank transfer reads as what the shop
+ * is waiting for, not as cash to collect.
+ */
+export function PaymentStatus({
+    status,
+    order,
+}: {
+    status: string;
+    order?: { payment_method: string; status: string };
+}) {
+    if (status === 'paid')
+        return (
+            <span className="admin-badge" data-tone="success">
+                Đã thu tiền
+            </span>
+        );
+    if (status === 'refunded')
+        return <span className="admin-badge">Đã hoàn tiền</span>;
+    return order?.payment_method === 'bank_transfer' &&
+        order.status === 'pending' ? (
+        <span className="admin-badge" data-tone="warning">
+            Chờ chuyển khoản
         </span>
     ) : (
         <span className="admin-badge">Chưa thu</span>
@@ -233,6 +252,7 @@ export const emailTypes: Record<string, string> = {
     verify_email: 'Xác minh email',
     reset_password: 'Đặt lại mật khẩu',
     order_placed: 'Đã nhận đơn',
+    order_paid: 'Đã nhận thanh toán',
     order_shipped: 'Đơn đang giao',
     order_delivered: 'Đơn đã giao',
     order_cancelled: 'Đơn đã hủy',
@@ -570,7 +590,10 @@ export function OrderTable({
                                 <OrderStatus status={order.status} />
                             </td>
                             <td>
-                                <PaymentStatus status={order.payment_status} />
+                                <PaymentStatus
+                                    status={order.payment_status}
+                                    order={order}
+                                />
                             </td>
                             <td className="admin-number">
                                 {money(order.total)}

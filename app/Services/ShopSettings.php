@@ -26,8 +26,8 @@ class ShopSettings
     private ?array $saved = null;
 
     /**
-     * Everything the settings page edits: all(), the automatic emails as "marketing_<rule>" and
-     * the stringing service as "stringing_<rule>".
+     * Everything the settings page edits: all(), the automatic emails as "marketing_<rule>",
+     * the stringing service as "stringing_<rule>" and the bank transfer's account.
      *
      * @return array<string, int|string|bool>
      */
@@ -40,8 +40,43 @@ class ShopSettings
         foreach ($this->stringing() as $rule => $value) {
             $page['stringing_'.$rule] = $value;
         }
+        $bank = $this->bankTransfer();
 
-        return $page;
+        return [
+            ...$page,
+            'bank_transfer_enabled' => $bank['enabled'],
+            'bank_transfer_hold_hours' => $bank['hold_hours'],
+            'bank_bin' => $bank['bin'],
+            'bank_account_number' => $bank['account_number'],
+            'bank_account_name' => $bank['account_name'],
+        ];
+    }
+
+    /**
+     * Paying by bank transfer: the owner's switch, how long an order waits for its money, and
+     * the account customers pay into (App\Services\PaymentService). "ready" is what the
+     * checkout goes by: switched on, with a bank the QR code knows and an account to pay.
+     *
+     * @return array{enabled: bool, ready: bool, hold_hours: int, bin: string, bank: string, account_number: string, account_name: string}
+     */
+    public function bankTransfer(): array
+    {
+        $saved = $this->saved();
+        $enabled = (int) ($saved['bank_transfer_enabled'] ?? config('shop.bank_transfer.enabled')) === 1;
+        $bin = $this->string('bank_bin');
+        $bank = array_column($this->banks(), 'name', 'bin')[$bin] ?? '';
+        $number = $this->string('bank_account_number');
+        $name = $this->string('bank_account_name');
+
+        return [
+            'enabled' => $enabled,
+            'ready' => $enabled && $bank !== '' && $number !== '' && $name !== '',
+            'hold_hours' => (int) ($saved['bank_transfer_hold_hours'] ?? config('shop.bank_transfer.hold_hours')),
+            'bin' => $bank !== '' ? $bin : '',
+            'bank' => $bank,
+            'account_number' => $number,
+            'account_name' => $name,
+        ];
     }
 
     /**
@@ -55,6 +90,21 @@ class ShopSettings
         $rule = fn (string $key): int => (int) ($this->saved()['stringing_'.$key] ?? config('shop.stringing.'.$key));
 
         return ['enabled' => $rule('enabled') === 1, 'fee' => $rule('fee')];
+    }
+
+    /**
+     * The banks a transfer by QR code can go to, each with its NAPAS code (config/shop.php).
+     *
+     * @return list<array{bin: string, name: string}>
+     */
+    public function banks(): array
+    {
+        $banks = [];
+        foreach ((array) config('shop.banks') as $bin => $name) {
+            $banks[] = ['bin' => (string) $bin, 'name' => (string) $name];
+        }
+
+        return $banks;
     }
 
     /**

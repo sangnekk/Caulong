@@ -82,7 +82,7 @@ index.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-export const show = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+export const show = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -97,7 +97,7 @@ show.definition = {
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-show.url = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+show.url = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { serviceOrder: args }
     }
@@ -130,7 +130,7 @@ show.url = (args: { serviceOrder: string | number | { id: string | number } } | 
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-show.get = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+show.get = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     url: show.url(args, options),
     method: 'get',
 })
@@ -139,7 +139,7 @@ show.get = (args: { serviceOrder: string | number | { id: string | number } } | 
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-show.head = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+show.head = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     url: show.url(args, options),
     method: 'head',
 })
@@ -149,7 +149,7 @@ show.head = (args: { serviceOrder: string | number | { id: string | number } } |
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-    const showForm = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+    const showForm = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
         action: show.url(args, options),
         method: 'get',
     })
@@ -159,7 +159,7 @@ show.head = (args: { serviceOrder: string | number | { id: string | number } } |
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-        showForm.get = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        showForm.get = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: show.url(args, options),
             method: 'get',
         })
@@ -168,7 +168,7 @@ show.head = (args: { serviceOrder: string | number | { id: string | number } } |
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:53
  * @route '/admin/service-orders/{serviceOrder}'
  */
-        showForm.head = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        showForm.head = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
             action: show.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'HEAD',
@@ -184,7 +184,7 @@ show.head = (args: { serviceOrder: string | number | { id: string | number } } |
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:82
  * @route '/admin/service-orders/{serviceOrder}'
  */
-export const update = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+export const update = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
@@ -199,7 +199,7 @@ update.definition = {
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:82
  * @route '/admin/service-orders/{serviceOrder}'
  */
-update.url = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions) => {
+update.url = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions) => {
     if (typeof args === 'string' || typeof args === 'number') {
         args = { serviceOrder: args }
     }
@@ -232,7 +232,7 @@ update.url = (args: { serviceOrder: string | number | { id: string | number } } 
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:82
  * @route '/admin/service-orders/{serviceOrder}'
  */
-update.patch = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
+update.patch = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     url: update.url(args, options),
     method: 'patch',
 })
@@ -242,7 +242,7 @@ update.patch = (args: { serviceOrder: string | number | { id: string | number } 
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:82
  * @route '/admin/service-orders/{serviceOrder}'
  */
-    const updateForm = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+    const updateForm = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
         action: update.url(args, {
                     [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                         _method: 'PATCH',
@@ -257,7 +257,7 @@ update.patch = (args: { serviceOrder: string | number | { id: string | number } 
  * @see app/Http/Controllers/Admin/ServiceOrderController.php:82
  * @route '/admin/service-orders/{serviceOrder}'
  */
-        updateForm.patch = (args: { serviceOrder: string | number | { id: string | number } } | [serviceOrder: string | number | { id: string | number } ] | string | number | { id: string | number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
+        updateForm.patch = (args: { serviceOrder: number | { id: number } } | [serviceOrder: number | { id: number } ] | number | { id: number }, options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
             action: update.url(args, {
                         [options?.mergeQuery ? 'mergeQuery' : 'query']: {
                             _method: 'PATCH',

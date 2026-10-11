@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\CatalogImporter;
+use App\Services\PaymentService;
 use App\Support\DemoData;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -38,12 +39,15 @@ class DashboardController extends Controller
         $week = $today->subDays(6);
         $kept = fn (CarbonImmutable $from) => $orders()->where('status', '!=', 'cancelled')->where('created_at', '>=', $from->utc());
         $costed = OrderItem::whereIn('order_id', $kept($week)->select('id'))->whereNotNull('unit_cost');
+        $awaiting = fn ($query) => $query->where('payment_method', PaymentService::METHOD)->where('payment_status', 'unpaid');
 
         return Inertia::render('admin/dashboard', [
             'demo' => $demo,
             'demoDefault' => DemoData::shownByDefault(),
             'todo' => [
-                'pending_orders' => $orders()->where('status', 'pending')->count(),
+                // To call and confirm; an order still waiting for its bank transfer is its own task.
+                'pending_orders' => $orders()->where('status', 'pending')->whereNot($awaiting)->count(),
+                'awaiting_transfer' => $orders()->where('status', 'pending')->where($awaiting)->count(),
                 'confirmed_orders' => $orders()->where('status', 'confirmed')->count(),
                 'uncollected' => $orders()->where('status', 'delivered')->where('payment_status', '!=', 'paid')->count(),
                 'low_stock' => (clone $lowStock)->count(),
@@ -79,7 +83,7 @@ class DashboardController extends Controller
                     'stock' => $variant->stock,
                 ]),
             'orders' => $orders()->withCount('items')->latest('id')->limit(8)
-                ->get(['id', 'public_id', 'name', 'phone', 'status', 'payment_status', 'total', 'is_demo', 'created_at']),
+                ->get(['id', 'public_id', 'name', 'phone', 'status', 'payment_status', 'payment_method', 'total', 'is_demo', 'created_at']),
         ]);
     }
 }

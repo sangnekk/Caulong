@@ -70,5 +70,10 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->na
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::patch('orders/{order}', [OrderController::class, 'update'])->name('orders.update');
         Route::post('orders/{order}/collected', [OrderController::class, 'collected'])->name('orders.collected');
+        // A bank transfer seen in the shop's account, or sent back: the payment must be this order's.
+        Route::post('orders/{order}/payments/{payment}/confirm', [OrderController::class, 'paymentReceived'])
+            ->whereNumber(['order', 'payment'])->scopeBindings()->name('orders.payments.confirm');
+        Route::post('orders/{order}/payments/{payment}/refund', [OrderController::class, 'paymentRefunded'])
+            ->whereNumber(['order', 'payment'])->scopeBindings()->name('orders.payments.refund');
     });
 });

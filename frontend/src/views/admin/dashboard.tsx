@@ -7,6 +7,8 @@ import type { Order } from './shared';
 
 type Todo = {
     pending_orders: number;
+    /** Placed, to be paid by bank transfer, and the money has not been confirmed. */
+    awaiting_transfer: number;
     confirmed_orders: number;
     uncollected: number;
     low_stock: number;
@@ -67,6 +69,14 @@ export default function Dashboard({
             hint: 'Gọi khách xác nhận địa chỉ và giờ nhận trước khi giao.',
             href: withDemo('/admin/orders', { status: 'pending' }),
             action: 'Xử lý đơn',
+        },
+        {
+            count: todo.awaiting_transfer,
+            title: 'đơn chờ khách chuyển khoản',
+            done: 'Không có đơn chờ chuyển khoản',
+            hint: 'Kiểm tra tài khoản ngân hàng rồi xác nhận tiền đã về. Đơn quá hạn giữ hàng sẽ tự hủy.',
+            href: withDemo('/admin/orders', { payment: 'transfer' }),
+            action: 'Đối chiếu',
         },
         {
             count: todo.confirmed_orders,

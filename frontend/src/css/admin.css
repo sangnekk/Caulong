@@ -1239,6 +1239,11 @@
 .admin-actions-stack .admin-toolbar {
     margin: 0;
 }
+/* The advice above the actions, and a note under a list of details, keep their distance. */
+.admin-muted + .admin-actions-stack,
+.admin-detail-list + .admin-muted {
+    margin-top: 0.75rem;
+}
 
 /* ───── Taxonomies ───── */
 .admin-taxonomies {
@@ -1872,6 +1877,26 @@
 .admin-example dd {
     margin: 0;
     font-weight: 600;
+}
+/* The saved bank account as a QR code the owner scans to check it (settings). */
+.admin-bank-check {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+}
+.admin-bank-check img {
+    flex: none;
+    width: 10rem;
+    height: auto;
+    border-radius: 6px;
+    background: #fff;
+}
+.admin-bank-check div {
+    flex: 1 1 16rem;
+}
+.admin-bank-check p {
+    margin: 0.3rem 0 0;
 }
 
 /* ───── Narrow screens: sidebar becomes a drawer ───── */

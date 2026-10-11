@@ -155,6 +155,47 @@ export type Order = Totals & {
         line_total: number;
     }[];
 };
+/** A way to pay that the checkout offers for the cart (App\Services\PaymentService::methods). */
+export type PaymentMethod = {
+    id: 'cod' | 'bank_transfer';
+    label: string;
+    hint: string;
+};
+/**
+ * The bank transfer asked for an order (App\Services\PaymentService::summary); an order paid
+ * on delivery has none.
+ */
+export type OrderPayment = {
+    status: 'pending' | 'paid' | 'expired' | 'cancelled' | 'refunded';
+    /** What the customer writes in the transfer. */
+    reference: string;
+    amount: number;
+    /** Until when the order keeps its goods without the money. */
+    expires_at: string | null;
+    paid_at: string | null;
+    /** Where to pay, given only while the money is awaited; `qr` is an image address. */
+    account: {
+        bank: string;
+        number: string;
+        name: string;
+        qr: string | null;
+    } | null;
+};
+/** How an order's money stands, in the customer's words. */
+export const paymentLabel = (order: {
+    payment_status: string;
+    payment_method?: string;
+    status?: string;
+}): string =>
+    order.payment_status === 'paid'
+        ? 'Đã thanh toán'
+        : order.payment_status === 'refunded'
+          ? 'Đã hoàn tiền'
+          : order.payment_method === 'bank_transfer'
+            ? order.status === 'cancelled'
+                ? 'Chưa thanh toán'
+                : 'Chờ chuyển khoản'
+            : 'Thanh toán khi nhận hàng';
 /** Where a stringing request stands (App\Services\StringingService::STATUSES). */
 export type ServiceStatus =
     | 'pending'

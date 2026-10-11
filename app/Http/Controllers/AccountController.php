@@ -29,6 +29,7 @@ class AccountController extends Controller
                 'public_id' => $order->public_id,
                 'status' => $order->status,
                 'payment_status' => $order->payment_status,
+                'payment_method' => $order->payment_method,
                 'total' => $order->total,
                 'is_demo' => $order->is_demo,
                 'created_at' => $order->created_at,

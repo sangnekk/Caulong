@@ -5,15 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Services\CartService;
 use App\Services\OrderService;
+use App\Services\PaymentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class CheckoutController extends Controller
 {
-    public function index(Request $request, CartService $cart): Response
+    public function index(Request $request, CartService $cart, PaymentService $payments): Response
     {
         $summary = $cart->summary($request);
         $token = $request->session()->get('checkout_token');
@@ -29,12 +31,17 @@ class CheckoutController extends Controller
         return Inertia::render('shop/checkout', [
             'cart' => $summary,
             'checkoutToken' => $token,
-            'paymentMethods' => [['id' => 'cod', 'label' => 'Thanh toán khi nhận hàng']],
+            'paymentMethods' => $payments->methods($summary),
         ]);
     }
 
-    public function store(Request $request, OrderService $orders): RedirectResponse
+    public function store(Request $request, OrderService $orders, CartService $cart, PaymentService $payments): RedirectResponse
     {
+        // A token sent again answers with the order it made: its cart is already empty.
+        $token = $request->input('checkout_token');
+        $methods = is_string($token) && isset($request->session()->get('checkout_orders', [])[$token])
+            ? ['cod', PaymentService::METHOD]
+            : array_column($payments->methods($cart->summary($request)), 'id');
         $data = $request->validate([
             'checkout_token' => ['required', 'uuid'],
             'name' => ['required', 'string', 'max:120'],
@@ -42,7 +49,7 @@ class CheckoutController extends Controller
             'address' => ['required', 'string', 'max:500'],
             'email' => ['nullable', 'email', 'max:190'],
             'notes' => ['nullable', 'string', 'max:1000'],
-            'payment_method' => ['required', 'in:cod'],
+            'payment_method' => ['required', Rule::in($methods)],
             'accept_terms' => ['accepted'],
         ], [
             'checkout_token.required' => 'Phiên đặt hàng đã hết hạn. Vui lòng mở lại trang thanh toán.',
@@ -60,8 +67,10 @@ class CheckoutController extends Controller
             'email.max' => 'Email không được vượt quá 190 ký tự.',
             'notes.string' => 'Ghi chú không hợp lệ.',
             'notes.max' => 'Ghi chú không được vượt quá 1000 ký tự.',
-            'payment_method.required' => 'Vui lòng chọn thanh toán khi nhận hàng.',
-            'payment_method.in' => 'Cửa hàng hiện chỉ hỗ trợ thanh toán khi nhận hàng (COD).',
+            'payment_method.required' => 'Vui lòng chọn cách thanh toán.',
+            'payment_method.in' => in_array(PaymentService::METHOD, $methods, true)
+                ? 'Vui lòng chọn thanh toán khi nhận hàng hoặc chuyển khoản.'
+                : 'Cửa hàng hiện chỉ nhận thanh toán khi nhận hàng (COD) cho đơn này.',
             'accept_terms.accepted' => 'Vui lòng đồng ý điều khoản đặt hàng.',
         ]);
         $order = $orders->checkout($request, $data);
@@ -70,7 +79,7 @@ class CheckoutController extends Controller
             ->with('order_placed', $order->public_id);
     }
 
-    public function show(Request $request, Order $order): Response
+    public function show(Request $request, Order $order, PaymentService $payments): Response
     {
         $ownsOrder = $request->user() && $order->user_id !== null && (int) $request->user()->id === (int) $order->user_id;
         // The link in the order's emails carries a signature that opens this one order for a
@@ -85,6 +94,8 @@ class CheckoutController extends Controller
 
         return Inertia::render('shop/order', [
             'order' => $data,
+            // The transfer this order waits for, or what became of it; null for cash on delivery.
+            'payment' => $payments->summary($order),
             'trackingUrl' => route('orders.show', ['order' => $order->public_id], false),
             // "Order placed" only right after checkout; reopening it later shows it as an order.
             'justPlaced' => $request->session()->get('order_placed') === $order->public_id,

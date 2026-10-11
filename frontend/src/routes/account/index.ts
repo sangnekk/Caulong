@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
 * @see \App\Http\Controllers\AccountController::update
- * @see app/Http/Controllers/AccountController.php:71
+ * @see app/Http/Controllers/AccountController.php:72
  * @route '/account'
  */
 export const update = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -16,7 +16,7 @@ update.definition = {
 
 /**
 * @see \App\Http\Controllers\AccountController::update
- * @see app/Http/Controllers/AccountController.php:71
+ * @see app/Http/Controllers/AccountController.php:72
  * @route '/account'
  */
 update.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ update.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AccountController::update
- * @see app/Http/Controllers/AccountController.php:71
+ * @see app/Http/Controllers/AccountController.php:72
  * @route '/account'
  */
 update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
@@ -35,7 +35,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
     /**
 * @see \App\Http\Controllers\AccountController::update
- * @see app/Http/Controllers/AccountController.php:71
+ * @see app/Http/Controllers/AccountController.php:72
  * @route '/account'
  */
     const updateForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -50,7 +50,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
 
             /**
 * @see \App\Http\Controllers\AccountController::update
- * @see app/Http/Controllers/AccountController.php:71
+ * @see app/Http/Controllers/AccountController.php:72
  * @route '/account'
  */
         updateForm.patch = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -66,7 +66,7 @@ update.patch = (options?: RouteQueryOptions): RouteDefinition<'patch'> => ({
     update.form = updateForm
 /**
 * @see \App\Http\Controllers\AccountController::password
- * @see app/Http/Controllers/AccountController.php:90
+ * @see app/Http/Controllers/AccountController.php:91
  * @route '/account/password'
  */
 export const password = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -81,7 +81,7 @@ password.definition = {
 
 /**
 * @see \App\Http\Controllers\AccountController::password
- * @see app/Http/Controllers/AccountController.php:90
+ * @see app/Http/Controllers/AccountController.php:91
  * @route '/account/password'
  */
 password.url = (options?: RouteQueryOptions) => {
@@ -90,7 +90,7 @@ password.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AccountController::password
- * @see app/Http/Controllers/AccountController.php:90
+ * @see app/Http/Controllers/AccountController.php:91
  * @route '/account/password'
  */
 password.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
@@ -100,7 +100,7 @@ password.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
     /**
 * @see \App\Http\Controllers\AccountController::password
- * @see app/Http/Controllers/AccountController.php:90
+ * @see app/Http/Controllers/AccountController.php:91
  * @route '/account/password'
  */
     const passwordForm = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({
@@ -115,7 +115,7 @@ password.put = (options?: RouteQueryOptions): RouteDefinition<'put'> => ({
 
             /**
 * @see \App\Http\Controllers\AccountController::password
- * @see app/Http/Controllers/AccountController.php:90
+ * @see app/Http/Controllers/AccountController.php:91
  * @route '/account/password'
  */
         passwordForm.put = (options?: RouteQueryOptions): RouteFormDefinition<'post'> => ({

@@ -33,6 +33,28 @@ const guidance: Record<string, string> = {
         'Đơn đã hủy; tồn kho của các sản phẩm trong đơn đã được hoàn lại.',
 };
 
+/** The bank transfer asked for the order (Admin\OrderController::show). */
+type Payment = {
+    id: number;
+    status: 'pending' | 'paid' | 'expired' | 'cancelled' | 'refunded';
+    /** What the customer writes in the transfer, as it reads on the bank statement. */
+    reference: string;
+    amount: number;
+    expires_at: string | null;
+    paid_at: string | null;
+    refunded_at: string | null;
+    /** The member of staff who saw the money arrive, or sent it back. */
+    confirmed_by: string | null;
+    refunded_by: string | null;
+};
+const paymentStates: Record<Payment['status'], string> = {
+    pending: 'Chờ khách chuyển',
+    paid: 'Đã nhận tiền',
+    expired: 'Hết hạn, chưa nhận tiền',
+    cancelled: 'Đơn hủy trước khi thanh toán',
+    refunded: 'Đã hoàn tiền cho khách',
+};
+
 type Related = {
     id: number;
     status: string;
@@ -43,15 +65,52 @@ type Related = {
 
 export default function OrderDetail({
     order,
+    payment = null,
     related,
 }: {
     order: Order;
+    /** Null for an order paid on delivery. */
+    payment?: Payment | null;
     related: Related;
 }) {
     const form = useForm({ status: '' });
     const collection = useForm({});
+    const receipt = useForm({});
+    const refund = useForm({});
     const [copied, setCopied] = useState(false);
-    const options = transitions[order.status] ?? [];
+    const transfer = order.payment_method === 'bank_transfer';
+    const paid = order.payment_status === 'paid';
+    // A transfer is confirmed by its money and, once paid, cancelled only by a refund.
+    const awaiting =
+        transfer && order.status === 'pending' && payment?.status === 'pending';
+    const refundable =
+        transfer &&
+        payment?.status === 'paid' &&
+        (order.status === 'pending' || order.status === 'confirmed');
+    const options = (transitions[order.status] ?? []).filter((value) =>
+        !transfer
+            ? true
+            : value === 'cancelled'
+              ? !paid
+              : value !== 'confirmed' || paid,
+    );
+    const busy =
+        form.processing ||
+        collection.processing ||
+        receipt.processing ||
+        refund.processing;
+    const paymentUrl =
+        '/admin/orders/' + order.id + '/payments/' + (payment?.id ?? 0);
+    // What to do next, in the order's own words.
+    const advice = awaiting
+        ? 'Đơn chờ khách chuyển khoản. Khi tiền đã về tài khoản, bấm “Xác nhận đã nhận tiền”: đơn chuyển sang “Đã xác nhận”.'
+        : order.status === 'delivered' && transfer
+          ? 'Đơn đã giao và đã thanh toán bằng chuyển khoản.'
+          : order.status === 'cancelled' && payment?.status === 'expired'
+            ? 'Đơn tự hủy vì quá hạn mà chưa nhận được tiền chuyển khoản; tồn kho đã được hoàn lại.'
+            : order.status === 'cancelled' && payment?.status === 'refunded'
+              ? 'Tiền đã hoàn cho khách; tồn kho của các sản phẩm trong đơn đã được hoàn lại.'
+              : guidance[order.status];
     const step = flow.indexOf(order.status);
     const canCollect =
         order.payment_method === 'cod' &&
@@ -86,7 +145,12 @@ export default function OrderDetail({
                     ' · Mã theo dõi ' +
                     order.public_id.slice(0, 8)
                 }
-                actions={<PaymentStatus status={order.payment_status} />}
+                actions={
+                    <PaymentStatus
+                        status={order.payment_status}
+                        order={order}
+                    />
+                }
             />
             {order.is_demo && (
                 <p className="admin-notice">
@@ -98,7 +162,7 @@ export default function OrderDetail({
             {order.status === 'cancelled' ? (
                 <p className="admin-empty admin-cancelled">
                     <strong>Đơn đã hủy.</strong>
-                    {guidance.cancelled}
+                    {advice}
                 </p>
             ) : (
                 <ol className="admin-steps" aria-label="Tiến trình đơn hàng">
@@ -213,7 +277,7 @@ export default function OrderDetail({
                                     <strong>
                                         {order.payment_method === 'cod'
                                             ? 'Thu khi giao (COD)'
-                                            : 'Tổng cộng'}
+                                            : 'Tổng cộng (chuyển khoản)'}
                                     </strong>
                                 </dt>
                                 <dd>
@@ -295,10 +359,47 @@ export default function OrderDetail({
                         aria-labelledby="process-title"
                     >
                         <h2 id="process-title">Xử lý đơn</h2>
-                        <p className="admin-muted">{guidance[order.status]}</p>
+                        <p className="admin-muted">{advice}</p>
                         <Errors errors={form.errors} />
                         <Errors errors={collection.errors} />
+                        <Errors errors={receipt.errors} />
+                        <Errors errors={refund.errors} />
                         <div className="admin-actions-stack">
+                            {awaiting && payment && (
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        if (
+                                            window.confirm(
+                                                'Tài khoản cửa hàng đã nhận đủ ' +
+                                                    money(payment.amount) +
+                                                    ' với nội dung ' +
+                                                    payment.reference +
+                                                    '? Đơn sẽ chuyển sang “Đã xác nhận” và khách được báo qua email.',
+                                            )
+                                        )
+                                            receipt.post(
+                                                paymentUrl + '/confirm',
+                                                { preserveScroll: true },
+                                            );
+                                    }}
+                                >
+                                    <button
+                                        disabled={busy}
+                                        data-busy={receipt.processing}
+                                    >
+                                        {receipt.processing
+                                            ? 'Đang ghi nhận…'
+                                            : 'Xác nhận đã nhận ' +
+                                              money(payment.amount)}
+                                    </button>
+                                    <small className="admin-muted">
+                                        Chỉ bấm khi đã thấy khoản tiền trong tài
+                                        khoản ngân hàng, đúng số tiền và nội
+                                        dung {payment.reference}.
+                                    </small>
+                                </form>
+                            )}
                             {options.length > 0 && (
                                 <form
                                     onSubmit={(event) => {
@@ -347,11 +448,7 @@ export default function OrderDetail({
                                             ))}
                                         </select>
                                         <button
-                                            disabled={
-                                                form.processing ||
-                                                collection.processing ||
-                                                !form.data.status
-                                            }
+                                            disabled={busy || !form.data.status}
                                             data-busy={form.processing}
                                         >
                                             {form.processing
@@ -381,10 +478,7 @@ export default function OrderDetail({
                                     }}
                                 >
                                     <button
-                                        disabled={
-                                            collection.processing ||
-                                            form.processing
-                                        }
+                                        disabled={busy}
                                         data-busy={collection.processing}
                                     >
                                         {collection.processing
@@ -398,13 +492,110 @@ export default function OrderDetail({
                                     </small>
                                 </form>
                             )}
-                            {options.length === 0 && !canCollect && (
-                                <p className="admin-muted">
-                                    Đơn đã kết thúc; không còn thao tác nào.
-                                </p>
+                            {refundable && payment && (
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        if (
+                                            window.confirm(
+                                                'Bạn đã chuyển trả ' +
+                                                    money(payment.amount) +
+                                                    ' cho khách? Đơn sẽ bị hủy, tồn kho được hoàn lại và khách được báo qua email. Thao tác này không thể hoàn tác.',
+                                            )
+                                        )
+                                            refund.post(
+                                                paymentUrl + '/refund',
+                                                {
+                                                    preserveScroll: true,
+                                                },
+                                            );
+                                    }}
+                                >
+                                    <button
+                                        className="admin-button-secondary"
+                                        disabled={busy}
+                                        data-busy={refund.processing}
+                                    >
+                                        {refund.processing
+                                            ? 'Đang ghi nhận…'
+                                            : 'Đã hoàn tiền, hủy đơn'}
+                                    </button>
+                                    <small className="admin-muted">
+                                        Đơn đã thanh toán chỉ hủy được bằng cách
+                                        này. Chuyển trả tiền cho khách trước rồi
+                                        mới bấm.
+                                    </small>
+                                </form>
                             )}
+                            {options.length === 0 &&
+                                !canCollect &&
+                                !awaiting &&
+                                !refundable && (
+                                    <p className="admin-muted">
+                                        Đơn đã kết thúc; không còn thao tác nào.
+                                    </p>
+                                )}
                         </div>
                     </section>
+
+                    {payment && (
+                        <section
+                            className="admin-panel"
+                            aria-labelledby="payment-title"
+                        >
+                            <h2 id="payment-title">Chuyển khoản</h2>
+                            <dl className="admin-detail-list">
+                                <dt>Nội dung</dt>
+                                <dd>
+                                    <strong>{payment.reference}</strong>
+                                </dd>
+                                <dt>Số tiền</dt>
+                                <dd>{money(payment.amount)}</dd>
+                                <dt>Tình trạng</dt>
+                                <dd>{paymentStates[payment.status]}</dd>
+                                {payment.status === 'pending' &&
+                                    payment.expires_at && (
+                                        <>
+                                            <dt>Giữ hàng tới</dt>
+                                            <dd>
+                                                {dateTime(payment.expires_at)}
+                                            </dd>
+                                        </>
+                                    )}
+                                {payment.paid_at && (
+                                    <>
+                                        <dt>Nhận lúc</dt>
+                                        <dd>
+                                            {dateTime(payment.paid_at)}
+                                            {payment.confirmed_by &&
+                                                ' · ' +
+                                                    payment.confirmed_by +
+                                                    ' xác nhận'}
+                                        </dd>
+                                    </>
+                                )}
+                                {payment.refunded_at && (
+                                    <>
+                                        <dt>Hoàn lúc</dt>
+                                        <dd>
+                                            {dateTime(payment.refunded_at)}
+                                            {payment.refunded_by &&
+                                                ' · ' +
+                                                    payment.refunded_by +
+                                                    ' ghi nhận'}
+                                        </dd>
+                                    </>
+                                )}
+                            </dl>
+                            {payment.status === 'pending' && (
+                                <p className="admin-muted">
+                                    Tìm khoản tiền trên sao kê theo nội dung
+                                    này. Quá hạn giữ hàng mà chưa xác nhận, đơn
+                                    tự hủy và hoàn tồn kho.
+                                </p>
+                            )}
+                        </section>
+                    )}
 
                     <section
                         className="admin-panel"

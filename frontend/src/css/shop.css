@@ -1221,6 +1221,78 @@
     margin: 0;
     font-size: 0.85rem;
 }
+/* Paying an order by bank transfer: the QR code beside the account, amount and reference. */
+.store-transfer {
+    margin: 1.25rem 0 1.5rem;
+    padding: 1.1rem 1.25rem 1.25rem;
+    border: 2px solid var(--accent);
+    border-radius: 0.6rem;
+}
+.store-transfer h2 {
+    margin: 0 0 0.4rem;
+    font-size: 1.2rem;
+}
+.store-transfer > p {
+    margin: 0 0 0.9rem;
+}
+.store-transfer-body {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+.store-transfer-qr {
+    width: 13.75rem;
+    margin: 0;
+}
+.store-transfer-qr img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--line);
+    border-radius: 0.4rem;
+    background: #fff;
+}
+.store-transfer-qr figcaption {
+    margin-top: 0.4rem;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+.store-transfer .store-specs dd {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    overflow-wrap: anywhere;
+}
+.store-transfer > .store-hint {
+    margin: 0.9rem 0 0;
+    font-size: 0.9rem;
+}
+.store-copy {
+    min-height: 2rem;
+    padding: 0.2rem 0.65rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    color: var(--accent);
+    font: inherit;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.store-copy:hover {
+    border-color: var(--accent);
+}
+@media (max-width: 640px) {
+    .store-transfer-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .store-transfer-qr {
+        margin-inline: auto;
+    }
+}
 .store-variants small,
 .store-payment small {
     display: block;

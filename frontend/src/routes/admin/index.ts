@@ -15,7 +15,7 @@ import serviceOrders from './service-orders'
 import serviceStrings from './service-strings'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -30,7 +30,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -39,7 +39,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -48,7 +48,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -58,7 +58,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
     const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -68,7 +68,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
         dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -77,7 +77,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:22
+ * @see app/Http/Controllers/Admin/DashboardController.php:23
  * @route '/admin'
  */
         dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

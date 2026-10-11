@@ -7,6 +7,7 @@ import { ProductImage } from '@/layouts/shop-layout';
 import {
     couponTerms,
     kg,
+    paymentLabel,
     serviceStatuses,
     shortOrderCode,
     vnd,
@@ -19,6 +20,7 @@ type AccountOrder = {
     public_id: string;
     status: string;
     payment_status: string;
+    payment_method: string;
     total: number;
     is_demo: boolean;
     created_at: string;
@@ -316,11 +318,7 @@ export default function Account({
                                                         ).toLocaleDateString(
                                                             'vi-VN',
                                                         )}{' '}
-                                                        ·{' '}
-                                                        {order.payment_status ===
-                                                        'paid'
-                                                            ? 'Đã thanh toán'
-                                                            : 'Thanh toán khi nhận hàng'}
+                                                        · {paymentLabel(order)}
                                                     </p>
                                                 </div>
                                                 <div className="store-account-order-total">

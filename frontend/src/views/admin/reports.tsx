@@ -226,7 +226,7 @@ export default function Reports({
             <PageHeader
                 title="Báo cáo doanh thu"
                 description={
-                    'Doanh số là giá trị đơn đặt trong kỳ, không tính đơn hủy. Lãi gộp là tiền hàng trừ giá nhập (không tính phí giao, chi phí vận hành). Đã thu là tiền COD đã ghi nhận. Mỗi số được so với ' +
+                    'Doanh số là giá trị đơn đặt trong kỳ, không tính đơn hủy. Lãi gộp là tiền hàng trừ giá nhập (không tính phí giao, chi phí vận hành). Đã thu là tiền COD và tiền chuyển khoản đã ghi nhận, không tính khoản đã hoàn lại. Mỗi số được so với ' +
                     period.previous +
                     '.'
                 }
@@ -344,7 +344,7 @@ export default function Reports({
                             )}
                         </div>
                         <div>
-                            <dt>Đã thu (COD)</dt>
+                            <dt>Đã thu</dt>
                             <dd title={money(totals.collected)}>
                                 {tileMoney(totals.collected)}
                                 <Delta

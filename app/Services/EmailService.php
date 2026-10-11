@@ -32,7 +32,7 @@ class EmailService
 {
     /** About something the customer did: sent whenever there is an address to send to. */
     public const TRANSACTIONAL = [
-        'welcome', 'order_placed', 'order_shipped', 'order_delivered', 'order_cancelled', 'coupon',
+        'welcome', 'order_placed', 'order_paid', 'order_shipped', 'order_delivered', 'order_cancelled', 'coupon',
         'service_placed', 'service_ready', 'service_cancelled',
     ];
 
