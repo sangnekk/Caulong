@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\SupportConversation;
 use App\Models\User;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Routing\Route as RoutingRoute;
 use Illuminate\Support\Facades\Route;
@@ -67,18 +68,27 @@ class StaffRolesTest extends TestCase
         $this->post('/admin/coupons', [])->assertForbidden();
     }
 
-    public function test_every_admin_route_but_the_inbox_asks_for_the_right_to_manage_the_shop(): void
+    public function test_every_admin_route_but_the_inbox_asks_for_one_of_the_two_rights(): void
     {
-        $open = ['admin.dashboard', 'admin.support-chat.index', 'admin.support-chat.claim', 'admin.support-chat.reply', 'admin.support-chat.resolve', 'admin.support-chat.close'];
+        $open = ['admin.dashboard', 'admin.support-chat.index', 'admin.support-chat.claim', 'admin.support-chat.reply', 'admin.support-chat.resolve', 'admin.support-chat.close', 'admin.support-chat.release'];
+        // The owner's alone: the shop's figures and settings, every order in one file, its staff.
+        $owner = ['admin.reports', 'admin.settings.edit', 'admin.settings.update', 'admin.orders.export', 'admin.staff.index', 'admin.staff.store', 'admin.staff.update', 'admin.staff.destroy'];
         $admin = collect(Route::getRoutes()->getRoutes())->filter(fn (RoutingRoute $route) => str_starts_with((string) $route->getName(), 'admin.'));
         $this->assertGreaterThan(30, $admin->count());
+        $this->assertSame([], array_values(array_diff($owner, $admin->map(fn (RoutingRoute $route) => $route->getName())->all())));
 
         foreach ($admin as $route) {
-            $this->assertSame(
-                ! in_array($route->getName(), $open, true),
-                in_array('can:manage-shop', $route->gatherMiddleware(), true),
-                (string) $route->getName(),
-            );
+            $name = (string) $route->getName();
+            $middleware = $route->gatherMiddleware();
+            // A route added later carries the daily-work right unless it is named above.
+            $expected = match (true) {
+                in_array($name, $open, true) => [],
+                in_array($name, $owner, true) => ['can:administer-shop'],
+                default => ['can:manage-shop'],
+            };
+            $this->assertSame($expected, array_values(array_filter($middleware, fn ($entry) => is_string($entry) && str_starts_with($entry, 'can:'))), $name);
+            // Changing who is staff asks for the password again.
+            $this->assertSame(str_starts_with($name, 'admin.staff.'), in_array(RequirePassword::class, $middleware, true), $name);
         }
     }
 

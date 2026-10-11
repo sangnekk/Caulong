@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\PrivacyController;
 use App\Http\Controllers\SeoController;
 use App\Http\Responses\SignedInResponse;
 use App\Services\SeoService;
@@ -9,6 +10,9 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', fn (SeoService $seo) => Inertia::render('welcome', ['seo' => $seo->home()]))->name('home');
+
+// What the shop keeps about its customers and why. A draft until the owner publishes it.
+Route::get('privacy', PrivacyController::class)->name('privacy');
 
 // What search engines ask a site for. No session and no cookies: a crawler is not a visitor.
 Route::get('sitemap.xml', [SeoController::class, 'sitemap'])->withoutMiddleware('web')->name('sitemap');
@@ -29,6 +33,7 @@ Route::middleware('auth')->group(function () {
     Route::get('account', [AccountController::class, 'show'])->name('account');
     Route::patch('account', [AccountController::class, 'update'])->name('account.update');
     Route::put('account/password', [AccountController::class, 'password'])->middleware('throttle:6,1,account-password')->name('account.password');
+    Route::delete('account', [AccountController::class, 'destroy'])->middleware('throttle:6,1,account-delete')->name('account.destroy');
 });
 
 require __DIR__.'/settings.php';

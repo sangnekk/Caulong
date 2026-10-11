@@ -112,6 +112,11 @@ return [
     'seo' => [
         'index' => (bool) env('SHOP_SEO_INDEX', env('APP_ENV') === 'production'),
     ],
+    // The privacy policy page (/privacy) says when it was last changed: set this to the day its
+    // wording, or anything it states (what is kept, for how long), changes.
+    'privacy' => [
+        'updated' => '2026-10-11',
+    ],
     // The support chat (App\Services\SupportChat).
     'support' => [
         // Days a conversation staff marked as solved waits for the customer before it closes itself.

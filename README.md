@@ -6,7 +6,7 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 
 - **Trang giới thiệu:** vợt Hyper Core8000 bằng Three.js, sáu chương xoay và phóng theo cuộn, màn mở đầu “căng dây” chạy theo tiến độ tải mô hình thật, bản đọc tĩnh cho máy yếu hoặc khi tắt chuyển động.
 - **Cửa hàng:** danh sách vợt có lọc theo hãng, lối chơi, mức giá và hàng còn; trang sản phẩm theo phiên bản; giỏ hàng; đặt hàng không cần tài khoản, trả tiền khi nhận (COD) hoặc chuyển khoản; gợi ý chọn vợt theo ngân sách, lối chơi, trình độ (theo quy tắc, không dùng AI).
-- **Tài khoản:** khách xem đơn và yêu cầu đan dây của mình, lưu sản phẩm yêu thích, viết đánh giá cho sản phẩm đã nhận, sửa hồ sơ, đổi mật khẩu, bật/tắt email ưu đãi, xem lại các lần nhắn với cửa hàng; đăng nhập có xác minh email, xác thực hai lớp và passkey.
+- **Tài khoản:** khách xem đơn và yêu cầu đan dây của mình, lưu sản phẩm yêu thích, viết đánh giá cho sản phẩm đã nhận, sửa hồ sơ, đổi mật khẩu, bật/tắt email ưu đãi, xem lại các lần nhắn với cửa hàng, tự xóa tài khoản; đăng nhập có xác minh email, xác thực hai lớp và passkey.
 - **Quản trị:** sản phẩm, tồn kho, đơn hàng, yêu cầu đan dây, khách hàng (hồ sơ từng khách: số liệu, đơn, dòng hoạt động, sản phẩm, đánh giá), duyệt đánh giá, báo cáo doanh số và lãi gộp kèm phễu từ xem tới đặt hàng, nhóm khách, mã giảm giá, cách thanh toán, đan dây và chat hỗ trợ, cài đặt phí giao và liên hệ, xuất đơn ra CSV, trả lời chat hỗ trợ.
 - **Hành vi khách hàng:** cửa hàng tự ghi các sự kiện mua sắm (xem, tìm, thêm giỏ, đặt đơn…) vào database của mình; Microsoft Clarity là tùy chọn, chỉ chạy khi có project ID và khách đồng ý.
 - **Nhóm khách và mã giảm giá:** mỗi khách được xếp vào một nhóm (Mới, Tiềm năng, Đang mua, VIP, Không hoạt động, Đã mất) theo ngưỡng chủ shop đặt; mã giảm giá cho mọi khách, cho riêng một khách hoặc cho một nhóm, có hạn dùng, giới hạn lượt và điều kiện đơn.
@@ -15,7 +15,8 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 - **Chuyển khoản ngân hàng:** chủ shop nhập tài khoản nhận tiền ở Cài đặt và bật lên; chưa bật thì cửa hàng chỉ nhận COD. Khách chọn chuyển khoản lúc đặt, trang đơn hàng hiện số tài khoản, số tiền, nội dung chuyển khoản và mã QR (VietQR). Cửa hàng kiểm tra tài khoản rồi bấm xác nhận ở trang đơn; đơn chưa được xác nhận trong thời hạn giữ hàng (mặc định 24 giờ) tự hủy và hoàn tồn kho. Đơn đã thanh toán chỉ hủy được bằng cách ghi nhận đã hoàn tiền.
 - **SEO:** mỗi trang công khai (trang giới thiệu, danh sách vợt, từng cây vợt, gợi ý chọn vợt, đan dây) có tiêu đề, mô tả, địa chỉ canonical, thẻ Open Graph và dữ liệu có cấu trúc (schema.org) ngay trong HTML máy chủ trả về; có `sitemap.xml` và `robots.txt`. Giỏ hàng, đơn hàng, tài khoản và trang quản trị không cho lập chỉ mục. Sản phẩm mẫu không vào sitemap và không được mô tả là hàng đang bán.
 - **Dịch vụ đan dây:** khách gửi yêu cầu ở `/services` (vợt, dây của cửa hàng hoặc dây tự mang, mức căng, lúc định mang vợt tới), không cần tài khoản và không trả tiền online. Cửa hàng xử lý ở `/admin/service-orders`: hẹn, nhận vợt, đan, báo khách tới lấy, thu tiền tại quầy. Danh sách dây và giá do chủ shop nhập; phí công đan và công tắc nhận yêu cầu ở Cài đặt.
-- **Hai vai trò nhân viên:** quản trị viên dùng toàn bộ `/admin`; nhân viên hỗ trợ chỉ vào được Chat hỗ trợ.
+- **Ba vai trò nhân viên:** quản trị viên dùng toàn bộ `/admin`; nhân viên bán hàng làm việc hằng ngày (đơn, kho, khách hàng, chat) nhưng không mở được Cài đặt, Báo cáo, xuất CSV và không thấy số tiền ở Tổng quan; nhân viên hỗ trợ chỉ vào được Chat hỗ trợ. Quản trị viên cấp, đổi và gỡ vai trò ở `/admin/staff`, sau khi nhập lại mật khẩu.
+- **Chính sách quyền riêng tư:** trang `/privacy` nói cửa hàng ghi lại gì về khách, dùng vào việc gì, giữ bao lâu và khách làm được gì, viết theo đúng những gì hệ thống đang làm. Nó là bản nháp chỉ quản trị viên mở được, cho tới khi chủ shop đọc và bật “Công bố chính sách quyền riêng tư” ở Cài đặt.
 - **Nhập hàng:** từ CSV hoặc Excel kèm ZIP ảnh, có xem trước và khớp theo SKU; đồng bộ danh mục vợt từ shopvnb.com (đã được cho phép) bằng `scripts/vnb-catalog.mjs`.
 - **Chưa có:** cổng thanh toán tự đối soát (tiền chuyển khoản do cửa hàng tự kiểm tra và xác nhận), kết nối hãng vận chuyển.
 
@@ -69,9 +70,9 @@ php artisan db:seed --class=DemoCatalogSeeder   # sản phẩm minh họa, chỉ
 php artisan shop:demo-sales                     # một năm đơn mẫu có nhãn, để xem báo cáo
 ```
 
-Khi `APP_ENV=local`, trang đăng nhập tự tạo ba tài khoản và có nút đăng nhập một lần bấm: `admin@test.local` (quản trị), `hotro@test.local` (nhân viên hỗ trợ) và `khach@test.local` (khách), mật khẩu `Test-Cau-Long-2026!`. Xóa ba tài khoản này trước khi dùng database đó cho hàng thật.
+Khi `APP_ENV=local`, trang đăng nhập tự tạo bốn tài khoản và có nút đăng nhập một lần bấm: `admin@test.local` (quản trị), `nhanvien@test.local` (nhân viên bán hàng), `hotro@test.local` (nhân viên hỗ trợ) và `khach@test.local` (khách), mật khẩu `Test-Cau-Long-2026!`. Mỗi lần mở trang đăng nhập, bốn tài khoản này được đặt lại đúng vai trò và mật khẩu đó. Xóa bốn tài khoản này trước khi dùng database đó cho hàng thật.
 
-Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (ở local thư nằm trong `storage/logs/laravel.log` sau khi queue worker xử lý), rồi chạy `php artisan shop:make-admin email-cua-ban`. Thêm `--role=support` để tài khoản đó chỉ là nhân viên hỗ trợ.
+Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (ở local thư nằm trong `storage/logs/laravel.log` sau khi queue worker xử lý), rồi chạy `php artisan shop:make-admin email-cua-ban`. Từ đó quản trị viên cấp vai trò cho người khác ở `/admin/staff` (người được thêm phải tự đăng ký và xác minh email trước); lệnh trên cũng nhận `--role=staff` (nhân viên bán hàng) và `--role=support` (nhân viên hỗ trợ).
 
 ## Lệnh thường dùng
 
@@ -85,7 +86,7 @@ Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (�
 | `php artisan test --compact`          | Chạy test của Laravel                                                                                                                          |
 | `php artisan queue:work`              | Xử lý email đã xếp hàng; local ghi vào log, Resend gửi thật khi cấu hình                                                                       |
 | `php artisan schedule:work`           | Chạy marketing, xếp nhóm khách, hủy đơn chuyển khoản quá hạn, đóng cuộc trò chuyện đã giải quyết, xóa sự kiện và nhật ký email cũ hơn 365 ngày |
-| `php artisan shop:make-admin email`   | Cấp quyền quản trị cho một tài khoản đã xác minh; `--role=support` cho nhân viên hỗ trợ                                                        |
+| `php artisan shop:make-admin email`   | Cấp quyền quản trị cho một tài khoản đã xác minh; `--role=staff` cho nhân viên bán hàng, `--role=support` cho nhân viên hỗ trợ                 |
 | `php artisan marketing:run`           | Chạy các automation đang bật; có thể thêm `abandoned_cart`, `winback`, `post_purchase` hoặc `vip`                                              |
 | `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)                                                                     |
 | `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                                                                                        |
@@ -150,9 +151,13 @@ Lệnh chép chỉ chạy khi database mới còn trống và không chép phiê
 - **Công cụ tìm kiếm:** chỉ khi `APP_ENV=production` thì các trang công khai mới cho lập chỉ mục và `robots.txt` mới mở; ở mọi môi trường khác `robots.txt` chặn toàn bộ và mọi trang có `noindex` (đặt `SHOP_SEO_INDEX=true` hoặc `false` để quyết định thay). Sau khi lên trang thật, khai báo `https://ten-mien/sitemap.xml` trong Google Search Console.
 - **Next.js:** `npm run build` rồi `npm run start`, với `LARAVEL_URL` trong `frontend/.env.local` trỏ tới Laravel. Laravel chỉ cần Next.js gọi tới được, không cần mở ra Internet.
 - **Proxy:** Laravel hiện chỉ tin header chuyển tiếp từ `127.0.0.1` (`bootstrap/app.php`). Nếu Next.js chạy ở máy khác, thêm địa chỉ máy đó.
+- **`TRUST_PROXY` (quan trọng):** để trống khi trình duyệt nối thẳng tới Next.js. Chỉ đặt `TRUST_PROXY=1` trong `frontend/.env.local` khi Next.js đứng sau một reverse proxy (Nginx, Caddy, Cloudflare) **tự ghi đè** `X-Forwarded-For`, `X-Forwarded-Host` và `X-Forwarded-Proto` của khách. Đặt mà không có proxy như vậy thì ai cũng tự khai được địa chỉ IP và vượt giới hạn thử mật khẩu; để trống khi có proxy thì mọi khách chưa đăng nhập dùng chung một hạn mức. Không mở cổng của Next.js và của Laravel ra Internet.
+- **Hiệu năng:** chạy `php artisan optimize` sau mỗi lần triển khai (gộp cấu hình, route, view), bật OPcache, và để web server trả thẳng thư mục `/storage` (ảnh sản phẩm) thay vì qua PHP.
 - **Email:** đặt `MAIL_MAILER=resend`, `RESEND_API_KEY`, `MAIL_FROM_ADDRESS` thuộc domain đã xác minh trên Resend và `MAIL_FROM_NAME` trong `.env`; giữ `php artisan queue:work` chạy dưới process manager. `MAIL_MAILER=log` chỉ ghi file, không chứng minh email đã tới hộp thư. Transport HTTP đã kiểm thử bằng API giả; cần kiểm tra gửi thật trước khi mở bán.
 - **Việc định kỳ:** thêm cron chạy `php artisan schedule:run` mỗi phút (hoặc giữ `php artisan schedule:work` chạy). Bật từng automation ở `/admin/settings`; lịch marketing dùng giờ Việt Nam. Giữ các tùy chọn tắt khi chưa có chính sách và cấu hình gửi thật.
-- **Clarity (tùy chọn):** đặt `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` trước khi build. Cần có trang chính sách quyền riêng tư nói rõ cửa hàng ghi lại gì trước khi bật.
+- **Chính sách quyền riêng tư:** đăng nhập bằng tài khoản quản trị, đọc `/privacy`, rồi bật “Công bố chính sách quyền riêng tư” ở `/admin/settings` (cần có hotline hoặc email liên hệ). Trang tự nói theo cấu hình đang chạy (chuyển khoản, đan dây, Resend, Clarity), nên đọc lại sau khi đổi các thứ đó. Câu chữ nằm ở `frontend/src/views/shop/privacy.tsx`; sửa câu chữ thì đổi ngày ở `config/shop.php` (`privacy.updated`). Đây là bản mô tả hệ thống, không phải tư vấn pháp lý.
+- **Clarity (tùy chọn):** đặt `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` trước khi build. Công bố trang chính sách quyền riêng tư trước khi bật: lời hỏi đồng ý sẽ dẫn tới trang đó.
+- **Tài khoản nhân viên:** bật xác thực hai lớp cho mọi tài khoản nhân viên ở `/settings/security` (màn Nhân viên cho thấy ai chưa bật).
 - Dùng HTTPS, và xác nhận chính sách giao, đổi, trả trước khi nhận đơn thật.
 
 ## Thư mục

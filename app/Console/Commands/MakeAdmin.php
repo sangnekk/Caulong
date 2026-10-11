@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Validator;
 class MakeAdmin extends Command
 {
     protected $signature = 'shop:make-admin {email : Email tài khoản đã xác minh}
-        {--role=admin : admin (toàn quyền) hoặc support (chỉ trả lời khách ở Chat hỗ trợ)}
+        {--role=admin : admin (toàn quyền), staff (việc hằng ngày của cửa hàng) hoặc support (chỉ trả lời khách ở Chat hỗ trợ)}
         {--force : Bỏ qua xác nhận}';
 
-    protected $description = 'Cấp quyền quản trị, hoặc quyền nhân viên hỗ trợ, cho tài khoản đã tồn tại và xác minh email';
+    protected $description = 'Cấp quyền quản trị, nhân viên bán hàng hoặc nhân viên hỗ trợ cho tài khoản đã tồn tại và xác minh email';
 
     public function handle(): int
     {
@@ -37,9 +37,11 @@ class MakeAdmin extends Command
 
             return self::FAILURE;
         }
-        $question = $role === 'admin'
-            ? "Cấp toàn quyền quản trị cho {$email}?"
-            : "Cấp quyền nhân viên hỗ trợ (chỉ Chat hỗ trợ) cho {$email}?";
+        $question = match ($role) {
+            'admin' => "Cấp toàn quyền quản trị cho {$email}?",
+            'staff' => "Cấp quyền nhân viên bán hàng (đơn, sản phẩm, khách hàng; không gồm cài đặt và báo cáo) cho {$email}?",
+            default => "Cấp quyền nhân viên hỗ trợ (chỉ Chat hỗ trợ) cho {$email}?",
+        };
         if (! $this->option('force') && ! $this->confirm($question, false)) {
             $this->warn('Đã hủy.');
 
@@ -63,7 +65,11 @@ class MakeAdmin extends Command
 
             return self::FAILURE;
         }
-        $this->info($role === 'admin' ? "Đã cấp quyền quản trị: {$email}" : "Đã cấp quyền nhân viên hỗ trợ: {$email}");
+        $this->info(match ($role) {
+            'admin' => "Đã cấp quyền quản trị: {$email}",
+            'staff' => "Đã cấp quyền nhân viên bán hàng: {$email}",
+            default => "Đã cấp quyền nhân viên hỗ trợ: {$email}",
+        });
 
         return self::SUCCESS;
     }

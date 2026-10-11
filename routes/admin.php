@@ -12,14 +12,17 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ServiceOrderController;
 use App\Http\Controllers\Admin\ServiceStringController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\SupportChatController;
 use App\Http\Controllers\Admin\TaxonomyController;
 use App\Http\Middleware\EnsureAdmin;
+use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
-// Every staff account (users.is_admin) gets in here. What it may do is its role's: the support
-// inbox is for all staff, the rest of the shop for those who may manage it (the "manage-shop"
-// gate in AppServiceProvider).
+// Every staff account (users.is_admin) gets in here. What it may do is its role's (the gates
+// in AppServiceProvider): the support inbox is for all staff, the daily work of the shop for
+// those who may manage it ("manage-shop"), and its settings, figures, exports and staff for
+// its admins ("administer-shop"). Every route outside the inbox carries one of the two.
 Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->name('admin.')->group(function () {
     // Sends support staff on to their inbox, so it is not behind the gate itself.
     Route::get('/', DashboardController::class)->name('dashboard');
@@ -28,14 +31,28 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->na
     Route::post('support-chat/{conversation}/reply', [SupportChatController::class, 'reply'])->whereNumber('conversation')->name('support-chat.reply');
     Route::post('support-chat/{conversation}/resolve', [SupportChatController::class, 'resolve'])->whereNumber('conversation')->name('support-chat.resolve');
     Route::post('support-chat/{conversation}/close', [SupportChatController::class, 'close'])->whereNumber('conversation')->name('support-chat.close');
+    // A ticket handed back to the inbox, by whoever holds it or by an admin for them.
+    Route::post('support-chat/{conversation}/release', [SupportChatController::class, 'release'])->whereNumber('conversation')->name('support-chat.release');
 
-    Route::middleware('can:manage-shop')->group(function () {
+    Route::middleware('can:administer-shop')->group(function () {
         Route::get('reports', ReportController::class)->name('reports');
         Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+        // Every order with its customer's name, phone and address in one file.
+        Route::get('orders/export', [OrderController::class, 'export'])->name('orders.export');
+        // Who may get into /admin at all: asked for the password again first, as the
+        // account's own security settings are.
+        Route::middleware(RequirePassword::class)->group(function () {
+            Route::get('staff', [StaffController::class, 'index'])->name('staff.index');
+            Route::post('staff', [StaffController::class, 'store'])->name('staff.store');
+            Route::patch('staff/{user}', [StaffController::class, 'update'])->whereNumber('user')->name('staff.update');
+            Route::delete('staff/{user}', [StaffController::class, 'destroy'])->whereNumber('user')->name('staff.destroy');
+        });
+    });
+
+    Route::middleware('can:manage-shop')->group(function () {
         Route::post('products/bulk', [ProductController::class, 'bulk'])->name('products.bulk');
         Route::patch('products/{product}/variants', [ProductController::class, 'quick'])->name('products.quick');
-        Route::get('orders/export', [OrderController::class, 'export'])->name('orders.export');
         Route::resource('products', ProductController::class)->except(['show', 'destroy']);
         Route::get('taxonomies', [TaxonomyController::class, 'index'])->name('taxonomies.index');
         Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');

@@ -1,3 +1,4 @@
+import PrivacyController from './PrivacyController'
 import SeoController from './SeoController'
 import AccountController from './AccountController'
 import Settings from './Settings'
@@ -14,7 +15,8 @@ import SupportChatController from './SupportChatController'
 import Admin from './Admin'
 import AdvisorController from './AdvisorController'
 const Controllers = {
-    SeoController: Object.assign(SeoController, SeoController),
+    PrivacyController: Object.assign(PrivacyController, PrivacyController),
+SeoController: Object.assign(SeoController, SeoController),
 AccountController: Object.assign(AccountController, AccountController),
 Settings: Object.assign(Settings, Settings),
 CatalogController: Object.assign(CatalogController, CatalogController),

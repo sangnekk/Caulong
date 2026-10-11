@@ -288,6 +288,8 @@ export default function SupportChat({
         assigned_to: number | null;
         assigned_name: string | null;
         can_reply: boolean;
+        /** Whoever holds the ticket, or an admin for them, may hand it back to the inbox. */
+        can_release: boolean;
         started_at: string;
     } | null;
     messages: Message[];
@@ -353,7 +355,7 @@ export default function SupportChat({
         });
     };
 
-    const act = (action: 'claim' | 'resolve' | 'close') => {
+    const act = (action: 'claim' | 'resolve' | 'close' | 'release') => {
         if (!selected) return;
         router.post(
             `/admin/support-chat/${selected.id}/${action}`,
@@ -523,6 +525,17 @@ export default function SupportChat({
                                         >
                                             <CheckCheck aria-hidden="true" />
                                             Đóng hội thoại
+                                        </button>
+                                    )}
+                                    {selected.can_release && (
+                                        <button
+                                            type="button"
+                                            className="admin-button-secondary"
+                                            onClick={() => act('release')}
+                                        >
+                                            {selected.can_reply
+                                                ? 'Trả lại ticket'
+                                                : 'Gỡ người đang nhận'}
                                         </button>
                                     )}
                                 </div>

@@ -203,6 +203,9 @@ export default function Account({
     const [resent, setResent] = useState(false);
     const [removing, setRemoving] = useState<string | null>(null);
     const [switching, setSwitching] = useState(false);
+    // Deleting the account: asked for first, then confirmed with the password.
+    const removal = useForm({ password: '' });
+    const [closing, setClosing] = useState(false);
     const unsave = (slug: string) => {
         setRemoving(slug);
         router.delete('/wishlist/' + slug, {
@@ -813,6 +816,90 @@ export default function Account({
                             </button>
                         </form>
                     </section>
+
+                    {/* A staff account is taken out of the staff by an admin first. */}
+                    {!account.is_admin && (
+                        <section
+                            className="store-account-card"
+                            aria-labelledby="xoa-tai-khoan"
+                        >
+                            <h2 id="xoa-tai-khoan">Xóa tài khoản</h2>
+                            <p className="store-hint store-account-delete-note">
+                                Xóa hẳn tài khoản cùng lịch sử xem hàng, sản
+                                phẩm yêu thích, đánh giá, lịch sử hỗ trợ và mã
+                                giảm giá riêng của bạn. Đơn hàng đã đặt vẫn được
+                                cửa hàng giữ làm chứng từ, không còn gắn với tài
+                                khoản. Không hoàn tác được.
+                            </p>
+                            {closing ? (
+                                <form
+                                    onSubmit={(event) => {
+                                        event.preventDefault();
+                                        removal.delete('/account', {
+                                            preserveScroll: true,
+                                            onError: () =>
+                                                removal.reset('password'),
+                                        });
+                                    }}
+                                >
+                                    <div className="store-field">
+                                        <label htmlFor="delete_password">
+                                            Nhập mật khẩu để xác nhận
+                                        </label>
+                                        <input
+                                            id="delete_password"
+                                            type="password"
+                                            required
+                                            autoComplete="current-password"
+                                            value={removal.data.password}
+                                            onChange={(event) =>
+                                                removal.setData(
+                                                    'password',
+                                                    event.target.value,
+                                                )
+                                            }
+                                            aria-invalid={
+                                                !!removal.errors.password
+                                            }
+                                        />
+                                        <FieldError
+                                            message={removal.errors.password}
+                                        />
+                                    </div>
+                                    <div className="store-account-delete-actions">
+                                        <button
+                                            className="store-button store-button-danger"
+                                            disabled={removal.processing}
+                                        >
+                                            {removal.processing
+                                                ? 'Đang xóa…'
+                                                : 'Xóa tài khoản vĩnh viễn'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="store-button store-button-secondary"
+                                            disabled={removal.processing}
+                                            onClick={() => {
+                                                removal.reset();
+                                                removal.clearErrors();
+                                                setClosing(false);
+                                            }}
+                                        >
+                                            Giữ tài khoản
+                                        </button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <button
+                                    type="button"
+                                    className="store-button store-button-secondary"
+                                    onClick={() => setClosing(true)}
+                                >
+                                    Xóa tài khoản…
+                                </button>
+                            )}
+                        </section>
+                    )}
                 </aside>
             </div>
         </div>

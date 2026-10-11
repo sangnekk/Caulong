@@ -4,9 +4,37 @@ const laravel = process.env.LARAVEL_URL ?? 'http://127.0.0.1:8000';
 
 const nextConfig: NextConfig = {
     reactCompiler: true,
+    // Not telling every visitor which server software answers.
+    poweredByHeader: false,
     experimental: {
         // forbidden() for Laravel's 403 answers.
         authInterrupts: true,
+    },
+    // On every answer: no other site may show these pages in a frame (clickjacking), browsers
+    // keep to the declared content types, a link followed to another site carries the origin
+    // only (an order's address holds its signature), and the pages ask for no device features.
+    async headers() {
+        return [
+            {
+                source: '/:path*',
+                headers: [
+                    { key: 'X-Frame-Options', value: 'DENY' },
+                    {
+                        key: 'Content-Security-Policy',
+                        value: "frame-ancestors 'none'",
+                    },
+                    { key: 'X-Content-Type-Options', value: 'nosniff' },
+                    {
+                        key: 'Referrer-Policy',
+                        value: 'strict-origin-when-cross-origin',
+                    },
+                    {
+                        key: 'Permissions-Policy',
+                        value: 'camera=(), microphone=(), geolocation=(), payment=()',
+                    },
+                ],
+            },
+        ];
     },
     // Laravel's own routes that never become a page: uploaded images, links from emails,
     // file downloads, what search engines ask for (the site map and robots.txt), and the

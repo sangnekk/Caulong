@@ -92,6 +92,9 @@ class SupportChatController extends Controller
                 'assigned_to' => $selected->assigned_to,
                 'assigned_name' => $selected->assignedUser?->name,
                 'can_reply' => $selected->needs_human && $selected->assigned_to === $request->user()?->id,
+                // Handing it back to the inbox: whoever holds it, or an admin on their behalf.
+                'can_release' => $selected->needs_human && $selected->status !== 'closed' && $selected->assigned_to !== null
+                    && ($selected->assigned_to === $request->user()?->id || (bool) $request->user()?->can('administer-shop')),
                 'started_at' => $selected->created_at->toIso8601String(),
             ] : null,
             'messages' => $messages,
@@ -172,6 +175,24 @@ class SupportChatController extends Controller
         }
 
         return back()->with('success', 'Đã đóng cuộc trò chuyện.');
+    }
+
+    /**
+     * Back to the inbox for someone else to take: by whoever holds the ticket (going off
+     * shift), or by an admin for a member of staff who is away.
+     */
+    public function release(Request $request, SupportConversation $conversation): RedirectResponse
+    {
+        if (! $conversation->needs_human || $conversation->status === 'closed' || $conversation->assigned_to === null) {
+            throw ValidationException::withMessages(['claim' => 'Ticket này không có ai đang nhận.']);
+        }
+        if ($conversation->assigned_to !== $request->user()?->id && $request->user()?->cannot('administer-shop')) {
+            throw ValidationException::withMessages(['claim' => 'Chỉ người đang nhận ticket hoặc quản trị viên mới trả lại ticket được.']);
+        }
+        // Only from the holder it had when this was asked: not from someone who took it since.
+        SupportConversation::query()->whereKey($conversation->id)->where('assigned_to', $conversation->assigned_to)->update(['assigned_to' => null]);
+
+        return back()->with('success', 'Đã trả ticket về hộp thư. Nhân viên khác có thể nhận.');
     }
 
     private function mine(Request $request, SupportConversation $conversation, string $action): void

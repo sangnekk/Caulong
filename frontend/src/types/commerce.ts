@@ -239,7 +239,7 @@ export type ShopSharedProps = {
         /** A staff account: it works in /admin. */
         is_admin: boolean;
         /** What a staff account may open there: everything, or the support inbox only. */
-        staff_role?: 'admin' | 'support' | null;
+        staff_role?: 'admin' | 'staff' | 'support' | null;
         pending_orders?: number;
         pending_support_chats?: number;
         pending_reviews?: number;
@@ -247,6 +247,8 @@ export type ShopSharedProps = {
         pending_service_orders?: number;
         /** The shop takes stringing requests online. */
         stringing?: boolean;
+        /** The privacy policy (/privacy) is on the site: linked from the footer and the consent texts. */
+        privacy?: boolean;
         shipping_fee?: number;
         contact?: {
             hotline: string;

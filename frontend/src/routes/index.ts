@@ -211,7 +211,7 @@ register.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     register.form = registerForm
 /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
 export const home = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -225,7 +225,7 @@ home.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
 home.url = (options?: RouteQueryOptions) => {
@@ -233,7 +233,7 @@ home.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
 home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -241,7 +241,7 @@ home.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
 home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -250,7 +250,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
     const homeForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -259,7 +259,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
         homeForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -267,7 +267,7 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:11
+ * @see routes/web.php:12
  * @route '/'
  */
         homeForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -281,6 +281,84 @@ home.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
     
     home.form = homeForm
+/**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+export const privacy = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: privacy.url(options),
+    method: 'get',
+})
+
+privacy.definition = {
+    methods: ["get","head"],
+    url: '/privacy',
+} satisfies RouteDefinition<["get","head"]>
+
+/**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+privacy.url = (options?: RouteQueryOptions) => {
+    return privacy.definition.url + queryParams(options)
+}
+
+/**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+privacy.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
+    url: privacy.url(options),
+    method: 'get',
+})
+/**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+privacy.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
+    url: privacy.url(options),
+    method: 'head',
+})
+
+    /**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+    const privacyForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+        action: privacy.url(options),
+        method: 'get',
+    })
+
+            /**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+        privacyForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: privacy.url(options),
+            method: 'get',
+        })
+            /**
+* @see \App\Http\Controllers\PrivacyController::__invoke
+ * @see app/Http/Controllers/PrivacyController.php:25
+ * @route '/privacy'
+ */
+        privacyForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
+            action: privacy.url({
+                        [options?.mergeQuery ? 'mergeQuery' : 'query']: {
+                            _method: 'HEAD',
+                            ...(options?.query ?? options?.mergeQuery ?? {}),
+                        }
+                    }),
+            method: 'get',
+        })
+    
+    privacy.form = privacyForm
 /**
 * @see \App\Http\Controllers\SeoController::sitemap
  * @see app/Http/Controllers/SeoController.php:11
@@ -438,7 +516,7 @@ robots.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     
     robots.form = robotsForm
 /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -452,7 +530,7 @@ dashboard.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -460,7 +538,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -468,7 +546,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -477,7 +555,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
     const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -486,7 +564,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
         dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -494,7 +572,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:24
+ * @see routes/web.php:28
  * @route '/dashboard'
  */
         dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -510,7 +588,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     dashboard.form = dashboardForm
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
 export const account = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -525,7 +603,7 @@ account.definition = {
 
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
 account.url = (options?: RouteQueryOptions) => {
@@ -534,7 +612,7 @@ account.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
 account.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -543,7 +621,7 @@ account.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
 account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -553,7 +631,7 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
     const accountForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -563,7 +641,7 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
         accountForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -572,7 +650,7 @@ account.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\AccountController::account
- * @see app/Http/Controllers/AccountController.php:22
+ * @see app/Http/Controllers/AccountController.php:24
  * @route '/account'
  */
         accountForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

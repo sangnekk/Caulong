@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\Settings\PasswordUpdateRequest;
+use App\Http\Requests\Settings\ProfileDeleteRequest;
 use App\Http\Requests\Settings\ProfileUpdateRequest;
 use App\Http\Resources\ProductCardResource;
 use App\Models\Order;
@@ -13,6 +14,7 @@ use App\Services\StringingService;
 use App\Services\SupportChat;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -93,5 +95,22 @@ class AccountController extends Controller
         $request->user()?->update(['password' => $request->string('password')->toString()]);
 
         return back()->with('success', 'Đã đổi mật khẩu.');
+    }
+
+    /**
+     * The customer removes their own account, after giving the password again. What they
+     * did in the shop goes with it; the orders stay as the shop's sales records, tied to
+     * nobody (the foreign keys say which is which).
+     */
+    public function destroy(ProfileDeleteRequest $request): RedirectResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        Auth::logout();
+        $user->delete();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return to_route('products.index')->with('success', 'Đã xóa tài khoản của bạn.');
     }
 }

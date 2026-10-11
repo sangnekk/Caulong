@@ -43,7 +43,7 @@ class SignedInResponse implements LoginResponse, TwoFactorLoginResponse
     public static function home(Request $request): string
     {
         return match ($request->user()?->staffRole()) {
-            'admin' => route('admin.dashboard'),
+            'admin', 'staff' => route('admin.dashboard'),
             'support' => route('admin.support-chat.index'),
             default => route('account'),
         };

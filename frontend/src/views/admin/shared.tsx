@@ -330,6 +330,7 @@ export const serviceLine = (
 /** Staff roles (App\Models\User::ROLES), as the admin names them. */
 export const staffRoles: Record<string, string> = {
     admin: 'Quản trị viên',
+    staff: 'Nhân viên bán hàng',
     support: 'Nhân viên hỗ trợ',
 };
 

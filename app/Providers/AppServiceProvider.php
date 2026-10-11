@@ -49,9 +49,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->configureMail();
 
-        // Staff roles (User::ROLES). Admins run the shop; support staff only answer customers,
-        // so everything in /admin but the support inbox asks for this.
-        Gate::define('manage-shop', fn (User $user): bool => $user->staffRole() === 'admin');
+        // Staff roles (User::ROLES), as two rights every /admin route but the support inbox asks
+        // for one of. The daily work of the shop is for admins and staff; its settings (the
+        // bank account customers pay into among them), its figures, the export of every order
+        // and the list of who is staff are the owner's alone.
+        Gate::define('manage-shop', fn (User $user): bool => in_array($user->staffRole(), ['admin', 'staff'], true));
+        Gate::define('administer-shop', fn (User $user): bool => $user->staffRole() === 'admin');
 
         // What a visitor did before signing in during this visit joins their account's history,
         // and so does the support conversation they were in.

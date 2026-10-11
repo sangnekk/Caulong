@@ -41,8 +41,12 @@ class DashboardController extends Controller
         $kept = fn (CarbonImmutable $from) => $orders()->where('status', '!=', 'cancelled')->where('created_at', '>=', $from->utc());
         $costed = OrderItem::whereIn('order_id', $kept($week)->select('id'))->whereNotNull('unit_cost');
         $awaiting = fn ($query) => $query->where('payment_method', PaymentService::METHOD)->where('payment_status', 'unpaid');
+        // Sales, profit and money collected are the owner's to see (as the reports are); staff
+        // get the same page without them.
+        $figures = (bool) $request->user()?->can('administer-shop');
 
         return Inertia::render('admin/dashboard', [
+            'figures' => $figures,
             'demo' => $demo,
             'demoDefault' => DemoData::shownByDefault(),
             'todo' => [
@@ -59,19 +63,21 @@ class DashboardController extends Controller
                 ...$insights->waiting(),
             ],
             'stats' => [
-                'today_sales' => (int) $kept($today)->sum('total'),
+                'today_sales' => $figures ? (int) $kept($today)->sum('total') : 0,
                 'today_orders' => $kept($today)->count(),
-                'week_sales' => (int) $kept($week)->sum('total'),
+                'week_sales' => $figures ? (int) $kept($week)->sum('total') : 0,
                 'week_orders' => $kept($week)->count(),
                 // Less the share of the week's coupons that falls on the lines with a known cost.
-                'week_profit' => (int) (clone $costed)->sum(DB::raw('line_total - unit_cost * quantity'))
-                    - (($goods = (int) $kept($week)->sum('subtotal')) > 0
-                        ? intdiv((int) $kept($week)->sum('discount_total') * (int) (clone $costed)->sum('line_total'), $goods)
-                        : 0),
-                'week_costed' => (int) (clone $costed)->sum('line_total'),
-                'week_collected' => (int) $orders()->where('paid_at', '>=', $week->utc())->sum('total'),
+                'week_profit' => $figures
+                    ? (int) (clone $costed)->sum(DB::raw('line_total - unit_cost * quantity'))
+                        - (($goods = (int) $kept($week)->sum('subtotal')) > 0
+                            ? intdiv((int) $kept($week)->sum('discount_total') * (int) (clone $costed)->sum('line_total'), $goods)
+                            : 0)
+                    : 0,
+                'week_costed' => $figures ? (int) (clone $costed)->sum('line_total') : 0,
+                'week_collected' => $figures ? (int) $orders()->where('paid_at', '>=', $week->utc())->sum('total') : 0,
                 // Paid at the stringing counter in the same seven days; not part of the orders' money.
-                'week_service' => $insights->serviceCollected($week),
+                'week_service' => $figures ? $insights->serviceCollected($week) : 0,
                 'orders_open' => $orders()->whereIn('status', ['pending', 'confirmed', 'shipped'])->count(),
                 'products_active' => $products()->where('is_active', true)->count(),
                 'products_in_stock' => $products()->where('is_active', true)->whereHas('variants', $sellable)->count(),

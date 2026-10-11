@@ -1,6 +1,6 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
 export const renew = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -14,7 +14,7 @@ renew.definition = {
 } satisfies RouteDefinition<["get","head"]>
 
 /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
 renew.url = (options?: RouteQueryOptions) => {
@@ -22,7 +22,7 @@ renew.url = (options?: RouteQueryOptions) => {
 }
 
 /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
 renew.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -30,7 +30,7 @@ renew.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
     method: 'get',
 })
 /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
 renew.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -39,7 +39,7 @@ renew.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 })
 
     /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
     const renewForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -48,7 +48,7 @@ renew.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     })
 
             /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
         renewForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -56,7 +56,7 @@ renew.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
             method: 'get',
         })
             /**
- * @see routes/web.php:20
+ * @see routes/web.php:24
  * @route '/session'
  */
         renewForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

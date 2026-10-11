@@ -455,6 +455,11 @@ export default function ShopLayout({ children }: PropsWithChildren) {
                             lượng trước khi đặt.
                         </p>
                         <Link href="/products">Tiếp tục xem sản phẩm</Link>
+                        {props.shop?.privacy && (
+                            <Link href="/privacy">
+                                Chính sách quyền riêng tư
+                            </Link>
+                        )}
                         <AnalyticsChoice />
                     </div>
                     <ShopContact showEmptyState />

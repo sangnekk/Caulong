@@ -190,6 +190,22 @@ class SeoService
     }
 
     /**
+     * The privacy policy; a draft only admins can open says nothing to search engines.
+     *
+     * @return Seo
+     */
+    public function privacy(bool $published): array
+    {
+        return $this->page(
+            'Chính sách quyền riêng tư',
+            $this->name().' ghi lại những gì về khách hàng, dùng để làm gì, giữ trong bao lâu, và cách bạn xem, sửa hoặc xóa dữ liệu của mình.',
+            '/privacy',
+            index: $published,
+            jsonLd: [$this->breadcrumbs([['Trang chủ', '/'], ['Chính sách quyền riêng tư', '/privacy']])],
+        );
+    }
+
+    /**
      * The site map: the public pages, each brand and category with something on sale, and
      * every real racket on sale (never sample goods).
      */
@@ -199,6 +215,9 @@ class SeoService
         $urls = [['/', null], ['/products', null], ['/advisor', null]];
         if ($this->settings->stringing()['enabled']) {
             $urls[] = ['/services', null];
+        }
+        if ($this->settings->privacyPublished()) {
+            $urls[] = ['/privacy', (string) config('shop.privacy.updated')];
         }
         foreach (Category::query()->whereHas('products', $real)->orderBy('slug')->pluck('slug') as $slug) {
             $urls[] = ['/products?category='.$slug, null];

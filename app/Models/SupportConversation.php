@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\MassPrunable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,6 +32,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  */
 class SupportConversation extends Model
 {
+    use MassPrunable;
+
+    /**
+     * A closed conversation of someone without an account is kept this long, then removed
+     * with its messages. An account's conversations go when the account does.
+     */
+    public const GUEST_KEEP_DAYS = 365;
+
     protected $guarded = ['id'];
 
     protected $hidden = ['access_code_hash'];
@@ -40,6 +50,18 @@ class SupportConversation extends Model
             'needs_human' => 'boolean', 'last_message_at' => 'datetime', 'resolved_at' => 'datetime',
             'closed_at' => 'datetime', 'access_code_expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * What `php artisan model:prune` removes (scheduled daily in routes/console.php); the
+     * messages go with their conversation (foreign key).
+     *
+     * @return Builder<static>
+     */
+    public function prunable(): Builder
+    {
+        return static::query()->whereNull('user_id')->where('status', 'closed')
+            ->where('closed_at', '<', now()->subDays(self::GUEST_KEEP_DAYS));
     }
 
     /** @return HasMany<SupportMessage, $this> */

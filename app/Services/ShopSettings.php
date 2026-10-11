@@ -49,6 +49,7 @@ class ShopSettings
             'bank_bin' => $bank['bin'],
             'bank_account_number' => $bank['account_number'],
             'bank_account_name' => $bank['account_name'],
+            'privacy_published' => $this->privacyPublished(),
         ];
     }
 
@@ -90,6 +91,15 @@ class ShopSettings
         $rule = fn (string $key): int => (int) ($this->saved()['stringing_'.$key] ?? config('shop.stringing.'.$key));
 
         return ['enabled' => $rule('enabled') === 1, 'fee' => $rule('fee')];
+    }
+
+    /**
+     * Whether the owner has read the privacy policy page and put it on the site. Until then
+     * it is a draft only admins can open (PrivacyController).
+     */
+    public function privacyPublished(): bool
+    {
+        return (int) ($this->saved()['privacy_published'] ?? 0) === 1;
     }
 
     /**

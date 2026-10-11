@@ -2,6 +2,7 @@
 
 use App\Models\CustomerEvent;
 use App\Models\EmailLog;
+use App\Models\SupportConversation;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -10,9 +11,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Browsing history and the email log are kept for a year (KEEP_DAYS on each model). Needs
-// "php artisan schedule:work" (or the server's cron) to run.
-Schedule::command('model:prune', ['--model' => [CustomerEvent::class, EmailLog::class]])->daily();
+// Browsing history, the email log and the finished support conversations of visitors without
+// an account are kept for a year (KEEP_DAYS on each model). Needs "php artisan schedule:work"
+// (or the server's cron) to run.
+Schedule::command('model:prune', ['--model' => [CustomerEvent::class, EmailLog::class, SupportConversation::class]])->daily();
 
 // Time alone moves customers between groups (new, inactive, lost): every account is looked at
 // once a day, in the shop's night, so the morning's emails go by the day's groups.

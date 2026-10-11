@@ -50,6 +50,7 @@ type LowStock = {
 const number = (value: number) => value.toLocaleString('vi-VN');
 
 export default function Dashboard({
+    figures,
     demo,
     demoDefault,
     todo,
@@ -57,6 +58,8 @@ export default function Dashboard({
     lowStock,
     orders,
 }: {
+    /** Sales, profit and money collected are shown to admins; staff get the work and the stock. */
+    figures: boolean;
     demo: boolean;
     demoDefault: boolean;
     todo: Todo;
@@ -194,12 +197,14 @@ export default function Dashboard({
                 }
                 actions={
                     <>
-                        <Link
-                            href={withDemo('/admin/reports')}
-                            className="admin-button admin-button-secondary"
-                        >
-                            Báo cáo doanh thu
-                        </Link>
+                        {figures && (
+                            <Link
+                                href={withDemo('/admin/reports')}
+                                className="admin-button admin-button-secondary"
+                            >
+                                Báo cáo doanh thu
+                            </Link>
+                        )}
                         <Link
                             href="/admin/products/create"
                             className="admin-button"
@@ -228,52 +233,60 @@ export default function Dashboard({
                 <h2 id="stats-title" className="sr-only">
                     Số liệu cửa hàng
                 </h2>
-                <dl className="admin-metrics" data-layout="3">
-                    <div>
-                        <dt>Doanh số hôm nay</dt>
-                        <dd>
-                            {money(stats.today_sales)}
-                            <small>{number(stats.today_orders)} đơn</small>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>Doanh số 7 ngày</dt>
-                        <dd>
-                            {money(stats.week_sales)}
-                            <small>{number(stats.week_orders)} đơn</small>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>Lãi gộp 7 ngày</dt>
-                        <dd>
-                            {stats.week_costed > 0
-                                ? money(stats.week_profit)
-                                : '—'}
-                            <small>
-                                {stats.week_costed > 0
-                                    ? 'biên ' +
-                                      Math.round(
-                                          (stats.week_profit /
-                                              stats.week_costed) *
-                                              100,
-                                      ) +
-                                      '%'
-                                    : 'cần giá nhập'}
-                            </small>
-                        </dd>
-                    </div>
-                    <div>
-                        <dt>Đã thu 7 ngày</dt>
-                        <dd>
-                            {money(stats.week_collected)}
-                            <small>
-                                COD và chuyển khoản
-                                {stats.week_service > 0 &&
-                                    ' · đan dây thu thêm ' +
-                                        money(stats.week_service)}
-                            </small>
-                        </dd>
-                    </div>
+                <dl className="admin-metrics" data-layout={figures ? '3' : '2'}>
+                    {figures && (
+                        <>
+                            <div>
+                                <dt>Doanh số hôm nay</dt>
+                                <dd>
+                                    {money(stats.today_sales)}
+                                    <small>
+                                        {number(stats.today_orders)} đơn
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Doanh số 7 ngày</dt>
+                                <dd>
+                                    {money(stats.week_sales)}
+                                    <small>
+                                        {number(stats.week_orders)} đơn
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Lãi gộp 7 ngày</dt>
+                                <dd>
+                                    {stats.week_costed > 0
+                                        ? money(stats.week_profit)
+                                        : '—'}
+                                    <small>
+                                        {stats.week_costed > 0
+                                            ? 'biên ' +
+                                              Math.round(
+                                                  (stats.week_profit /
+                                                      stats.week_costed) *
+                                                      100,
+                                              ) +
+                                              '%'
+                                            : 'cần giá nhập'}
+                                    </small>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt>Đã thu 7 ngày</dt>
+                                <dd>
+                                    {money(stats.week_collected)}
+                                    <small>
+                                        COD và chuyển khoản
+                                        {stats.week_service > 0 &&
+                                            ' · đan dây thu thêm ' +
+                                                money(stats.week_service)}
+                                    </small>
+                                </dd>
+                            </div>
+                        </>
+                    )}
                     <div>
                         <dt>Đơn đang xử lý</dt>
                         <dd>

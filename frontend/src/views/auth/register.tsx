@@ -1,6 +1,6 @@
 'use client';
 
-import { Form, Head } from '@/lib/page';
+import { Form, Head, usePage } from '@/lib/page';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -11,12 +11,15 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { login } from '@/routes';
 import { store } from '@/routes/register';
+import type { ShopSharedProps } from '@/types/commerce';
 
 type Props = {
     passwordRules: string;
 };
 
 export default function Register({ passwordRules }: Props) {
+    // Linked once the shop has published its privacy policy.
+    const privacy = usePage<ShopSharedProps>().props.shop?.privacy;
     return (
         <>
             <Head title="Đăng ký" />
@@ -111,6 +114,15 @@ export default function Register({ passwordRules }: Props) {
                                     được bất cứ lúc nào.
                                 </Label>
                             </div>
+                            {privacy && (
+                                <p className="text-sm text-muted-foreground">
+                                    Cửa hàng lưu gì về bạn và dùng vào việc gì:{' '}
+                                    <TextLink href="/privacy">
+                                        Chính sách quyền riêng tư
+                                    </TextLink>
+                                    .
+                                </p>
+                            )}
 
                             <Button
                                 type="submit"

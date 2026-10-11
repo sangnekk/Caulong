@@ -21,6 +21,7 @@ class LocalAccounts
      */
     public const ACCOUNTS = [
         ['email' => 'admin@test.local', 'name' => 'Quản trị Thử nghiệm', 'staff' => 'admin', 'role' => 'Quản trị'],
+        ['email' => 'nhanvien@test.local', 'name' => 'Nhân viên Thử nghiệm', 'staff' => 'staff', 'role' => 'Nhân viên bán hàng'],
         ['email' => 'hotro@test.local', 'name' => 'Hỗ trợ Thử nghiệm', 'staff' => 'support', 'role' => 'Nhân viên hỗ trợ'],
         ['email' => 'khach@test.local', 'name' => 'Khách Thử nghiệm', 'staff' => null, 'role' => 'Khách hàng'],
     ];

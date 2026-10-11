@@ -18,6 +18,7 @@ import {
     Store,
     Tags,
     TicketPercent,
+    UserCog,
     UserRound,
     Users,
     Wrench,
@@ -49,7 +50,10 @@ const workNav = [
     { href: '/admin/reviews', label: 'Đánh giá', icon: Star },
     { href: '/admin/emails', label: 'Email đã gửi', icon: Mail },
     { href: '/admin/settings', label: 'Cài đặt', icon: Settings },
+    { href: '/admin/staff', label: 'Nhân viên', icon: UserCog },
 ];
+// The owner's alone: the shop's figures, its settings and who its staff are.
+const ownerNav = ['/admin/reports', '/admin/settings', '/admin/staff'];
 
 const initials = (name: string) =>
     name
@@ -69,12 +73,16 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     const pendingSupportChats = props.shop?.pending_support_chats ?? 0;
     const pendingReviews = props.shop?.pending_reviews ?? 0;
     const pendingServices = props.shop?.pending_service_orders ?? 0;
-    // Support staff answer customers and nothing else: Laravel refuses them the other pages,
-    // so the menu does not offer them.
-    const support = props.shop?.staff_role === 'support';
+    // Laravel refuses each role the pages that are not its own, so the menu does not offer
+    // them: support staff answer customers and nothing else; staff do the daily work without
+    // the owner's pages; admins see everything.
+    const role = props.shop?.staff_role;
+    const support = role === 'support';
     const nav = support
         ? workNav.filter(({ href }) => href === '/admin/support-chat')
-        : workNav;
+        : role === 'staff'
+          ? workNav.filter(({ href }) => !ownerNav.includes(href))
+          : workNav;
     const [menuOpen, setMenuOpen] = useState(false);
     const [signingOut, setSigningOut] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);

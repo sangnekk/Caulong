@@ -46,10 +46,13 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     use HasFactory, Notifiable, PasskeyAuthenticatable, TwoFactorAuthenticatable;
 
     /**
-     * What staff may do. "admin" runs the whole shop; "support" only answers customers in the
-     * support chat. Checked through the "manage-shop" gate (AppServiceProvider), never in pages.
+     * What staff may do, from most to least. "admin" owns the shop: everything, including its
+     * settings, its figures and who its staff are. "staff" does the daily work: orders,
+     * goods, customers, coupons, stringing and the support chat. "support" only answers
+     * customers in the support chat. Checked through the gates in AppServiceProvider
+     * ("administer-shop", "manage-shop"), never in pages.
      */
-    public const ROLES = ['admin', 'support'];
+    public const ROLES = ['admin', 'staff', 'support'];
 
     /**
      * The role of a staff account, null for a customer. Staff without a role written down
@@ -63,7 +66,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             return null;
         }
 
-        return $this->role === 'support' ? 'support' : 'admin';
+        return in_array($this->role, self::ROLES, true) ? $this->role : 'admin';
     }
 
     /**

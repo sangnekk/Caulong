@@ -17,6 +17,7 @@ import {
     navigationPreservesState,
     pageRendered,
 } from './router';
+import { ignoreCutShortTransitions } from './transition';
 import type { Page } from './types';
 
 const PageContext = createContext<Page | null>(null);
@@ -61,6 +62,7 @@ export function PageRoot({
         if (!navigationPreservesState()) setKey((value) => value + 1);
     }
     useEffect(() => pageRendered(page), [page]);
+    useEffect(ignoreCutShortTransitions, []);
 
     const dynamic = useSyncExternalStore(
         layoutProps.subscribe,

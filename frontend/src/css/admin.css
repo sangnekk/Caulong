@@ -1886,6 +1886,15 @@
     margin: 0;
     font-weight: 600;
 }
+/* A member of staff's role in the staff list: the choice and its button on one line. */
+.admin-staff-role {
+    flex-wrap: nowrap;
+    align-items: center;
+    margin: 0;
+}
+.admin-staff-role select {
+    min-width: 11rem;
+}
 /* The saved bank account as a QR code the owner scans to check it (settings). */
 .admin-bank-check {
     display: flex;

@@ -61,6 +61,8 @@ class HandleInertiaRequests extends Middleware
                 'free_shipping_from' => app(ShopSettings::class)->freeShippingThreshold(),
                 // Whether the shop takes stringing requests online: the header links to it then.
                 'stringing' => app(ShopSettings::class)->stringing()['enabled'],
+                // Whether the privacy policy is on the site: the footer and the consent texts link to it then.
+                'privacy' => app(ShopSettings::class)->privacyPublished(),
                 'is_admin' => (bool) $request->user()?->is_admin,
                 // What a staff account may open: "admin" the whole of /admin, "support" its inbox only.
                 'staff_role' => $request->user()?->staffRole(),

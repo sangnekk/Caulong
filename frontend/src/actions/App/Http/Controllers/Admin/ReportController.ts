@@ -1,7 +1,7 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../../../../wayfinder'
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 const ReportController = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -16,7 +16,7 @@ ReportController.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 ReportController.url = (options?: RouteQueryOptions) => {
@@ -25,7 +25,7 @@ ReportController.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 ReportController.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -34,7 +34,7 @@ ReportController.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => 
 })
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 ReportController.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -44,7 +44,7 @@ ReportController.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =
 
     /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
     const ReportControllerForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -54,7 +54,7 @@ ReportController.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =
 
             /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
         ReportControllerForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -63,7 +63,7 @@ ReportController.head = (options?: RouteQueryOptions): RouteDefinition<'head'> =
         })
             /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
         ReportControllerForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({

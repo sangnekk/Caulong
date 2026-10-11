@@ -1,8 +1,9 @@
 import { queryParams, type RouteQueryOptions, type RouteDefinition, type RouteFormDefinition } from './../../wayfinder'
 import supportChat from './support-chat'
 import settings from './settings'
-import products from './products'
 import orders from './orders'
+import staff from './staff'
+import products from './products'
 import taxonomies from './taxonomies'
 import customers from './customers'
 import coupons from './coupons'
@@ -15,7 +16,7 @@ import serviceOrders from './service-orders'
 import serviceStrings from './service-strings'
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
 export const dashboard = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -30,7 +31,7 @@ dashboard.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
 dashboard.url = (options?: RouteQueryOptions) => {
@@ -39,7 +40,7 @@ dashboard.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
 dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -48,7 +49,7 @@ dashboard.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
 dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -58,7 +59,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
     const dashboardForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -68,7 +69,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
         dashboardForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -77,7 +78,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Admin\DashboardController::__invoke
- * @see app/Http/Controllers/Admin/DashboardController.php:23
+ * @see app/Http/Controllers/Admin/DashboardController.php:24
  * @route '/admin'
  */
         dashboardForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -93,7 +94,7 @@ dashboard.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
     dashboard.form = dashboardForm
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 export const reports = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -108,7 +109,7 @@ reports.definition = {
 
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 reports.url = (options?: RouteQueryOptions) => {
@@ -117,7 +118,7 @@ reports.url = (options?: RouteQueryOptions) => {
 
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 reports.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
@@ -126,7 +127,7 @@ reports.get = (options?: RouteQueryOptions): RouteDefinition<'get'> => ({
 })
 /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
 reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
@@ -136,7 +137,7 @@ reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
     /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
     const reportsForm = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -146,7 +147,7 @@ reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
 
             /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
         reportsForm.get = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -155,7 +156,7 @@ reports.head = (options?: RouteQueryOptions): RouteDefinition<'head'> => ({
         })
             /**
 * @see \App\Http\Controllers\Admin\ReportController::__invoke
- * @see app/Http/Controllers/Admin/ReportController.php:33
+ * @see app/Http/Controllers/Admin/ReportController.php:34
  * @route '/admin/reports'
  */
         reportsForm.head = (options?: RouteQueryOptions): RouteFormDefinition<'get'> => ({
@@ -174,8 +175,9 @@ const admin = {
 supportChat: Object.assign(supportChat, supportChat),
 reports: Object.assign(reports, reports),
 settings: Object.assign(settings, settings),
-products: Object.assign(products, products),
 orders: Object.assign(orders, orders),
+staff: Object.assign(staff, staff),
+products: Object.assign(products, products),
 taxonomies: Object.assign(taxonomies, taxonomies),
 customers: Object.assign(customers, customers),
 coupons: Object.assign(coupons, coupons),

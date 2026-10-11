@@ -259,6 +259,62 @@
 .store-unsubscribe {
     max-width: 38rem;
 }
+/* The privacy policy: one readable column of short sections. */
+.store-policy,
+.store-policy-draft {
+    max-width: 46rem;
+}
+.store-policy-draft {
+    margin: 0 0 1.5rem;
+}
+.store-policy-lead {
+    margin: 0;
+    font-size: 1.05rem;
+}
+.store-policy section {
+    margin-top: 2.25rem;
+}
+.store-policy h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1.2rem;
+    font-weight: 650;
+}
+.store-policy section p {
+    margin: 0 0 0.75rem;
+}
+.store-policy ul {
+    margin: 0;
+    padding-left: 1.2rem;
+    list-style: disc;
+}
+.store-policy li + li {
+    margin-top: 0.45rem;
+}
+.store-policy dl {
+    margin: 0;
+    border-top: 1px solid var(--line);
+}
+.store-policy dl > div {
+    display: grid;
+    grid-template-columns: 13rem minmax(0, 1fr);
+    gap: 0.25rem 1.5rem;
+    padding: 0.8rem 0;
+    border-bottom: 1px solid var(--line);
+}
+.store-policy dt {
+    font-weight: 600;
+}
+.store-policy dd {
+    margin: 0;
+}
+.store-policy dl + p {
+    margin-top: 0.9rem;
+}
+.store-policy a,
+.store-policy-draft a {
+    color: var(--accent);
+    font-weight: 600;
+}
 .store-coupons {
     list-style: none;
     margin: 0 0 0.6rem;
@@ -644,6 +700,22 @@
 .store-button-secondary {
     background: #fff;
     color: var(--accent) !important;
+}
+/* The one button that destroys something: red, so it is not pressed for another. */
+.store-button-danger {
+    border-color: oklch(0.5 0.18 25);
+    background: oklch(0.5 0.18 25);
+}
+.store-button-danger:hover:not(:disabled) {
+    background: oklch(0.42 0.16 25);
+}
+.store-account-delete-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+.store-account-card .store-account-delete-note {
+    margin: 0 0 0.9rem;
 }
 .store-full {
     width: 100%;
@@ -1811,6 +1883,8 @@
     margin: 0.5rem 0;
 }
 .store-footer-about > a {
+    display: inline-block;
+    margin-right: 1.25rem;
     color: var(--accent-dark);
     font-weight: 600;
 }
@@ -2384,6 +2458,14 @@
     }
     .store-page-heading .store-pill-link {
         margin-top: 1rem;
+    }
+    .store-policy dl > div {
+        grid-template-columns: 1fr;
+    }
+    /* One link to a line: side by side, the second runs under the chat button. */
+    .store-footer-about > a {
+        display: block;
+        margin: 0.4rem 0 0;
     }
     /* Phones: search and a "Bộ lọc" button; the selects open below it on demand. */
     .storefront .store-filter-toggle {

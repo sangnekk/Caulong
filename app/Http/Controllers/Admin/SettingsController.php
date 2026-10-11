@@ -7,6 +7,7 @@ use App\Services\CustomerSegmentation;
 use App\Services\MarketingAutomation;
 use App\Services\ShopSettings;
 use App\Support\VietQr;
+use Closure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -69,6 +70,13 @@ class SettingsController extends Controller
             // As the bank prints it: digits, or the letters and digits of an account alias.
             'bank_account_number' => ['sometimes', 'nullable', 'required_if_accepted:bank_transfer_enabled', 'string', 'regex:/^[0-9A-Za-z]{4,19}$/'],
             'bank_account_name' => ['sometimes', 'nullable', 'required_if_accepted:bank_transfer_enabled', 'string', 'max:60', 'regex:/^[\pL\pN .,&\-]+$/u'],
+            // The privacy policy page: a draft for admins until the owner puts it on the site.
+            // It sends customers to the shop with questions about their data: it needs a way to reach it.
+            'privacy_published' => ['sometimes', 'required', 'boolean', function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+                if (filter_var($value, FILTER_VALIDATE_BOOL) && blank($request->input('hotline')) && blank($request->input('contact_email'))) {
+                    $fail('Nhập hotline hoặc email liên hệ trước khi công bố chính sách quyền riêng tư: trang đó hướng khách tới đây khi họ hỏi về dữ liệu của mình.');
+                }
+            }],
         ], [
             'shipping_fee.*' => 'Phí giao hàng phải là số tiền từ 0 đến 5.000.000 ₫.',
             'free_shipping_threshold.*' => 'Mức miễn phí giao hàng phải là số tiền hợp lệ.',
@@ -109,7 +117,7 @@ class SettingsController extends Controller
             ...array_map('intval', array_filter(
                 $data,
                 fn (string $key) => str_starts_with($key, 'segment_') || str_starts_with($key, 'marketing_') || str_starts_with($key, 'stringing_')
-                    || str_starts_with($key, 'bank_transfer_'),
+                    || str_starts_with($key, 'bank_transfer_') || $key === 'privacy_published',
                 ARRAY_FILTER_USE_KEY,
             )),
             ...array_map(

@@ -38,6 +38,8 @@ type Settings = {
     bank_bin: string;
     bank_account_number: string;
     bank_account_name: string;
+    /** The privacy policy page is on the site; off, it is a draft admins can read. */
+    privacy_published: boolean;
 };
 type NumberSetting = {
     [Key in keyof Settings]: Settings[Key] extends number ? Key : never;
@@ -753,6 +755,51 @@ export default function ShopSettings({
                                 </p>
                             </div>
                         </div>
+                    )}
+                </section>
+
+                <section
+                    className="admin-form-section"
+                    aria-labelledby="privacy-title"
+                >
+                    <h2 id="privacy-title">Chính sách quyền riêng tư</h2>
+                    <p className="admin-lead">
+                        Trang nói với khách cửa hàng lưu gì về họ, dùng vào việc
+                        gì và giữ trong bao lâu, viết theo đúng những gì hệ
+                        thống đang làm. Trang nói nhân danh cửa hàng, nên hãy{' '}
+                        <a href="/privacy" target="_blank" rel="noreferrer">
+                            đọc bản nháp
+                        </a>{' '}
+                        trước khi công bố. Chưa công bố thì chỉ quản trị viên mở
+                        được; đã công bố thì chân trang, lời hỏi đồng ý ghi lại
+                        cách dùng trang và form đăng ký dẫn tới trang này.
+                    </p>
+                    <label className="admin-check">
+                        <input
+                            type="checkbox"
+                            checked={data.privacy_published}
+                            onChange={(e) =>
+                                form.setData(
+                                    'privacy_published',
+                                    e.target.checked,
+                                )
+                            }
+                            aria-describedby={
+                                form.errors.privacy_published
+                                    ? 'privacy_published-error'
+                                    : undefined
+                            }
+                        />
+                        Công bố chính sách quyền riêng tư
+                    </label>
+                    {form.errors.privacy_published && (
+                        <p
+                            id="privacy_published-error"
+                            className="admin-error"
+                            role="alert"
+                        >
+                            {form.errors.privacy_published}
+                        </p>
                     )}
                 </section>
 

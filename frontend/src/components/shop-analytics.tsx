@@ -9,7 +9,7 @@ import {
     stopClarity,
     useChoice,
 } from '@/lib/analytics';
-import { usePage } from '@/lib/page';
+import { Link, usePage } from '@/lib/page';
 import type { ShopSharedProps } from '@/types/commerce';
 
 /**
@@ -18,7 +18,8 @@ import type { ShopSharedProps } from '@/types/commerce';
  * (the landing) honours an earlier answer without putting the question on screen.
  */
 export default function ShopAnalytics({ ask = true }: { ask?: boolean }) {
-    const staff = !!usePage<ShopSharedProps>().props.shop?.is_admin;
+    const shop = usePage<ShopSharedProps>().props.shop;
+    const staff = !!shop?.is_admin;
     const choice = useChoice();
     useEffect(() => {
         // Not known yet while the page hydrates.
@@ -35,6 +36,12 @@ export default function ShopAnalytics({ ask = true }: { ask?: boolean }) {
                 Microsoft Clarity ghi lại cách bạn dùng cửa hàng: trang đã xem,
                 chỗ bấm, cuộn. Những gì bạn nhập (tên, địa chỉ, mật khẩu, tin
                 nhắn) không được ghi lại.
+                {shop?.privacy && (
+                    <>
+                        {' '}
+                        <Link href="/privacy">Chính sách quyền riêng tư</Link>
+                    </>
+                )}
             </p>
             <div>
                 <button

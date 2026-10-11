@@ -18,7 +18,7 @@ class LocalAccountsTest extends TestCase
 
         $this->get(route('login'))->assertOk()->assertInertia(fn (Assert $page) => $page
             ->component('auth/login')
-            ->has('localAccounts', 3)
+            ->has('localAccounts', 4)
             ->where('localAccounts.0.email', 'admin@test.local')
             ->where('localAccounts.0.password', LocalAccounts::PASSWORD));
 
@@ -26,9 +26,9 @@ class LocalAccountsTest extends TestCase
         $this->assertTrue($admin->is_admin);
         $this->assertTrue($admin->hasVerifiedEmail());
         $this->assertFalse(User::where('email', 'khach@test.local')->firstOrFail()->is_admin);
-        // One account for each kind of person who signs in: owner, support staff, customer.
+        // One account for each kind of person who signs in: owner, sales staff, support staff, customer.
         $this->assertSame(
-            ['admin@test.local' => 'admin', 'hotro@test.local' => 'support', 'khach@test.local' => null],
+            ['admin@test.local' => 'admin', 'nhanvien@test.local' => 'staff', 'hotro@test.local' => 'support', 'khach@test.local' => null],
             User::all()->mapWithKeys(fn (User $user) => [$user->email => $user->staffRole()])->all(),
         );
 
@@ -37,6 +37,9 @@ class LocalAccountsTest extends TestCase
         $this->get(route('login'));
         $this->app['env'] = 'testing'; // CSRF is only skipped in the testing environment.
         $this->post(route('login.store'), ['email' => 'admin@test.local', 'password' => LocalAccounts::PASSWORD])
+            ->assertRedirect(route('admin.dashboard'));
+        $this->post(route('logout'));
+        $this->post(route('login.store'), ['email' => 'nhanvien@test.local', 'password' => LocalAccounts::PASSWORD])
             ->assertRedirect(route('admin.dashboard'));
         $this->post(route('logout'));
         $this->post(route('login.store'), ['email' => 'hotro@test.local', 'password' => LocalAccounts::PASSWORD])
