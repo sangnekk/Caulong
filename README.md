@@ -2,6 +2,41 @@
 
 Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng với giỏ và đặt hàng trả tiền khi nhận (COD) hoặc chuyển khoản ngân hàng, tài khoản khách và trang quản trị. Dữ liệu và nghiệp vụ do Laravel 13 xử lý; giao diện là một app Next.js 16.
 
+## Trạng thái và việc còn lại
+
+Rà soát ngày **2026-10-12**. **Phase 1–10 đã triển khai trong mã nguồn**, không đồng nghĩa đã sẵn sàng nhận đơn thật. Local tiếp tục dùng **SQLite theo lựa chọn của chủ project**; Phase 0.7 (chuyển MySQL) tạm hoãn, không cần làm để chạy local. Chi tiết từng phase: [PROJECT_UPGRADE_PLAN.md](PROJECT_UPGRADE_PLAN.md#implementation-phases).
+
+### Đã có, còn cấu hình hoặc kiểm thử thực tế
+
+| Hạng mục                  | Việc còn lại                                                                                                                                                                                                            |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email Resend              | Cấp API key, xác minh domain gửi, thử nhận email thật và liên kết xác minh/đặt lại mật khẩu. Local đang dùng `MAIL_MAILER=log`; test API giả không chứng minh thư đã tới hộp thư.                                       |
+| Email tự động             | Bốn automation hiện tắt. Sau khi kiểm tra cấu hình và sự đồng ý của khách, chủ shop mới bật từng loại ở `/admin/settings`; máy chủ cần cả queue worker và scheduler.                                                    |
+| Chuyển khoản              | Nhập tài khoản ngân hàng ở `/admin/settings`, quét VietQR bằng ứng dụng ngân hàng và chuyển thử một khoản nhỏ, rồi mới bật. Đã kiểm tra chuỗi và giải mã QR, chưa quét bằng tài khoản thật.                             |
+| Đan dây                   | Nhập dây và giá ở `/admin/service-strings`, đặt phí công ở `/admin/settings`. Local chưa có dây; phí công mặc định 0 nghĩa là báo giá khi nhận vợt.                                                                     |
+| Chính sách quyền riêng tư | Chủ shop kiểm tra bản nháp `/privacy`, thông tin liên hệ và cách vận hành thực tế rồi mới công bố ở Cài đặt. Bản nháp mô tả hệ thống, không thay thế tư vấn pháp lý.                                                    |
+| Clarity (tùy chọn)        | Có mã hỏi sự đồng ý, nhưng chưa thử trên project thật. Cần project ID, build lại, kiểm tra trên dashboard việc đồng ý/từ chối/dừng ghi; công bố chính sách trước khi bật.                                               |
+| SEO                       | Có metadata, JSON-LD, sitemap và robots. Cần tên miền HTTPS, địa chỉ canonical đúng, kiểm tra Google Rich Results Test và Search Console; local không cho lập chỉ mục.                                                  |
+| Catalog                   | Local có 2.586 vợt nhập từ VNB; 239 vợt có ảnh phụ, 229 SKU có giá niêm yết. Chưa chạy lượt `--upgrade` cho phần còn lại; đây là lượt tải lớn, chỉ chạy khi được đồng ý. Giá và tồn kho bán thật phải do shop xác nhận. |
+| Triển khai                | Chưa xác nhận trên máy chủ production: HTTPS, reverse proxy, `TRUST_PROXY`, worker/scheduler thường trực, sao lưu và phục hồi dữ liệu, tài khoản nhân viên bật 2FA. Xem [Đưa lên máy chủ](#đưa-lên-máy-chủ).            |
+| MySQL (tạm hoãn)          | Có migration và lệnh nhập dữ liệu, chưa chạy trên MySQL thật. Chỉ xem lại khi cần chuyển môi trường; giữ SQLite cho local.                                                                                              |
+
+### Chưa triển khai — chỉ bổ sung khi có nhu cầu
+
+- **Đối soát ngân hàng tự động/webhook:** nhân viên vẫn xác nhận tiền và ghi nhận hoàn tiền bằng tay.
+- **Kết nối hãng vận chuyển:** chưa tự tạo vận đơn hay đồng bộ trạng thái giao hàng.
+- **Trả hàng sau khi giao, hoàn một phần, hoàn tiền COD:** chưa có quy trình; hoàn chuyển khoản hiện chỉ cho đơn chưa giao đi.
+- **Lịch đan dây theo khung giờ/công suất, tồn kho dây:** thời điểm khách chọn chỉ là đề nghị; cửa hàng hẹn lại. Dây dịch vụ chưa được quản lý số lượng hay bán lẻ qua giỏ.
+- **Chat đẩy thời gian thực, giao ticket thẳng cho người khác, đo thời gian phản hồi:** hiện dùng polling; trả ticket về hộp thư để người khác tự nhận.
+- **Công cụ xử lý yêu cầu xóa thông tin trên đơn/yêu cầu đan dây:** xóa tài khoản không xóa thông tin đã lưu trên chứng từ; cần quy trình xử lý riêng.
+
+### Giới hạn đã xác nhận
+
+- Local có **572 đơn mẫu, chưa có đơn thật**. Không dùng đơn mẫu để chứng minh doanh thu, bán chạy hay gợi ý mua cùng của cửa hàng thật.
+- Dữ liệu demo cũ có **12 nhóm SKU trùng khi bỏ qua hoa/thường**. Form sản phẩm chặn lưu bằng lỗi “Không được lặp mã hoặc biến thể”. Chưa dọn dữ liệu này; không tự xóa vì đơn mẫu còn tham chiếu SKU.
+- Build Next.js thành công nhưng còn cảnh báo phát hiện nhiều lockfile và suy luận workspace root. Không phải lỗi build; chưa chỉnh cấu hình để bỏ cảnh báo.
+- SQLite phù hợp để chạy local; chưa kiểm chứng khả năng chịu tải khi web và queue cùng ghi. Trước mở bán cần kiểm thử môi trường thật, không suy ra từ test bộ nhớ.
+
 ## Có gì
 
 - **Trang giới thiệu:** vợt Hyper Core8000 bằng Three.js, sáu chương xoay và phóng theo cuộn, màn mở đầu “căng dây” chạy theo tiến độ tải mô hình thật, bản đọc tĩnh cho máy yếu hoặc khi tắt chuyển động.
@@ -17,7 +52,7 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 - **Dịch vụ đan dây:** khách gửi yêu cầu ở `/services` (vợt, dây của cửa hàng hoặc dây tự mang, mức căng, lúc định mang vợt tới), không cần tài khoản và không trả tiền online. Cửa hàng xử lý ở `/admin/service-orders`: hẹn, nhận vợt, đan, báo khách tới lấy, thu tiền tại quầy. Danh sách dây và giá do chủ shop nhập; phí công đan và công tắc nhận yêu cầu ở Cài đặt.
 - **Ba vai trò nhân viên:** quản trị viên dùng toàn bộ `/admin`; nhân viên bán hàng làm việc hằng ngày (đơn, kho, khách hàng, chat) nhưng không mở được Cài đặt, Báo cáo, xuất CSV và không thấy số tiền ở Tổng quan; nhân viên hỗ trợ chỉ vào được Chat hỗ trợ. Quản trị viên cấp, đổi và gỡ vai trò ở `/admin/staff`, sau khi nhập lại mật khẩu.
 - **Chính sách quyền riêng tư:** trang `/privacy` nói cửa hàng ghi lại gì về khách, dùng vào việc gì, giữ bao lâu và khách làm được gì, viết theo đúng những gì hệ thống đang làm. Nó là bản nháp chỉ quản trị viên mở được, cho tới khi chủ shop đọc và bật “Công bố chính sách quyền riêng tư” ở Cài đặt.
-- **Nhập hàng:** từ CSV hoặc Excel kèm ZIP ảnh, có xem trước và khớp theo SKU; đồng bộ danh mục vợt từ shopvnb.com (đã được cho phép) bằng `scripts/vnb-catalog.mjs`.
+- **Nhập hàng:** từ CSV UTF-8 kèm ZIP ảnh, có xem trước và khớp theo SKU; file Excel phải lưu thành CSV trước, chưa nhận trực tiếp `.xlsx`/`.xls`. Đồng bộ danh mục vợt từ shopvnb.com (đã được cho phép) bằng `scripts/vnb-catalog.mjs`.
 - **Chưa có:** cổng thanh toán tự đối soát (tiền chuyển khoản do cửa hàng tự kiểm tra và xác nhận), kết nối hãng vận chuyển.
 
 ## Hai phần của project
@@ -29,13 +64,13 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 
 Trình duyệt chỉ mở địa chỉ của Next.js. Với mỗi trang, Next.js hỏi Laravel đúng đường dẫn đó và nhận về tên trang kèm dữ liệu; form, giỏ hàng và đăng nhập gửi qua `/api/...` của Next.js rồi mới tới Laravel. Vì vậy controller ở Laravel vẫn viết như thường (`Inertia::render('shop/products', [...])`), còn phần hiển thị nằm ở `frontend/src/views`. Mở thẳng cổng 8000 chỉ thấy một dòng chỉ sang địa chỉ giao diện. Chi tiết: [frontend/README.md](frontend/README.md).
 
-Database mặc định là SQLite (`database/database.sqlite`); có thể chuyển sang MySQL, xem bên dưới.
+Database local là SQLite (`database/database.sqlite`); session, cache và queue cũng dùng database, không cần Redis. Giữ SQLite cho local; hướng dẫn MySQL bên dưới chỉ dùng khi có nhu cầu chuyển.
 
 ## Chạy local
 
-Cần PHP 8.3 trở lên (khuyến nghị 8.4) có `pdo_sqlite`, `mbstring`, `fileinfo`, `curl`, `zip`, `intl`, `gd`; Composer; Node.js 22.
+Cần PHP 8.3 trở lên (khuyến nghị 8.4) có `pdo_sqlite`, `mbstring`, `fileinfo`, `curl`, `zip`, `intl`, `gd`; Node.js 22. Composer cần khi cài mới hoặc cập nhật dependency PHP. Máy local hiện chưa có Composer, nhưng đã có `vendor/` nên vẫn chạy được các lệnh PHP dưới đây; không cần cài MySQL/Redis.
 
-Cài lần đầu:
+Cài lần đầu trên máy có Composer (không chạy lại hoặc ghi đè `.env` của checkout đã cấu hình):
 
 ```sh
 composer install
@@ -55,9 +90,9 @@ Chạy:
 php artisan dev
 ```
 
-Lệnh này mở Laravel ở cổng 8000, hàng đợi và Next.js ở cổng 3000 trong cùng một cửa sổ. Mở **http://localhost:3000**. Cửa hàng ở `/products`, gợi ý chọn vợt ở `/advisor`, quản trị ở `/admin`.
+Lệnh này mở Laravel ở cổng 8000, hàng đợi và Next.js ở cổng 3000 trong cùng một cửa sổ. Mở **http://localhost:3000**. Cửa hàng ở `/products`, gợi ý chọn vợt ở `/advisor`, quản trị ở `/admin`. **Scheduler chạy riêng:** mở terminal khác và chạy `php artisan schedule:work` nếu cần xếp nhóm, hủy đơn quá hạn, dọn dữ liệu hoặc automation.
 
-Muốn chạy riêng từng phần thì dùng `php artisan serve` và `npm run dev`; thêm `php artisan queue:work` để gửi email và `php artisan schedule:work` để chạy automation. Trên Windows có sẵn `scripts/start-local.ps1`, kiểm tra `.env`, các gói đã cài và hai cổng rồi mới chạy:
+Muốn chạy riêng từng phần thì dùng `php artisan serve` và `npm run dev`; thêm `php artisan queue:work` để gửi email và `php artisan schedule:work` cho các việc định kỳ. Trên Windows có sẵn `scripts/start-local.ps1`, kiểm tra `.env`, các gói đã cài và hai cổng rồi mới chạy:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1
@@ -96,12 +131,25 @@ Sau khi thêm hoặc đổi route ở Laravel, chạy `npm run routes` để gia
 
 ## Kiểm tra
 
+Chạy từ thư mục gốc. Kết quả kiểm tra ngày **2026-10-12**:
+
+| Kiểm tra                                                                      | Kết quả                                                                                                |
+| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Laravel/PHPUnit                                                               | **282/282 test đạt**, 4.788 assertions; database SQLite trong bộ nhớ, không phải MySQL.                |
+| PHPStan, Pint                                                                 | Đạt.                                                                                                   |
+| `npm run check`, `npm run types:check`                                        | Đạt.                                                                                                   |
+| `npm run build`                                                               | Đạt; còn cảnh báo workspace root/lockfile đã ghi ở trên.                                               |
+| Tool VNB và ba bài kiểm tra mô hình/dây vợt bên dưới                          | Đạt; không tải dữ liệu VNB mới.                                                                        |
+| Kiểm tra trình duyệt end-to-end                                               | Chưa chạy lại trong lần rà soát này; xem kết quả các phase trước trong kế hoạch.                       |
+| Resend thật, Clarity thật, quét QR bằng ngân hàng, Google Rich Results, MySQL | Chưa kiểm chứng thực tế; không được coi kết quả test local là bằng chứng đã hoạt động trên production. |
+
 ```sh
 npm run check
 npm run types:check
 php vendor/bin/pint --test
 php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
 php artisan test --compact
+npm run build
 node tests/vnb-catalog.mjs                 # tool đọc danh mục VNB, không cần mạng
 node frontend/tests/hyper-core-model.mjs   # mô hình 3D; cần file nguồn trong glb/
 node frontend/tests/racket-strings.mjs
@@ -115,7 +163,7 @@ node tests/commerce-browser.mjs
 node tests/landing-loader-browser.mjs
 ```
 
-Địa chỉ mặc định là `http://localhost:3000`; đổi bằng biến `LANDING_URL`. `commerce-browser` tạo một đơn hàng mẫu trong database đang dùng.
+Địa chỉ mặc định là `http://localhost:3000`; đổi bằng biến `LANDING_URL`. **`commerce-browser` tạo một đơn hàng mẫu trong database đang dùng**: chỉ chạy với database thử, sao lưu trước và dọn đúng dữ liệu thử sau khi kiểm tra; không chạy trên dữ liệu khách thật.
 
 ## Nhập hàng và dữ liệu VNB
 
@@ -130,7 +178,11 @@ php artisan shop:import-catalog hang.csv --images=thu-muc-anh            # nhậ
 
 ## Chuyển sang MySQL
 
-Để chuyển sang MySQL mà giữ nguyên dữ liệu:
+**Tạm hoãn theo lựa chọn giữ SQLite cho local.** Hướng dẫn này dành cho lần chuyển sau, chưa được kiểm thử trên MySQL thật.
+
+Trước khi chuyển, dừng nhận đơn và các tiến trình ghi dữ liệu, xử lý hết email đang chờ, sao lưu database SQLite và ảnh trong `storage/app/public`. Lệnh nhập không chép phiên, cache, queue hoặc job lỗi, nên email đang chờ sẽ không đi theo.
+
+Để chuyển sang MySQL mà giữ nguyên dữ liệu nghiệp vụ:
 
 1. Cài MySQL 8 và bật `extension=pdo_mysql` trong `php.ini`.
 2. Tạo database trống: `CREATE DATABASE caulong CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
@@ -142,7 +194,9 @@ php artisan migrate
 php artisan shop:import-sqlite        # chép mọi bảng từ database/database.sqlite, giữ nguyên id
 ```
 
-Lệnh chép chỉ chạy khi database mới còn trống và không chép phiên đăng nhập (mọi người đăng nhập lại). File SQLite không bị sửa: muốn quay lại thì đổi `DB_CONNECTION=sqlite`. Test luôn chạy trên SQLite trong bộ nhớ. Lệnh chép mới được thử từ SQLite sang SQLite, chưa chạy trên MySQL thật: sao lưu trước khi dùng với dữ liệu thật.
+Lệnh chép chỉ chạy khi các bảng nghiệp vụ ở database mới còn trống; mọi người phải đăng nhập lại. File SQLite nguồn không bị sửa. Muốn quay lại thì đổi `DB_CONNECTION=sqlite`, xóa hoặc sửa các biến `DB_DATABASE`/`DB_URL` của MySQL, trỏ tới đúng file SQLite rồi chạy `php artisan config:clear` và khởi động lại worker. **Đổi cấu hình không đồng bộ những đơn đã phát sinh trên MySQL về SQLite**; không dùng bản cũ để khôi phục sau khi đã mở nhận đơn mới nếu chưa có kế hoạch chuyển dữ liệu ngược.
+
+Test luôn chạy trên SQLite trong bộ nhớ. Lệnh chép mới được thử từ SQLite sang SQLite, chưa chạy trên MySQL thật. So sánh số dòng, giá/tồn kho và luồng đặt hàng trên database mới trước khi mở nhận đơn.
 
 ## Đưa lên máy chủ
 
