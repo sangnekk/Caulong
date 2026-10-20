@@ -55,7 +55,10 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 
             setQrCodeSvg(svg);
         } catch {
-            setErrors((prev) => [...prev, 'Failed to fetch QR code']);
+            setErrors((prev) => [
+                ...prev,
+                'Không tải được mã QR. Tải lại trang rồi thử lại.',
+            ]);
             setQrCodeSvg(null);
         }
     }, [submit]);
@@ -68,7 +71,10 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
 
             setManualSetupKey(key);
         } catch {
-            setErrors((prev) => [...prev, 'Failed to fetch a setup key']);
+            setErrors((prev) => [
+                ...prev,
+                'Không tải được khóa thiết lập. Tải lại trang rồi thử lại.',
+            ]);
             setManualSetupKey(null);
         }
     }, [submit]);
@@ -79,7 +85,10 @@ export const useTwoFactorAuth = (): UseTwoFactorAuthReturn => {
             const codes = (await submit(recoveryCodes())) as string[];
             setRecoveryCodesList(codes);
         } catch {
-            setErrors((prev) => [...prev, 'Failed to fetch recovery codes']);
+            setErrors((prev) => [
+                ...prev,
+                'Không tải được mã khôi phục. Tải lại trang rồi thử lại.',
+            ]);
             setRecoveryCodesList([]);
         }
     }, [submit]);

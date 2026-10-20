@@ -1,6 +1,6 @@
 'use client';
 
-import AuthLayoutTemplate from '@/layouts/auth/auth-simple-layout';
+import AuthLayoutTemplate from '@/layouts/auth/auth-court-layout';
 import { useNoRecording } from '@/lib/analytics';
 
 export default function AuthLayout({

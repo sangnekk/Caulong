@@ -23,14 +23,15 @@ export default function DeleteUser() {
         <div className="space-y-6">
             <Heading
                 variant="small"
-                title="Delete account"
-                description="Delete your account and all of its resources"
+                title="Xóa tài khoản"
+                description="Xóa hẳn tài khoản cùng lịch sử xem hàng, sản phẩm yêu thích, đánh giá, lịch sử hỗ trợ và mã giảm giá riêng."
             />
             <div className="space-y-4 rounded-lg border border-red-100 bg-red-50 p-4 dark:border-red-200/10 dark:bg-red-700/10">
                 <div className="relative space-y-0.5 text-red-600 dark:text-red-100">
-                    <p className="font-medium">Warning</p>
+                    <p className="font-medium">Không hoàn tác được</p>
                     <p className="text-sm">
-                        Please proceed with caution, this cannot be undone.
+                        Đơn hàng đã đặt vẫn được cửa hàng giữ làm chứng từ,
+                        không còn gắn với tài khoản.
                     </p>
                 </div>
 
@@ -40,18 +41,14 @@ export default function DeleteUser() {
                             variant="destructive"
                             data-test="delete-user-button"
                         >
-                            Delete account
+                            Xóa tài khoản…
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
-                        <DialogTitle>
-                            Are you sure you want to delete your account?
-                        </DialogTitle>
+                        <DialogTitle>Xóa tài khoản của bạn?</DialogTitle>
                         <DialogDescription>
-                            Once your account is deleted, all of its resources
-                            and data will also be permanently deleted. Please
-                            enter your password to confirm you would like to
-                            permanently delete your account.
+                            Tài khoản và dữ liệu gắn với nó bị xóa vĩnh viễn.
+                            Nhập mật khẩu để xác nhận.
                         </DialogDescription>
 
                         <Form
@@ -70,14 +67,14 @@ export default function DeleteUser() {
                                             htmlFor="password"
                                             className="sr-only"
                                         >
-                                            Password
+                                            Mật khẩu
                                         </Label>
 
                                         <PasswordInput
                                             id="password"
                                             name="password"
                                             ref={passwordInput}
-                                            placeholder="Password"
+                                            placeholder="Mật khẩu"
                                             autoComplete="current-password"
                                         />
 
@@ -92,7 +89,7 @@ export default function DeleteUser() {
                                                     resetAndClearErrors()
                                                 }
                                             >
-                                                Cancel
+                                                Hủy
                                             </Button>
                                         </DialogClose>
 
@@ -105,7 +102,7 @@ export default function DeleteUser() {
                                                 type="submit"
                                                 data-test="confirm-delete-user-button"
                                             >
-                                                Delete account
+                                                Xóa vĩnh viễn
                                             </button>
                                         </Button>
                                     </DialogFooter>

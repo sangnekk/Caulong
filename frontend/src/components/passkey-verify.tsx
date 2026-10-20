@@ -51,8 +51,8 @@ export default function PasskeyVerify({
                 >
                     {isLoading ? <Spinner /> : <KeyRound className="h-4 w-4" />}
                     {isLoading
-                        ? (loadingLabel ?? 'Authenticating...')
-                        : (label ?? 'Sign in with a passkey')}
+                        ? (loadingLabel ?? 'Đang xác thực…')
+                        : (label ?? 'Đăng nhập bằng passkey')}
                 </Button>
                 {/* Browser and package errors are English and technical; the way forward is the same. */}
                 {error && (
@@ -69,7 +69,7 @@ export default function PasskeyVerify({
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
                     <span className="bg-background px-2 text-muted-foreground">
-                        {separator ?? 'Or continue with email'}
+                        {separator ?? 'Hoặc tiếp tục bằng email'}
                     </span>
                 </div>
             </div>

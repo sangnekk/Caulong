@@ -56,12 +56,12 @@ export default function Login({
             {localAccounts.length > 0 && (
                 <section
                     aria-labelledby="local-accounts-title"
-                    className="mb-6 rounded-md border border-dashed border-amber-400 bg-amber-50 p-3 text-sm text-amber-950"
+                    className="auth-trial"
                 >
                     <h2 id="local-accounts-title" className="font-semibold">
                         Tài khoản dùng thử
                     </h2>
-                    <p className="mt-0.5 text-xs text-amber-900">
+                    <p className="mt-0.5 text-xs opacity-80">
                         Chỉ hiện khi chạy local (APP_ENV=local). Mật khẩu:{' '}
                         <code className="font-mono whitespace-nowrap">
                             {localAccounts[0].password}
@@ -194,6 +194,6 @@ export default function Login({
 }
 
 Login.layout = {
-    title: 'Đăng nhập vào tài khoản của bạn',
-    description: 'Nhập email và mật khẩu bên dưới để đăng nhập',
+    title: 'Đăng nhập',
+    description: 'Xem đơn hàng, yêu cầu đan dây và sản phẩm bạn đã lưu.',
 };

@@ -30,15 +30,15 @@ export default function Security(props: Props) {
 
     return (
         <>
-            <Head title="Security settings" />
+            <Head title="Bảo mật đăng nhập" />
 
-            <h1 className="sr-only">Security settings</h1>
+            <h1 className="sr-only">Bảo mật đăng nhập</h1>
 
             <div className="space-y-6">
                 <Heading
                     variant="small"
-                    title="Update password"
-                    description="Ensure your account is using a long, random password to stay secure"
+                    title="Đổi mật khẩu"
+                    description="Dùng mật khẩu dài, không trùng với trang web khác."
                 />
 
                 <Form
@@ -67,7 +67,7 @@ export default function Security(props: Props) {
                         <>
                             <div className="grid gap-2">
                                 <Label htmlFor="current_password">
-                                    Current password
+                                    Mật khẩu hiện tại
                                 </Label>
 
                                 <PasswordInput
@@ -76,14 +76,14 @@ export default function Security(props: Props) {
                                     name="current_password"
                                     className="mt-1 block w-full"
                                     autoComplete="current-password"
-                                    placeholder="Current password"
+                                    placeholder="Mật khẩu hiện tại"
                                 />
 
                                 <InputError message={errors.current_password} />
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="password">New password</Label>
+                                <Label htmlFor="password">Mật khẩu mới</Label>
 
                                 <PasswordInput
                                     id="password"
@@ -91,7 +91,7 @@ export default function Security(props: Props) {
                                     name="password"
                                     className="mt-1 block w-full"
                                     autoComplete="new-password"
-                                    placeholder="New password"
+                                    placeholder="Mật khẩu mới"
                                     passwordrules={props.passwordRules}
                                 />
 
@@ -100,7 +100,7 @@ export default function Security(props: Props) {
 
                             <div className="grid gap-2">
                                 <Label htmlFor="password_confirmation">
-                                    Confirm password
+                                    Nhập lại mật khẩu mới
                                 </Label>
 
                                 <PasswordInput
@@ -108,7 +108,7 @@ export default function Security(props: Props) {
                                     name="password_confirmation"
                                     className="mt-1 block w-full"
                                     autoComplete="new-password"
-                                    placeholder="Confirm password"
+                                    placeholder="Nhập lại mật khẩu mới"
                                     passwordrules={props.passwordRules}
                                 />
 
@@ -122,7 +122,7 @@ export default function Security(props: Props) {
                                     disabled={processing}
                                     data-test="update-password-button"
                                 >
-                                    Save
+                                    Đổi mật khẩu
                                 </Button>
                             </div>
                         </>
@@ -151,7 +151,7 @@ export default function Security(props: Props) {
 Security.layout = {
     breadcrumbs: [
         {
-            title: 'Security settings',
+            title: 'Bảo mật đăng nhập',
             href: edit(),
         },
     ],

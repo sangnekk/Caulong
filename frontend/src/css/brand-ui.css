@@ -1,0 +1,340 @@
+/* Screens built from the shared UI kit (sign-in, sign-up, password, two-factor and the account's
+   security settings) speak the store's language: Archivo, ink on paper, the court blue for the
+   one action that moves things forward. The kit's colour tokens are redefined here, scoped, so
+   every Button, Input and Checkbox inside follows without touching the components. */
+.brand-ui {
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.2 0.025 260);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.2 0.025 260);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.2 0.025 260);
+    --primary: oklch(0.42 0.16 260);
+    --primary-foreground: oklch(1 0 0);
+    --secondary: oklch(0.965 0.012 260);
+    --secondary-foreground: oklch(0.28 0.06 260);
+    --muted: oklch(0.975 0.008 260);
+    --muted-foreground: oklch(0.46 0.025 260);
+    --accent: oklch(0.96 0.025 260);
+    --accent-foreground: oklch(0.32 0.14 260);
+    --destructive: oklch(0.5 0.18 25);
+    --destructive-foreground: oklch(0.5 0.18 25);
+    --border: oklch(0.89 0.016 260);
+    --input: oklch(0.72 0.025 260);
+    --ring: oklch(0.62 0.14 260);
+    --radius: 0.55rem;
+    /* The kit reads these (Tailwind theme colours resolve at :root, so they are restated). */
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+    color: var(--foreground);
+    background: var(--background);
+    color-scheme: light;
+    font-family: 'Archivo', system-ui, sans-serif;
+}
+.brand-ui [data-slot='input'] {
+    height: 2.875rem;
+    padding-inline: 0.85rem;
+    background: #fff;
+    font-size: 1rem;
+    box-shadow: none;
+}
+.brand-ui [data-slot='input']::placeholder {
+    color: oklch(0.6 0.02 260);
+}
+.brand-ui [data-slot='input']:focus-visible {
+    border-color: var(--primary);
+}
+.brand-ui [data-slot='button'] {
+    min-height: 2.5rem;
+    font-weight: 600;
+    box-shadow: none;
+}
+.brand-ui [data-slot='button']:not([data-size]),
+.brand-ui button[type='submit'][data-slot='button'] {
+    min-height: 2.875rem;
+}
+.brand-ui [data-slot='button'][class*='bg-primary']:hover:not(:disabled) {
+    background: oklch(0.34 0.14 260);
+}
+.brand-ui :where([data-slot='label']) {
+    font-weight: 600;
+}
+.brand-ui [data-slot='checkbox'] {
+    width: 1.15rem;
+    height: 1.15rem;
+}
+.brand-ui a {
+    text-underline-offset: 0.2em;
+}
+
+/* ───── Sign-in, sign-up and the other account doors ───── */
+.auth-shell {
+    --hall: oklch(0.145 0.032 262);
+    --arena-far: oklch(0.13 0.03 262);
+    --arena-floor: oklch(0.2 0.055 262);
+    --court-line: oklch(0.97 0.012 250);
+    --lime: oklch(0.91 0.14 115);
+    display: grid;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    min-height: 100svh;
+}
+html:has(.auth-shell) {
+    background: #fff;
+}
+
+/* The lit court from the landing, standing in for a picture: same hall, same lines. */
+.auth-hall {
+    position: sticky;
+    top: 0;
+    height: 100svh;
+    overflow: hidden;
+    isolation: isolate;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 2.25rem 2.5rem;
+    color: #fff;
+    background: linear-gradient(
+        180deg,
+        oklch(0.11 0.025 262) 0%,
+        var(--arena-far) 42%,
+        var(--arena-floor) 100%
+    );
+}
+.auth-court {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+}
+.auth-court .court-mat {
+    fill: oklch(0.38 0.13 262);
+}
+.auth-court .court-lines {
+    fill: var(--court-line);
+    fill-opacity: 0.86;
+}
+.auth-court .court-shadow {
+    fill: oklch(0.1 0.03 262);
+    fill-opacity: 0.18;
+}
+.auth-court .court-net {
+    fill: oklch(0.08 0.02 262);
+    fill-opacity: 0.22;
+}
+.auth-court .court-mesh {
+    fill: none;
+    stroke: oklch(0.08 0.02 262);
+    stroke-opacity: 0.55;
+    stroke-width: 0.7px;
+    vector-effect: non-scaling-stroke;
+}
+.auth-court .court-tape {
+    fill: var(--court-line);
+}
+.auth-court .court-posts {
+    fill: oklch(0.82 0.02 262);
+}
+.auth-court .court-light {
+    mix-blend-mode: screen;
+}
+/* The words sit in the shade at the top and bottom; the light pools mid-court. */
+.auth-hall::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background:
+        linear-gradient(
+            180deg,
+            oklch(0.11 0.025 262 / 0.92) 0%,
+            oklch(0.11 0.025 262 / 0.35) 30%,
+            oklch(0.11 0.025 262 / 0) 52%,
+            oklch(0.11 0.025 262 / 0.2) 74%,
+            oklch(0.11 0.025 262 / 0.9) 100%
+        ),
+        radial-gradient(
+            ellipse 80% 55% at 50% 55%,
+            transparent 40%,
+            oklch(0.11 0.025 262 / 0.6) 100%
+        );
+}
+.auth-racket {
+    position: absolute;
+    z-index: -1;
+    right: 3%;
+    top: 13%;
+    width: 60%;
+    max-width: 28rem;
+    height: auto;
+    filter: drop-shadow(0 24px 30px oklch(0.08 0.03 262 / 0.55));
+    pointer-events: none;
+}
+.auth-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    width: fit-content;
+    color: #fff;
+    font-size: 1.1rem;
+    text-decoration: none;
+}
+.auth-brand svg {
+    color: var(--lime);
+}
+.auth-brand strong {
+    font-weight: 700;
+}
+.auth-hall-copy {
+    max-width: 24rem;
+}
+.auth-hall-copy p:first-child {
+    margin: 0 0 0.6rem;
+    color: var(--lime);
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+.auth-hall-copy h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 2.6vw, 2.35rem);
+    font-weight: 600;
+    font-stretch: 106%;
+    letter-spacing: -0.028em;
+    line-height: 1.08;
+    text-wrap: balance;
+}
+.auth-hall-copy ul {
+    display: grid;
+    gap: 0.45rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+    color: oklch(0.84 0.022 262);
+    font-size: 0.95rem;
+}
+.auth-hall-copy li {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+.auth-hall-copy li svg {
+    color: var(--lime);
+}
+
+.auth-panel {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: 1.5rem clamp(1.25rem, 5vw, 4rem) 2rem;
+}
+.auth-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 2.75rem;
+}
+.auth-top .auth-brand {
+    display: none;
+    color: oklch(0.32 0.14 260);
+}
+.auth-top .auth-brand svg {
+    color: currentColor;
+}
+.auth-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    margin-left: auto;
+    color: var(--muted-foreground);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+}
+.auth-back:hover {
+    color: var(--primary);
+}
+.auth-body {
+    flex: 1;
+    display: grid;
+    align-content: center;
+    width: 100%;
+    max-width: 26rem;
+    margin: 0 auto;
+    padding-block: 2rem 1rem;
+}
+.auth-heading {
+    margin-bottom: 1.75rem;
+}
+.auth-heading h1 {
+    margin: 0;
+    font-size: clamp(1.65rem, 3vw, 2.1rem);
+    font-weight: 600;
+    font-stretch: 104%;
+    letter-spacing: -0.028em;
+    line-height: 1.1;
+    text-wrap: balance;
+}
+.auth-heading p {
+    margin: 0.55rem 0 0;
+    color: var(--muted-foreground);
+    text-wrap: pretty;
+}
+.auth-foot {
+    max-width: 26rem;
+    width: 100%;
+    margin: 0 auto;
+    color: var(--muted-foreground);
+    font-size: 0.82rem;
+}
+
+/* The trial accounts on a local build: a quiet card, not an alarm. */
+.auth-trial {
+    margin-bottom: 1.5rem;
+    padding: 0.9rem 1rem;
+    border: 1px dashed oklch(0.78 0.09 85);
+    border-radius: var(--radius);
+    background: oklch(0.985 0.025 95);
+    color: oklch(0.3 0.05 80);
+    font-size: 0.875rem;
+}
+
+@media (max-width: 899px) {
+    .auth-shell {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .auth-hall {
+        display: none;
+    }
+    .auth-top .auth-brand {
+        display: inline-flex;
+    }
+    .auth-body {
+        align-content: start;
+        padding-top: 1.75rem;
+    }
+}

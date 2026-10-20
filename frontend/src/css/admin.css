@@ -829,6 +829,8 @@
 
 /* ───── Tables ───── */
 .admin-table-wrap {
+    /* Positioned, so visually hidden header text stays inside the scroller on a phone. */
+    position: relative;
     overflow-x: auto;
     background: var(--panel);
     border: 1px solid var(--line);
@@ -948,6 +950,7 @@
 .admin-pagination div,
 .admin-pagination ol {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.25rem;
     margin: 0;

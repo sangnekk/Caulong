@@ -680,6 +680,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.45rem;
     min-height: 2.75rem;
     border: 1px solid var(--accent);
     border-radius: 0.4rem;
@@ -2536,5 +2537,286 @@
         scroll-behavior: auto !important;
         transition: none !important;
         animation: none !important;
+    }
+}
+
+/* ───── Account settings (profile, security) inside the store ───── */
+.store-settings-tabs {
+    display: flex;
+    gap: 0.35rem;
+    margin: -0.5rem 0 2rem;
+    padding: 0.3rem;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    scrollbar-width: none;
+}
+.store-settings-tabs a {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    color: var(--muted);
+    font-size: 0.92rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition:
+        background-color 150ms ease-out,
+        color 150ms ease-out;
+}
+.store-settings-tabs a:hover {
+    color: var(--accent);
+}
+.store-settings-tabs a[aria-current='page'] {
+    background: #fff;
+    color: var(--accent-dark);
+    box-shadow:
+        0 1px 2px oklch(0.2 0.03 260 / 0.1),
+        0 0 0 1px var(--line);
+}
+.store-settings-body {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 46rem;
+    background: transparent;
+}
+/* Each block of the kit's settings (password, two-factor, passkeys, delete) as one card. */
+.store-settings-body > div,
+.store-settings-body > form {
+    padding: 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 0.9rem;
+    background: #fff;
+}
+.store-settings-body header h2 {
+    font-size: 1.15rem !important;
+    font-weight: 650 !important;
+    letter-spacing: -0.01em;
+}
+.store-settings-body header p {
+    margin-top: 0.25rem;
+}
+@media (max-width: 640px) {
+    .store-settings-tabs {
+        flex-wrap: wrap;
+        width: 100%;
+        overflow: visible;
+        border-radius: 0.9rem;
+    }
+    .store-settings-body > div,
+    .store-settings-body > form {
+        padding: 1.1rem;
+    }
+}
+
+/* ───── Refinements: type, summaries, controls, footer ─────
+   Tailwind's preflight resets headings to the body weight, which left the store's titles at
+   400. DESIGN.md asks for Archivo 600, a touch wide and tight: restored here at :where()
+   specificity, so a rule that sets its own weight still wins. */
+.storefront :where(h1, h2, h3, h4) {
+    font-weight: 600;
+    color: var(--ink);
+}
+.store-page-heading h1 {
+    font-stretch: 106%;
+    letter-spacing: -0.028em;
+    line-height: 1.04;
+}
+.store-page-heading {
+    align-items: end;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.75rem;
+    border-bottom: 1px solid var(--line);
+}
+.store-page-heading > a:not(.store-pill-link) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--accent);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.store-page-heading > a:not(.store-pill-link):hover {
+    text-decoration: underline;
+}
+/* Money summaries (cart, checkout, order, stringing): one card, evenly spaced. */
+.store-summary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.85rem;
+    padding: 1.35rem 1.35rem 1.25rem;
+    border: 1px solid var(--line);
+    border-top: 1px solid var(--line);
+    border-radius: 1rem;
+    background: var(--surface);
+    top: 1.25rem;
+}
+.store-summary > * {
+    margin-block: 0;
+}
+.store-summary h2 {
+    font-size: 1.15rem;
+}
+.store-summary .store-totals {
+    margin: 0;
+    padding: 0.25rem 0 0;
+}
+.store-summary .store-totals .store-total {
+    margin-top: 0.35rem;
+    font-size: 1.2rem;
+}
+.store-summary .store-hint {
+    font-size: 0.88rem;
+    line-height: 1.5;
+}
+.store-summary .store-button {
+    min-height: 3rem;
+    font-size: 1rem;
+    border-radius: 0.6rem;
+}
+.store-summary .store-notice,
+.store-summary .store-free-hint dd {
+    font-size: 0.88rem;
+}
+
+/* Buttons: a little more presence, the same court blue. */
+.store-button {
+    border-radius: 0.55rem;
+    font-weight: 600;
+    transition:
+        background-color 150ms ease-out,
+        border-color 150ms ease-out,
+        color 150ms ease-out,
+        scale 120ms ease-out;
+}
+.store-button:active:not(:disabled) {
+    scale: 0.985;
+}
+.store-button-secondary:hover:not(:disabled) {
+    background: oklch(0.97 0.02 260);
+    color: var(--accent-dark) !important;
+}
+.storefront :focus-visible {
+    outline: 3px solid oklch(0.7 0.14 260);
+    outline-offset: 2px;
+}
+
+/* Native ticks and radios in the court blue, large enough to hit. */
+.storefront input[type='checkbox']:not(.store-switch input),
+.storefront input[type='radio'] {
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0.15rem 0 0;
+    flex-shrink: 0;
+    accent-color: var(--accent);
+}
+.store-check {
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--line);
+    border-radius: 0.6rem;
+    background: var(--surface);
+    cursor: pointer;
+}
+.store-check:has(input:checked) {
+    border-color: oklch(0.78 0.08 260);
+    background: oklch(0.97 0.02 260);
+}
+.store-field input,
+.store-field select,
+.store-field textarea {
+    border-color: oklch(0.72 0.025 260);
+    border-radius: 0.5rem;
+    transition: border-color 150ms ease-out;
+}
+.store-field input:hover:not(:focus),
+.store-field select:hover:not(:focus),
+.store-field textarea:hover:not(:focus) {
+    border-color: oklch(0.55 0.05 260);
+}
+.store-field input::placeholder,
+.store-field textarea::placeholder {
+    color: oklch(0.62 0.02 260);
+}
+.store-checkout-fields legend {
+    font-size: 1.15rem;
+    font-weight: 600;
+}
+
+/* Product cards: price on its own line of weight, stock as a quiet tag. */
+.store-card-title {
+    font-weight: 600;
+    font-size: 1.02rem;
+    letter-spacing: -0.005em;
+}
+.store-product-price {
+    align-items: baseline;
+    margin-top: 0.55rem;
+}
+.store-card-price strong,
+.store-card-price > span:first-child {
+    font-size: 1rem;
+}
+.store-product-card .store-image {
+    border-radius: 0.8rem;
+}
+
+/* Filters: one quiet panel, labels muted. */
+.store-filters {
+    border-radius: 1rem;
+    padding: 1rem 1.15rem 1.1rem;
+}
+.store-filters .store-field label {
+    color: var(--muted);
+    font-size: 0.8rem;
+    letter-spacing: 0.01em;
+}
+
+/* Footer: two columns that line up at the top, on a faint surface. */
+.store-footer {
+    background: var(--surface);
+    padding-block: 3rem 2.5rem;
+}
+.store-footer-with-contact {
+    align-items: start;
+}
+.store-footer-about > strong {
+    display: inline-flex;
+    font-size: 1.05rem;
+}
+.store-contact {
+    padding-top: 0;
+    border-top: 0;
+}
+@media (max-width: 760px) {
+    .store-page-heading {
+        padding-bottom: 1.1rem;
+        margin-bottom: 1.25rem;
+    }
+}
+.store-summary .store-totals .store-total dt {
+    align-self: center;
+    font-size: 0.98rem;
+}
+.store-summary .store-totals dd {
+    text-align: right;
+}
+.store-summary .store-totals .store-free-hint dd {
+    text-align: left;
+}
+/* Phones: the four store tabs fit across without being cut off. */
+@media (max-width: 760px) {
+    .store-nav {
+        gap: 1rem;
+        justify-content: space-between;
+    }
+    .store-nav a {
+        font-size: 0.9rem;
     }
 }
