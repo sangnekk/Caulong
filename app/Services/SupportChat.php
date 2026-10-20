@@ -203,6 +203,7 @@ class SupportChat
      * looked at, and what they wrote to the shop before. For a visitor without an account,
      * only what happened during the same visit is known.
      *
+     * @param  bool  $includeNonTickets  false for support staff: what the assistant handled alone is not theirs to read.
      * @return array{
      *     customer: array{id: int, name: string, email: string, segment: string|null, verified: bool, joined: string|null}|null,
      *     overview: array{orders: int, open: int, cancelled: int, ordered: int, spent: int, average: int, first_order_at: string|null, last_order_at: string|null}|null,
@@ -213,7 +214,7 @@ class SupportChat
      *     conversations: list<array{id: int, status: string, needs_human: bool, started_at: string, last_message_at: string|null, excerpt: string, messages: int, assigned_name: string|null}>
      * }
      */
-    public function context(SupportConversation $conversation): array
+    public function context(SupportConversation $conversation, bool $includeNonTickets = true): array
     {
         $demo = DemoData::shownByDefault();
         // Read in full: callers may have loaded the customer with a few columns only.
@@ -234,6 +235,13 @@ class SupportChat
                 ->groupBy('products.id', 'products.name')->orderByRaw('max(customer_events.created_at) desc')->limit(5)->toBase()
                 ->get(['products.id as id', 'products.name as name'])
                 ->map(fn (object $row) => ['id' => (int) $row->id, 'name' => (string) $row->name])->all());
+
+        $earlier = ($customer !== null
+            ? $customer->conversations()->getQuery()
+            : SupportConversation::query()->whereNull('user_id')->where('session_key', $conversation->session_key))
+            ->whereKeyNot($conversation->id)
+            ->when(! $includeNonTickets, fn (Builder $query) => $query->where('needs_human', true))
+            ->latest('id')->limit(6);
 
         return [
             'customer' => $customer === null ? null : [
@@ -261,10 +269,7 @@ class SupportChat
             'viewed' => $viewed,
             // The rackets they had strung, or asked to: the stringing service's own requests.
             'services' => $customer === null ? [] : $this->stringing->history($customer, 3),
-            'conversations' => $this->summaries(($customer !== null
-                ? $customer->conversations()->getQuery()
-                : SupportConversation::query()->whereNull('user_id')->where('session_key', $conversation->session_key))
-                ->whereKeyNot($conversation->id)->latest('id')->limit(6)),
+            'conversations' => $this->summaries($earlier),
         ];
     }
 

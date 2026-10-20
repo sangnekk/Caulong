@@ -92,15 +92,34 @@ class OrderController extends Controller
             $labels = ['pending' => 'Chờ xác nhận', 'confirmed' => 'Đã xác nhận', 'shipped' => 'Đang giao', 'delivered' => 'Đã giao', 'cancelled' => 'Đã hủy'];
             $money = ['paid' => 'Đã thu', 'refunded' => 'Đã hoàn tiền'];
             foreach ($query->lazy(200) as $order) {
-                fputcsv($out, [
+                $cells = [
                     $order->id, $time($order->created_at), $order->name, $order->phone, $order->address,
                     $labels[$order->status] ?? $order->status, $money[$order->payment_status] ?? 'Chưa thu',
                     $time($order->paid_at), $order->getAttribute('items_count'), $order->subtotal, $order->discount_total, (string) $order->getAttribute('coupon_code'), $order->shipping_fee, $order->total,
                     $order->payment_method === PaymentService::METHOD ? 'Chuyển khoản' : 'COD',
-                ]);
+                ];
+                // The customer types their own name, phone, address and coupon code: no text cell may start a formula.
+                fputcsv($out, array_map(fn ($cell) => $this->csvCell($cell), $cells));
             }
             fclose($out);
         }, 'don-hang-'.now($zone)->format('Y-m-d').'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    /**
+     * Spreadsheets run a cell that starts with =, +, -, @, a tab or a carriage return as a
+     * formula, so a customer's text is prefixed with an apostrophe to keep it text. Leading
+     * whitespace is ignored because some spreadsheets trim it before deciding. Numeric cells
+     * are left untouched so the spreadsheet still adds them up.
+     */
+    private function csvCell(mixed $value): mixed
+    {
+        if (! is_string($value) || $value === '') {
+            return $value;
+        }
+
+        $first = ltrim($value)[0] ?? '';
+
+        return in_array($first, ['=', '+', '-', '@', "\t", "\r"], true) ? "'".$value : $value;
     }
 
     /**

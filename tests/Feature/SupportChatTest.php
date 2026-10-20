@@ -446,6 +446,86 @@ class SupportChatTest extends TestCase
             ->where('conversations.0.id', $conversation->id)->where('conversations.1.status', 'closed'));
     }
 
+    public function test_support_staff_get_a_not_found_for_a_conversation_the_assistant_handled_alone(): void
+    {
+        $botOnly = $this->automatedConversation();
+        $support = $this->member('support');
+        $this->actingAs($support);
+
+        // Neither its messages nor whether that number is real are disclosed.
+        $this->get('/admin/support-chat?conversation='.$botOnly->id)
+            ->assertNotFound()
+            ->assertDontSee('Phí giao hàng là 30.000 ₫.');
+        $this->get('/admin/support-chat?conversation=999999')->assertNotFound();
+
+        // Claim, reply, resolve, close and release stay ticket-only.
+        $this->post('/admin/support-chat/'.$botOnly->id.'/claim')->assertSessionHasErrors('claim');
+        $this->post('/admin/support-chat/'.$botOnly->id.'/reply', ['message' => 'Xin chào'])->assertSessionHasErrors('message');
+        $this->post('/admin/support-chat/'.$botOnly->id.'/resolve')->assertSessionHasErrors('claim');
+        $this->post('/admin/support-chat/'.$botOnly->id.'/close')->assertSessionHasErrors('claim');
+        $this->post('/admin/support-chat/'.$botOnly->id.'/release')->assertSessionHasErrors('claim');
+        $this->assertSame(['open', false, null], [
+            $botOnly->fresh()->status,
+            $botOnly->fresh()->needs_human,
+            $botOnly->fresh()->assigned_to,
+        ]);
+    }
+
+    public function test_support_staff_can_read_a_real_ticket(): void
+    {
+        $ticket = $this->ticketOf(User::factory()->create(), 'Vợt của mình bị nứt khung');
+        $support = $this->member('support');
+
+        $this->actingAs($support)->get('/admin/support-chat?conversation='.$ticket->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('admin/support-chat')
+                ->where('selected.id', $ticket->id)
+                ->where('selected.is_ticket', true)
+                ->where('messages', fn ($messages) => collect($messages)->pluck('body')->contains('Vợt của mình bị nứt khung')));
+    }
+
+    public function test_managers_can_read_a_conversation_the_assistant_handled_alone(): void
+    {
+        $botOnly = $this->automatedConversation(User::factory()->create(['name' => 'Lê Thu Hà']));
+
+        foreach ([User::factory()->create(['is_admin' => true]), $this->member('staff')] as $manager) {
+            $this->actingAs($manager)->get('/admin/support-chat?conversation='.$botOnly->id)
+                ->assertOk()
+                ->assertInertia(fn (Assert $page) => $page
+                    ->component('admin/support-chat')
+                    ->where('selected.id', $botOnly->id)
+                    ->where('selected.is_ticket', false)
+                    ->where('selected.customer_name', 'Lê Thu Hà')
+                    ->where('messages.0.body', 'Phí giao hàng')
+                    ->where('messages.1.body', 'Phí giao hàng là 30.000 ₫.'));
+        }
+    }
+
+    public function test_support_staff_do_not_receive_automated_conversations_in_the_customer_context(): void
+    {
+        $customer = User::factory()->create();
+        $botOnly = $this->automatedConversation($customer);
+        $earlier = $this->ticketOf($customer, 'Ticket cũ', 'closed');
+        $ticket = $this->ticketOf($customer, 'Ticket đang mở');
+
+        // Only tickets are listed next to the conversation they are working on.
+        $this->actingAs($this->member('support'))->get('/admin/support-chat?conversation='.$ticket->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('context.conversations', 1)
+                ->where('context.conversations.0.id', $earlier->id)
+                ->where('context.conversations.0.needs_human', true)
+                ->where('context.conversations', fn ($rows) => collect($rows)->pluck('excerpt')->doesntContain('Phí giao hàng')));
+
+        // Those who manage the shop still get every conversation, as the customer's page links to them.
+        $this->actingAs(User::factory()->create(['is_admin' => true]))->get('/admin/support-chat?conversation='.$ticket->id)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('context.conversations', 2)
+                ->where('context.conversations', fn ($rows) => collect($rows)->pluck('id')->sort()->values()->all() === collect([$botOnly->id, $earlier->id])->sort()->values()->all()));
+    }
+
     public function test_the_open_widget_asking_for_new_messages_does_not_use_up_what_else_the_visitor_may_do(): void
     {
         // The widget asks every few seconds: a minute of it is more requests than a visitor may
@@ -477,6 +557,28 @@ class SupportChatTest extends TestCase
 
         $this->getJson('/support-chat/messages')->assertJsonCount(100, 'messages')
             ->assertJsonPath('messages.99.body', 'Tin 110')->assertJsonPath('messages.0.body', 'Tin 11');
+    }
+
+    /** A staff account with one of the roles in App\Models\User::ROLES. */
+    private function member(string $role): User
+    {
+        return User::factory()->create(['is_admin' => true, 'role' => $role]);
+    }
+
+    /** A conversation the automatic assistant answered without handing it to the staff. */
+    private function automatedConversation(?User $customer = null): SupportConversation
+    {
+        $conversation = SupportConversation::create([
+            'session_key' => Str::random(64),
+            'user_id' => $customer?->id,
+            'needs_human' => false,
+            'status' => 'open',
+            'last_message_at' => now(),
+        ]);
+        $conversation->messages()->create(['sender' => 'customer', 'body' => 'Phí giao hàng']);
+        $conversation->messages()->create(['sender' => 'bot', 'body' => 'Phí giao hàng là 30.000 ₫.']);
+
+        return $conversation;
     }
 
     /** A visitor's message the assistant could not answer: a ticket for the staff. */

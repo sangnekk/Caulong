@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { existsSync, statSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import {
     accessorBytes,
     outputPath,
@@ -7,6 +9,18 @@ import {
     readGlb,
     sourcePath,
 } from '../scripts/prepare-hyper-core.mjs';
+
+const sourceFile = fileURLToPath(sourcePath);
+if (
+    !existsSync(sourceFile) ||
+    !statSync(sourceFile).isFile() ||
+    statSync(sourceFile).size === 0
+) {
+    console.log(
+        `SKIP hyper-core-model: source assets not present (expected ${sourceFile})`,
+    );
+    process.exit(0);
+}
 
 const sourceBytes = await readFile(sourcePath),
     bytes = await readFile(outputPath);

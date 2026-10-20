@@ -1,0 +1,33 @@
+# MySQL 8.4 for local/production-like verification. The Laravel app runs on the
+# host (php artisan serve / php artisan dev), so there is deliberately no app
+# service here. Defaults are for a developer machine only; override the MYSQL_*
+# variables (environment or a Compose .env file) with real secrets in production.
+services:
+    mysql:
+        image: mysql:8.4
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${MYSQL_DATABASE:-caulong}
+            MYSQL_USER: ${MYSQL_USER:-caulong}
+            MYSQL_PASSWORD: ${MYSQL_PASSWORD:-caulong}
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+        command:
+            - --character-set-server=utf8mb4
+            - --collation-server=utf8mb4_unicode_ci
+        ports:
+            - '3306:3306'
+        volumes:
+            - mysql-data:/var/lib/mysql
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h 127.0.0.1 -u root --silent',
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 10
+            start_period: 30s
+
+volumes:
+    mysql-data:

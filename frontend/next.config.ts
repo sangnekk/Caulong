@@ -2,6 +2,33 @@ import type { NextConfig } from 'next';
 
 const laravel = process.env.LARAVEL_URL ?? 'http://127.0.0.1:8000';
 
+// Sent only by a production build: a local or staging server still on plain HTTP must not pin
+// itself in visitors' browsers as HTTPS-only. No "preload" until every subdomain is HTTPS for
+// good and the domain has been submitted to hstspreload.org.
+const securityHeaders = [
+    { key: 'X-Frame-Options', value: 'DENY' },
+    {
+        key: 'Content-Security-Policy',
+        value: "frame-ancestors 'none'",
+    },
+    { key: 'X-Content-Type-Options', value: 'nosniff' },
+    {
+        key: 'Referrer-Policy',
+        value: 'strict-origin-when-cross-origin',
+    },
+    {
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(), payment=()',
+    },
+];
+
+if (process.env.NODE_ENV === 'production') {
+    securityHeaders.push({
+        key: 'Strict-Transport-Security',
+        value: 'max-age=31536000; includeSubDomains',
+    });
+}
+
 const nextConfig: NextConfig = {
     reactCompiler: true,
     // Not telling every visitor which server software answers.
@@ -17,22 +44,7 @@ const nextConfig: NextConfig = {
         return [
             {
                 source: '/:path*',
-                headers: [
-                    { key: 'X-Frame-Options', value: 'DENY' },
-                    {
-                        key: 'Content-Security-Policy',
-                        value: "frame-ancestors 'none'",
-                    },
-                    { key: 'X-Content-Type-Options', value: 'nosniff' },
-                    {
-                        key: 'Referrer-Policy',
-                        value: 'strict-origin-when-cross-origin',
-                    },
-                    {
-                        key: 'Permissions-Policy',
-                        value: 'camera=(), microphone=(), geolocation=(), payment=()',
-                    },
-                ],
+                headers: securityHeaders,
             },
         ];
     },

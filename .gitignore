@@ -10,6 +10,7 @@
 .env.production
 .env.*
 !.env.example
+!.env.production.example
 /artifacts/
 /glb/
 /assets/reference-models/*.glb

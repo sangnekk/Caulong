@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Mail\ResendTransport;
+use App\Models\AdminActivity;
 use App\Models\User;
 use App\Services\CustomerEvents;
 use App\Services\EmailService;
@@ -15,6 +16,7 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\DevCommands;
+use Illuminate\Foundation\Http\Events\RequestHandled;
 use Illuminate\Mail\Events\MessageSent;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Throwable;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -56,6 +59,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-shop', fn (User $user): bool => in_array($user->staffRole(), ['admin', 'staff'], true));
         Gate::define('administer-shop', fn (User $user): bool => $user->staffRole() === 'admin');
 
+        // Who changed what in /admin: one row per state-changing request, written after the
+        // response. A failure here is reported but never allowed to change the response.
+        Event::listen(fn (RequestHandled $event) => $this->recordAdminActivity($event));
+
         // What a visitor did before signing in during this visit joins their account's history,
         // and so does the support conversation they were in.
         Event::listen(function (Login $event): void {
@@ -64,6 +71,48 @@ class AppServiceProvider extends ServiceProvider
                 $this->app->make(SupportChat::class)->claim(request(), $event->user);
             }
         });
+    }
+
+    /**
+     * Write what a member of staff changed in /admin. Only metadata is kept: never the
+     * request body, a password or a token. Any failure in the audit trail is reported and
+     * swallowed, because logging must never break the action it describes.
+     */
+    private function recordAdminActivity(RequestHandled $event): void
+    {
+        try {
+            $request = $event->request;
+            $path = trim($request->path(), '/');
+
+            if (! in_array($request->method(), ['POST', 'PUT', 'PATCH', 'DELETE'], true)) {
+                return;
+            }
+
+            if ($path !== 'admin' && ! str_starts_with($path, 'admin/')) {
+                return;
+            }
+
+            $user = $request->user();
+
+            if (! $user instanceof User || ! $user->is_admin) {
+                return;
+            }
+
+            $route = $request->route()?->getName();
+
+            AdminActivity::create([
+                'user_id' => $user->getKey(),
+                'method' => $request->method(),
+                'path' => mb_substr('/'.$path, 0, 2048),
+                'route' => $route === null ? null : mb_substr($route, 0, 191),
+                'status' => $event->response->getStatusCode(),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent() === null ? null : mb_substr($request->userAgent(), 0, 512),
+                'created_at' => now(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 
     /** How email leaves the shop, and what is written down about it. */

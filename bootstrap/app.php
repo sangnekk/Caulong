@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureStaffTwoFactor;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
@@ -26,6 +27,11 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+        ]);
+
+        // Staff need a confirmed second factor before they may work in /admin.
+        $middleware->alias([
+            'staff.2fa' => EnsureStaffTwoFactor::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Route;
 // in AppServiceProvider): the support inbox is for all staff, the daily work of the shop for
 // those who may manage it ("manage-shop"), and its settings, figures, exports and staff for
 // its admins ("administer-shop"). Every route outside the inbox carries one of the two.
-Route::middleware(['auth', 'verified', EnsureAdmin::class])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', EnsureAdmin::class, 'staff.2fa'])->prefix('admin')->name('admin.')->group(function () {
     // Sends support staff on to their inbox, so it is not behind the gate itself.
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('support-chat', [SupportChatController::class, 'index'])->name('support-chat.index');

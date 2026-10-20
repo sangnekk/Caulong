@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\AdminActivity;
 use App\Models\CustomerEvent;
 use App\Models\EmailLog;
 use App\Models\SupportConversation;
@@ -11,10 +12,10 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Browsing history, the email log and the finished support conversations of visitors without
-// an account are kept for a year (KEEP_DAYS on each model). Needs "php artisan schedule:work"
-// (or the server's cron) to run.
-Schedule::command('model:prune', ['--model' => [CustomerEvent::class, EmailLog::class, SupportConversation::class]])->daily();
+// Browsing history, the email log, the finished support conversations of visitors without an
+// account and the admin audit trail are kept for a year (KEEP_DAYS/prunable on each model).
+// Needs "php artisan schedule:work" (or the server's cron) to run.
+Schedule::command('model:prune', ['--model' => [CustomerEvent::class, EmailLog::class, SupportConversation::class, AdminActivity::class]])->daily();
 
 // Time alone moves customers between groups (new, inactive, lost): every account is looked at
 // once a day, in the shop's night, so the morning's emails go by the day's groups.
@@ -32,3 +33,8 @@ Schedule::command('orders:cancel-unpaid')->everyFifteenMinutes();
 // were worked out. Each email is queued; "php artisan queue:work" sends it.
 Schedule::command('marketing:run abandoned_cart')->hourly()->between('8:00', '21:00')->timezone((string) config('shop.timezone'));
 Schedule::command('marketing:run')->dailyAt('09:30')->timezone((string) config('shop.timezone'));
+
+// A copy of the database every night, kept for BACKUP_KEEP_DAYS. This file stays on the same
+// machine, so it is not a real backup until it is also copied off the server (another disk or
+// object storage): a lost server takes storage/backups with it.
+Schedule::command('shop:backup')->dailyAt('02:30')->timezone((string) config('shop.timezone'));

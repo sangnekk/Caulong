@@ -4,22 +4,22 @@ Cửa hàng vợt cầu lông: trang giới thiệu có vợt 3D, cửa hàng v�
 
 ## Trạng thái và việc còn lại
 
-Rà soát ngày **2026-10-12**. **Phase 1–10 đã triển khai trong mã nguồn**, không đồng nghĩa đã sẵn sàng nhận đơn thật. Local tiếp tục dùng **SQLite theo lựa chọn của chủ project**; Phase 0.7 (chuyển MySQL) tạm hoãn, không cần làm để chạy local. Chi tiết từng phase: [PROJECT_UPGRADE_PLAN.md](PROJECT_UPGRADE_PLAN.md#implementation-phases).
+Rà soát ngày **2026-10-20** (audit bảo mật). **Phase 1–10 đã triển khai trong mã nguồn**, không đồng nghĩa đã sẵn sàng nhận đơn thật. Local tiếp tục dùng **SQLite theo lựa chọn của chủ project**; Phase 0.7 (chuyển MySQL) chưa xác minh trong môi trường này và không cần làm để chạy local. Chi tiết từng phase: [PROJECT_UPGRADE_PLAN.md](PROJECT_UPGRADE_PLAN.md#implementation-phases).
 
 ### Đã có, còn cấu hình hoặc kiểm thử thực tế
 
-| Hạng mục                  | Việc còn lại                                                                                                                                                                                                            |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Email Resend              | Cấp API key, xác minh domain gửi, thử nhận email thật và liên kết xác minh/đặt lại mật khẩu. Local đang dùng `MAIL_MAILER=log`; test API giả không chứng minh thư đã tới hộp thư.                                       |
-| Email tự động             | Bốn automation hiện tắt. Sau khi kiểm tra cấu hình và sự đồng ý của khách, chủ shop mới bật từng loại ở `/admin/settings`; máy chủ cần cả queue worker và scheduler.                                                    |
-| Chuyển khoản              | Nhập tài khoản ngân hàng ở `/admin/settings`, quét VietQR bằng ứng dụng ngân hàng và chuyển thử một khoản nhỏ, rồi mới bật. Đã kiểm tra chuỗi và giải mã QR, chưa quét bằng tài khoản thật.                             |
-| Đan dây                   | Nhập dây và giá ở `/admin/service-strings`, đặt phí công ở `/admin/settings`. Local chưa có dây; phí công mặc định 0 nghĩa là báo giá khi nhận vợt.                                                                     |
-| Chính sách quyền riêng tư | Chủ shop kiểm tra bản nháp `/privacy`, thông tin liên hệ và cách vận hành thực tế rồi mới công bố ở Cài đặt. Bản nháp mô tả hệ thống, không thay thế tư vấn pháp lý.                                                    |
-| Clarity (tùy chọn)        | Có mã hỏi sự đồng ý, nhưng chưa thử trên project thật. Cần project ID, build lại, kiểm tra trên dashboard việc đồng ý/từ chối/dừng ghi; công bố chính sách trước khi bật.                                               |
-| SEO                       | Có metadata, JSON-LD, sitemap và robots. Cần tên miền HTTPS, địa chỉ canonical đúng, kiểm tra Google Rich Results Test và Search Console; local không cho lập chỉ mục.                                                  |
-| Catalog                   | Local có 2.586 vợt nhập từ VNB; 239 vợt có ảnh phụ, 229 SKU có giá niêm yết. Chưa chạy lượt `--upgrade` cho phần còn lại; đây là lượt tải lớn, chỉ chạy khi được đồng ý. Giá và tồn kho bán thật phải do shop xác nhận. |
-| Triển khai                | Chưa xác nhận trên máy chủ production: HTTPS, reverse proxy, `TRUST_PROXY`, worker/scheduler thường trực, sao lưu và phục hồi dữ liệu, tài khoản nhân viên bật 2FA. Xem [Đưa lên máy chủ](#đưa-lên-máy-chủ).            |
-| MySQL (tạm hoãn)          | Có migration và lệnh nhập dữ liệu, chưa chạy trên MySQL thật. Chỉ xem lại khi cần chuyển môi trường; giữ SQLite cho local.                                                                                              |
+| Hạng mục                  | Việc còn lại                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Email Resend              | Cấp API key, xác minh domain gửi, thử nhận email thật và liên kết xác minh/đặt lại mật khẩu. Local đang dùng `MAIL_MAILER=log`; test API giả không chứng minh thư đã tới hộp thư.                                                                                                                                                                                                        |
+| Email tự động             | Bốn automation hiện tắt. Sau khi kiểm tra cấu hình và sự đồng ý của khách, chủ shop mới bật từng loại ở `/admin/settings`; máy chủ cần cả queue worker và scheduler.                                                                                                                                                                                                                     |
+| Chuyển khoản              | Nhập tài khoản ngân hàng ở `/admin/settings`, quét VietQR bằng ứng dụng ngân hàng và chuyển thử một khoản nhỏ, rồi mới bật. Đã kiểm tra chuỗi và giải mã QR, chưa quét bằng tài khoản thật.                                                                                                                                                                                              |
+| Đan dây                   | Nhập dây và giá ở `/admin/service-strings`, đặt phí công ở `/admin/settings`. Local chưa có dây; phí công mặc định 0 nghĩa là báo giá khi nhận vợt.                                                                                                                                                                                                                                      |
+| Chính sách quyền riêng tư | Chủ shop kiểm tra bản nháp `/privacy`, thông tin liên hệ và cách vận hành thực tế rồi mới công bố ở Cài đặt. Bản nháp mô tả hệ thống, không thay thế tư vấn pháp lý.                                                                                                                                                                                                                     |
+| Clarity (tùy chọn)        | Có mã hỏi sự đồng ý, nhưng chưa thử trên project thật. Cần project ID, build lại, kiểm tra trên dashboard việc đồng ý/từ chối/dừng ghi; công bố chính sách trước khi bật.                                                                                                                                                                                                                |
+| SEO                       | Có metadata, JSON-LD, sitemap và robots. Cần tên miền HTTPS, địa chỉ canonical đúng, kiểm tra Google Rich Results Test và Search Console; local không cho lập chỉ mục.                                                                                                                                                                                                                   |
+| Catalog                   | Ở lần audit 2026-10-20, database nhập từ VNB (không có trong Git) có 2.586 vợt / 3.223 SKU; 239 vợt có ảnh phụ, 229 SKU có giá niêm yết. Bản checkout mới chỉ có 6 sản phẩm demo / 12 biến thể sau seeder; muốn có catalog lớn phải nhập lại. Chưa chạy lượt `--upgrade` cho phần còn lại; đây là lượt tải lớn, chỉ chạy khi được đồng ý. Giá và tồn kho bán thật phải do shop xác nhận. |
+| Triển khai                | Chưa xác nhận trên máy chủ production: HTTPS/HSTS, reverse proxy, `TRUST_PROXY`, worker/scheduler thường trực, sao lưu/phục hồi dữ liệu, nhật ký audit trên production, tài khoản nhân viên bật 2FA. Mã và test local cho 2FA/HSTS/audit/backup đã có; xem [Đưa lên máy chủ](#đưa-lên-máy-chủ).                                                                                          |
+| MySQL (chưa xác minh)     | Có migration và lệnh nhập dữ liệu, nhưng máy này không có MySQL server/Docker nên chưa chạy thật. Production cần MySQL 8 hoặc database quản lý trước đơn thật; local vẫn giữ SQLite.                                                                                                                                                                                                     |
 
 ### Chưa triển khai — chỉ bổ sung khi có nhu cầu
 
@@ -32,8 +32,8 @@ Rà soát ngày **2026-10-12**. **Phase 1–10 đã triển khai trong mã ngu�
 
 ### Giới hạn đã xác nhận
 
-- Local có **572 đơn mẫu, chưa có đơn thật**. Không dùng đơn mẫu để chứng minh doanh thu, bán chạy hay gợi ý mua cùng của cửa hàng thật.
-- Dữ liệu demo cũ có **12 nhóm SKU trùng khi bỏ qua hoa/thường**. Form sản phẩm chặn lưu bằng lỗi “Không được lặp mã hoặc biến thể”. Chưa dọn dữ liệu này; không tự xóa vì đơn mẫu còn tham chiếu SKU.
+- Ở lần audit 2026-10-20, database demo (không có trong Git) có **572 đơn mẫu, chưa có đơn thật**; số đơn thay đổi theo ngày chạy. Bản checkout mới có **0 đơn**; chạy `php artisan shop:demo-sales` để tạo. Không dùng đơn mẫu để chứng minh doanh thu, bán chạy hay gợi ý mua cùng của cửa hàng thật.
+- Database demo cũ (không có trong bản checkout) có **12 nhóm SKU trùng khi bỏ qua hoa/thường**. Form sản phẩm chặn lưu bằng lỗi “Không được lặp mã hoặc biến thể”. Chưa dọn dữ liệu này; không tự xóa vì đơn mẫu còn tham chiếu SKU.
 - Build Next.js thành công nhưng còn cảnh báo phát hiện nhiều lockfile và suy luận workspace root. Không phải lỗi build; chưa chỉnh cấu hình để bỏ cảnh báo.
 - SQLite phù hợp để chạy local; chưa kiểm chứng khả năng chịu tải khi web và queue cùng ghi. Trước mở bán cần kiểm thử môi trường thật, không suy ra từ test bộ nhớ.
 
@@ -68,9 +68,9 @@ Database local là SQLite (`database/database.sqlite`); session, cache và queue
 
 ## Chạy local
 
-Cần PHP 8.3 trở lên (khuyến nghị 8.4) có `pdo_sqlite`, `mbstring`, `fileinfo`, `curl`, `zip`, `intl`, `gd`; Node.js 22. Composer cần khi cài mới hoặc cập nhật dependency PHP. Máy local hiện chưa có Composer, nhưng đã có `vendor/` nên vẫn chạy được các lệnh PHP dưới đây; không cần cài MySQL/Redis.
+Cần PHP 8.4.1 trở lên (khuyến nghị 8.4) có `pdo_sqlite`, `mbstring`, `fileinfo`, `curl`, `zip`, `intl`, `gd`; Node.js 22. Composer 2.8 có sẵn trong Herd Lite tại `C:\Users\Laptop\.config\herd-lite\bin\composer.bat` nhưng chưa có trong `PATH` và không cài global; gọi bằng đường dẫn đầy đủ hoặc thêm thư mục đó vào `PATH`. `vendor/` đã có nên vẫn chạy được các lệnh PHP dưới đây; không cần cài MySQL/Redis.
 
-Cài lần đầu trên máy có Composer (không chạy lại hoặc ghi đè `.env` của checkout đã cấu hình):
+Cài lần đầu (Composer có sẵn; không chạy lại hoặc ghi đè `.env` của checkout đã cấu hình). Trên máy này, trong PowerShell chạy `& "C:\Users\Laptop\.config\herd-lite\bin\composer.bat" install` thay cho `composer install`:
 
 ```sh
 composer install
@@ -105,43 +105,49 @@ php artisan db:seed --class=DemoCatalogSeeder   # sản phẩm minh họa, chỉ
 php artisan shop:demo-sales                     # một năm đơn mẫu có nhãn, để xem báo cáo
 ```
 
+Bản checkout mới không kèm database. Sau `php artisan migrate`, seeder trên tạo **6 sản phẩm demo / 12 biến thể**; `shop:demo-sales` tạo đơn mẫu (lần chạy audit: 572; số đơn thay đổi theo ngày chạy). Các số 2.586 vợt / 3.223 SKU thuộc database đã nhập từ VNB lúc audit, không nằm trong Git.
+
 Khi `APP_ENV=local`, trang đăng nhập tự tạo bốn tài khoản và có nút đăng nhập một lần bấm: `admin@test.local` (quản trị), `nhanvien@test.local` (nhân viên bán hàng), `hotro@test.local` (nhân viên hỗ trợ) và `khach@test.local` (khách), mật khẩu `Test-Cau-Long-2026!`. Mỗi lần mở trang đăng nhập, bốn tài khoản này được đặt lại đúng vai trò và mật khẩu đó. Xóa bốn tài khoản này trước khi dùng database đó cho hàng thật.
 
 Tài khoản quản trị thật: đăng ký ở `/register`, xác minh email (ở local thư nằm trong `storage/logs/laravel.log` sau khi queue worker xử lý), rồi chạy `php artisan shop:make-admin email-cua-ban`. Từ đó quản trị viên cấp vai trò cho người khác ở `/admin/staff` (người được thêm phải tự đăng ký và xác minh email trước); lệnh trên cũng nhận `--role=staff` (nhân viên bán hàng) và `--role=support` (nhân viên hỗ trợ).
 
 ## Lệnh thường dùng
 
-| Lệnh                                  | Việc                                                                                                                                           |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `php artisan dev`                     | Chạy Laravel, hàng đợi và Next.js                                                                                                              |
-| `npm run build` rồi `npm run start`   | Build và chạy bản production của giao diện                                                                                                     |
-| `npm run check` / `npm run check:fix` | Kiểm tra / tự sửa định dạng và lint cho TypeScript, script, tài liệu                                                                           |
-| `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                                                                                         |
-| `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel                                                                    |
-| `php artisan test --compact`          | Chạy test của Laravel                                                                                                                          |
-| `php artisan queue:work`              | Xử lý email đã xếp hàng; local ghi vào log, Resend gửi thật khi cấu hình                                                                       |
-| `php artisan schedule:work`           | Chạy marketing, xếp nhóm khách, hủy đơn chuyển khoản quá hạn, đóng cuộc trò chuyện đã giải quyết, xóa sự kiện và nhật ký email cũ hơn 365 ngày |
-| `php artisan shop:make-admin email`   | Cấp quyền quản trị cho một tài khoản đã xác minh; `--role=staff` cho nhân viên bán hàng, `--role=support` cho nhân viên hỗ trợ                 |
-| `php artisan marketing:run`           | Chạy các automation đang bật; có thể thêm `abandoned_cart`, `winback`, `post_purchase` hoặc `vip`                                              |
-| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)                                                                     |
-| `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                                                                                        |
-| `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                                                                                              |
+| Lệnh                                  | Việc                                                                                                                                                                                  |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `php artisan dev`                     | Chạy Laravel, hàng đợi và Next.js                                                                                                                                                     |
+| `npm run build` rồi `npm run start`   | Build và chạy bản production của giao diện                                                                                                                                            |
+| `npm run check` / `npm run check:fix` | Kiểm tra / tự sửa định dạng và lint cho TypeScript, script, tài liệu                                                                                                                  |
+| `npm run types:check`                 | Kiểm tra kiểu TypeScript của giao diện                                                                                                                                                |
+| `npm run routes`                      | Sinh lại `frontend/src/actions`, `routes`, `wayfinder` từ route của Laravel                                                                                                           |
+| `php artisan test --compact`          | Chạy test của Laravel                                                                                                                                                                 |
+| `php artisan queue:work`              | Xử lý email đã xếp hàng; local ghi vào log, Resend gửi thật khi cấu hình                                                                                                              |
+| `php artisan schedule:work`           | Chạy marketing, xếp nhóm khách, hủy đơn chuyển khoản quá hạn, đóng cuộc trò chuyện đã giải quyết, xóa sự kiện/nhật ký email/nhật ký audit cũ hơn 365 ngày, sao lưu database lúc 02:30 |
+| `php artisan shop:backup`             | Sao lưu database vào `storage/backups` ngay (SQLite hoặc MySQL); `--keep-days` đổi số ngày giữ, mặc định 14                                                                           |
+| `php artisan audit:tail`              | Xem các thao tác gần đây của nhân viên trong `/admin`; `--limit` đổi số dòng, mặc định 20                                                                                             |
+| `php artisan shop:make-admin email`   | Cấp quyền quản trị cho một tài khoản đã xác minh; `--role=staff` cho nhân viên bán hàng, `--role=support` cho nhân viên hỗ trợ                                                        |
+| `php artisan marketing:run`           | Chạy các automation đang bật; có thể thêm `abandoned_cart`, `winback`, `post_purchase` hoặc `vip`                                                                                     |
+| `php artisan crm:segment`             | Xếp lại nhóm cho mọi khách hàng ngay (bình thường chạy theo lịch mỗi ngày)                                                                                                            |
+| `php artisan shop:import-catalog`     | Nhập sản phẩm, giá, tồn kho, ảnh từ CSV                                                                                                                                               |
+| `node scripts/vnb-catalog.mjs`        | Đọc danh mục vợt từ shopvnb.com thành CSV để nhập                                                                                                                                     |
 
 Sau khi thêm hoặc đổi route ở Laravel, chạy `npm run routes` để giao diện có hàm gọi route mới.
 
 ## Kiểm tra
 
-Chạy từ thư mục gốc. Kết quả kiểm tra ngày **2026-10-12**:
+Chạy từ thư mục gốc. Kết quả kiểm tra ngày **2026-10-20**:
 
-| Kiểm tra                                                                      | Kết quả                                                                                                |
-| ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Laravel/PHPUnit                                                               | **282/282 test đạt**, 4.788 assertions; database SQLite trong bộ nhớ, không phải MySQL.                |
-| PHPStan, Pint                                                                 | Đạt.                                                                                                   |
-| `npm run check`, `npm run types:check`                                        | Đạt.                                                                                                   |
-| `npm run build`                                                               | Đạt; còn cảnh báo workspace root/lockfile đã ghi ở trên.                                               |
-| Tool VNB và ba bài kiểm tra mô hình/dây vợt bên dưới                          | Đạt; không tải dữ liệu VNB mới.                                                                        |
-| Kiểm tra trình duyệt end-to-end                                               | Chưa chạy lại trong lần rà soát này; xem kết quả các phase trước trong kế hoạch.                       |
-| Resend thật, Clarity thật, quét QR bằng ngân hàng, Google Rich Results, MySQL | Chưa kiểm chứng thực tế; không được coi kết quả test local là bằng chứng đã hoạt động trên production. |
+| Kiểm tra                                                                                  | Kết quả                                                                                                                                                               |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Laravel/PHPUnit                                                                           | **303/303 test đạt, 4.950 assertions**; database SQLite trong bộ nhớ, không phải MySQL.                                                                               |
+| Audit P0/P1 (CSV injection, 2FA, backup, IDOR, nhật ký audit)                             | Đã sửa và kiểm tra tích hợp: toàn bộ test đạt, IDOR bị chặn 404, CSV được neutralize, 2FA có middleware, backup chạy được trên SQLite, audit ghi đúng thao tác admin. |
+| `composer audit --locked`                                                                 | **0 cảnh báo** sau khi nâng `symfony/http-foundation` và `symfony/yaml` lên 8.1.9.                                                                                    |
+| PHPStan, Pint                                                                             | Đạt.                                                                                                                                                                  |
+| `npm run check`, `npm run types:check`                                                    | Đạt.                                                                                                                                                                  |
+| `npm run build`                                                                           | Đạt; còn cảnh báo workspace root/lockfile đã ghi ở trên.                                                                                                              |
+| Tool VNB và các bài kiểm tra mô hình/dây vợt bên dưới                                     | Đạt; hai test model tự skip khi thiếu GLB nguồn, không báo fail giả.                                                                                                  |
+| Kiểm tra trình duyệt end-to-end                                                           | Đạt: `commerce-browser`, `landing-browser`, `landing-store-navigation`, `landing-loader-browser`, `loading-browser`; role smoke 50/50.                                |
+| Resend thật, Clarity thật, quét QR bằng ngân hàng, Google Rich Results, HTTPS/HSTS, MySQL | Chưa kiểm chứng thực tế; không được coi kết quả test local là bằng chứng đã hoạt động trên production.                                                                |
 
 ```sh
 npm run check
@@ -151,7 +157,8 @@ php -d memory_limit=512M vendor/bin/phpstan analyse --no-progress
 php artisan test --compact
 npm run build
 node tests/vnb-catalog.mjs                 # tool đọc danh mục VNB, không cần mạng
-node frontend/tests/hyper-core-model.mjs   # mô hình 3D; cần file nguồn trong glb/
+node frontend/tests/hyper-core-model.mjs   # mô hình 3D; tự skip nếu thiếu file nguồn trong glb/
+node frontend/tests/reference-model.mjs     # tự skip nếu thiếu GLB tham chiếu
 node frontend/tests/racket-strings.mjs
 node frontend/tests/baked-strings.mjs
 ```
@@ -167,7 +174,7 @@ node tests/landing-loader-browser.mjs
 
 ## Nhập hàng và dữ liệu VNB
 
-Quản trị viên nhập hàng ở `/admin/imports` hoặc bằng lệnh:
+Quản trị viên nhập hàng ở `/admin/imports` hoặc bằng lệnh (catalog lớn như 2.586 vợt của database nhập VNB lúc audit đến từ đây, không có trong bản checkout):
 
 ```sh
 php artisan shop:import-catalog hang.csv --images=thu-muc-anh --dry-run   # chỉ kiểm tra
@@ -178,7 +185,7 @@ php artisan shop:import-catalog hang.csv --images=thu-muc-anh            # nhậ
 
 ## Chuyển sang MySQL
 
-**Tạm hoãn theo lựa chọn giữ SQLite cho local.** Hướng dẫn này dành cho lần chuyển sau, chưa được kiểm thử trên MySQL thật.
+**Tạm hoãn theo lựa chọn giữ SQLite cho local.** Hướng dẫn này dành cho lần chuyển sau; chưa xác minh trong môi trường này vì máy không có MySQL server/Docker. Production vẫn cần MySQL 8 hoặc database quản lý trước khi nhận đơn thật.
 
 Trước khi chuyển, dừng nhận đơn và các tiến trình ghi dữ liệu, xử lý hết email đang chờ, sao lưu database SQLite và ảnh trong `storage/app/public`. Lệnh nhập không chép phiên, cache, queue hoặc job lỗi, nên email đang chờ sẽ không đi theo.
 
@@ -196,7 +203,7 @@ php artisan shop:import-sqlite        # chép mọi bảng từ database/databas
 
 Lệnh chép chỉ chạy khi các bảng nghiệp vụ ở database mới còn trống; mọi người phải đăng nhập lại. File SQLite nguồn không bị sửa. Muốn quay lại thì đổi `DB_CONNECTION=sqlite`, xóa hoặc sửa các biến `DB_DATABASE`/`DB_URL` của MySQL, trỏ tới đúng file SQLite rồi chạy `php artisan config:clear` và khởi động lại worker. **Đổi cấu hình không đồng bộ những đơn đã phát sinh trên MySQL về SQLite**; không dùng bản cũ để khôi phục sau khi đã mở nhận đơn mới nếu chưa có kế hoạch chuyển dữ liệu ngược.
 
-Test luôn chạy trên SQLite trong bộ nhớ. Lệnh chép mới được thử từ SQLite sang SQLite, chưa chạy trên MySQL thật. So sánh số dòng, giá/tồn kho và luồng đặt hàng trên database mới trước khi mở nhận đơn.
+Test luôn chạy trên SQLite trong bộ nhớ. Lệnh chép mới được thử từ SQLite sang SQLite; chưa chạy trên MySQL thật vì thiếu MySQL server và Docker. So sánh số dòng, giá/tồn kho và luồng đặt hàng trên database mới trước khi mở nhận đơn.
 
 ## Đưa lên máy chủ
 
@@ -211,7 +218,9 @@ Test luôn chạy trên SQLite trong bộ nhớ. Lệnh chép mới được th�
 - **Việc định kỳ:** thêm cron chạy `php artisan schedule:run` mỗi phút (hoặc giữ `php artisan schedule:work` chạy). Bật từng automation ở `/admin/settings`; lịch marketing dùng giờ Việt Nam. Giữ các tùy chọn tắt khi chưa có chính sách và cấu hình gửi thật.
 - **Chính sách quyền riêng tư:** đăng nhập bằng tài khoản quản trị, đọc `/privacy`, rồi bật “Công bố chính sách quyền riêng tư” ở `/admin/settings` (cần có hotline hoặc email liên hệ). Trang tự nói theo cấu hình đang chạy (chuyển khoản, đan dây, Resend, Clarity), nên đọc lại sau khi đổi các thứ đó. Câu chữ nằm ở `frontend/src/views/shop/privacy.tsx`; sửa câu chữ thì đổi ngày ở `config/shop.php` (`privacy.updated`). Đây là bản mô tả hệ thống, không phải tư vấn pháp lý.
 - **Clarity (tùy chọn):** đặt `NEXT_PUBLIC_CLARITY_ID` trong `frontend/.env.local` trước khi build. Công bố trang chính sách quyền riêng tư trước khi bật: lời hỏi đồng ý sẽ dẫn tới trang đó.
-- **Tài khoản nhân viên:** bật xác thực hai lớp cho mọi tài khoản nhân viên ở `/settings/security` (màn Nhân viên cho thấy ai chưa bật).
+- **Tài khoản nhân viên:** bật xác thực hai lớp cho mọi tài khoản nhân viên ở `/settings/security` (màn Nhân viên cho thấy ai chưa bật). Từ audit 2026-10-20, middleware `staff.2fa` chặn `/admin` khi production nếu tài khoản chưa xác nhận 2FA; đã kiểm tra bằng test. Chỉ đặt `SHOP_REQUIRE_STAFF_TWO_FACTOR=false` khi thật cần.
+- **Sao lưu:** `php artisan shop:backup` ghi bản sao vào `storage/backups` và chạy 02:30 hằng ngày (giữ 14 ngày); MySQL cần `mysqldump` (đặt `MYSQLDUMP_PATH` nếu không có trong `PATH`). Đã chạy thử trên SQLite; đường MySQL chưa có server thật để kiểm tra. File vẫn nằm cùng máy nên phải chép ra ngoài và thử phục hồi.
+- **HSTS và audit:** HSTS đã có trong `frontend/next.config.ts` cho bản production (`max-age=31536000; includeSubDomains`, không `preload`); đã thấy header trên bản build local, nhưng reverse proxy/domain thật chưa kiểm tra. Nhật ký audit `admin_activity_logs` (chỉ thao tác ghi trong `/admin`, giữ 365 ngày, xem bằng `php artisan audit:tail`) đã ghi thử đúng một thao tác admin và đã nối vào lịch `model:prune`.
 - Dùng HTTPS, và xác nhận chính sách giao, đổi, trả trước khi nhận đơn thật.
 
 ## Thư mục

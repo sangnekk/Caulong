@@ -117,6 +117,12 @@ return [
     'privacy' => [
         'updated' => '2026-10-11',
     ],
+    // Staff accounts must confirm a second factor before entering /admin. On in production
+    // unless SHOP_REQUIRE_STAFF_TWO_FACTOR says otherwise; off elsewhere so local work and
+    // the tests do not need a phone.
+    'security' => [
+        'require_staff_two_factor' => (bool) env('SHOP_REQUIRE_STAFF_TWO_FACTOR', env('APP_ENV') === 'production'),
+    ],
     // The support chat (App\Services\SupportChat).
     'support' => [
         // Days a conversation staff marked as solved waits for the customer before it closes itself.

@@ -30,6 +30,7 @@ class SupportChatController extends Controller
             'conversation' => ['nullable', 'integer', 'min:1'],
         ]);
         $status = $filters['status'] ?? 'active';
+        $canManageShop = (bool) $request->user()?->can('manage-shop');
         $tickets = fn (): Builder => SupportConversation::query()->where('needs_human', true);
         $conversations = $tickets()
             ->with(['latestHumanMessage', 'assignedUser:id,name', 'user:id,name'])
@@ -60,11 +61,20 @@ class SupportChatController extends Controller
             return redirect()->route('admin.support-chat.index', [...$request->query(), 'status' => $status, 'conversation' => $firstConversation['id']]);
         }
         $selectedId = $filters['conversation'] ?? null;
-        // Any conversation can be read by its number (a customer's page links to all of theirs);
-        // only tickets are listed and worked on.
+        // Those who manage the shop read any conversation by its number (a customer's page
+        // links to all of theirs). Support staff answer tickets: to them anything else does
+        // not exist, so a conversation the assistant handled alone leaks neither its messages
+        // nor whether its number is real.
         $selected = $selectedId
-            ? SupportConversation::query()->whereKey((int) $selectedId)->with(['assignedUser:id,name', 'user:id,name'])->first()
+            ? SupportConversation::query()
+                ->whereKey((int) $selectedId)
+                ->when(! $canManageShop, fn (Builder $query) => $query->where('needs_human', true))
+                ->with(['assignedUser:id,name', 'user:id,name'])
+                ->first()
             : null;
+        if ($selectedId !== null && $selected === null && ! $canManageShop) {
+            abort(404);
+        }
         $messages = [];
         if ($selected) {
             $selected->messages()->where('sender', 'customer')->whereNull('read_at')->update(['read_at' => now()]);
@@ -98,8 +108,9 @@ class SupportChatController extends Controller
                 'started_at' => $selected->created_at->toIso8601String(),
             ] : null,
             'messages' => $messages,
-            // Who the customer is and what they did before.
-            'context' => $selected ? $chat->context($selected) : null,
+            // Who the customer is and what they did before. Support staff only see the
+            // customer's tickets there, never what the assistant handled alone.
+            'context' => $selected ? $chat->context($selected, $canManageShop) : null,
             'filters' => ['status' => $status],
             'counts' => array_replace(
                 array_fill_keys(SupportChat::STATUSES, 0),
@@ -107,7 +118,7 @@ class SupportChatController extends Controller
             ),
             'unread_count' => $unreadCount,
             // Links to a customer's page and orders are for those who may open them.
-            'can_manage_shop' => (bool) $request->user()?->can('manage-shop'),
+            'can_manage_shop' => $canManageShop,
         ]);
     }
 

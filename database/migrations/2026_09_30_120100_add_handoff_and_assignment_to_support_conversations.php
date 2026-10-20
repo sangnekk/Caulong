@@ -18,6 +18,8 @@ return new class extends Migration
     {
         Schema::table('support_conversations', function (Blueprint $table) {
             $table->dropConstrainedForeignId('assigned_to');
+            // SQLite refuses to drop a column while an index still names it.
+            $table->dropIndex(['needs_human']);
             $table->dropColumn('needs_human');
         });
     }
