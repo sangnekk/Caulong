@@ -98,6 +98,12 @@ Muốn chạy riêng từng phần thì dùng `php artisan serve` và `npm run d
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-local.ps1
 ```
 
+Chạy bản production trên máy (build giao diện, `php artisan optimize`, rồi Laravel, Next.js, hàng đợi và lịch trong cùng một cửa sổ; `Ctrl+C` tắt tất cả). Thêm `-SkipBuild` để dùng lại bản build trước khi `frontend/` không đổi; sửa `.env` thì chạy `php artisan optimize:clear` rồi chạy lại:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/start-production.ps1
+```
+
 ### Dữ liệu và tài khoản để thử
 
 ```sh
