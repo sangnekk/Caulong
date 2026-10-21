@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Coupon;
 use App\Models\ProductReview;
 use App\Models\User;
 use App\Services\CustomerProfile;
@@ -29,7 +30,8 @@ class CustomerController extends Controller
             'segment' => ['nullable', Rule::in(CustomerSegmentation::SEGMENTS)],
         ]);
         $filters = ['q' => trim($validated['q'] ?? ''), 'role' => $validated['role'] ?? '', 'segment' => $validated['segment'] ?? ''];
-        $real = fn ($query) => $query->when(! DemoData::shownByDefault(), fn ($query) => $query->where('is_demo', false));
+        $demo = DemoData::shownByDefault();
+        $real = fn ($query) => $query->when(! $demo, fn ($query) => $query->where('is_demo', false));
 
         $users = User::query()
             ->when($filters['q'] !== '', fn ($query) => $query->where(fn ($query) => $query
@@ -55,8 +57,39 @@ class CustomerController extends Controller
                 'last_order_at' => $user->getAttribute('last_order_at'),
             ]);
 
+        $vips = User::query()
+            ->where('is_admin', false)
+            ->when(! $demo, fn ($query) => DemoData::withoutDemoCustomers($query))
+            ->withSum(['orders as collected' => fn ($query) => $real($query)->where('payment_status', 'paid')], 'total')
+            ->with(['coupons' => fn ($query) => $query->where('is_active', true)
+                ->where(fn ($query) => $query->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                ->withCount('redemptions')->latest('id')])
+            ->orderByDesc('collected')->limit(5)->get()
+            ->filter(fn (User $user) => (int) $user->getAttribute('collected') > 0)
+            ->map(function (User $user): array {
+                // Prefer a code the customer can actually use; fall back to the newest one so the
+                // staff still see that a voucher was given (used up, scheduled, switched off).
+                $coupon = $user->coupons->first(fn (Coupon $coupon): bool => $coupon->state((int) $coupon->getAttribute('redemptions_count')) === 'active')
+                    ?? $user->coupons->first();
+
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'segment' => $user->segment,
+                    'collected' => (int) $user->getAttribute('collected'),
+                    'coupon' => $coupon === null ? null : [
+                        ...$coupon->only(['code', 'name', 'type', 'value', 'min_order', 'max_discount']),
+                        'starts_at' => $coupon->starts_at?->toIso8601String(),
+                        'expires_at' => $coupon->expires_at?->toIso8601String(),
+                        'state' => $coupon->state((int) $coupon->getAttribute('redemptions_count')),
+                    ],
+                ];
+            })->values();
+
         return Inertia::render('admin/customers', [
             'customers' => $users,
+            'vips' => $vips,
             'filters' => $filters,
             'counts' => ['all' => User::count(), 'admins' => User::where('is_admin', true)->count()],
             // How many customers each group holds, as last worked out (crm:segment, daily).

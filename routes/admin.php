@@ -27,6 +27,9 @@ Route::middleware(['auth', 'verified', EnsureAdmin::class, 'staff.2fa'])->prefix
     // Sends support staff on to their inbox, so it is not behind the gate itself.
     Route::get('/', DashboardController::class)->name('dashboard');
     Route::get('support-chat', [SupportChatController::class, 'index'])->name('support-chat.index');
+    // A guest's code, typed by the customer: opens the conversation it belongs to. All staff
+    // may look one up; support staff still only reach tickets (see index()).
+    Route::post('support-chat/lookup', [SupportChatController::class, 'lookup'])->middleware('throttle:10,1,admin-chat-code')->name('support-chat.lookup');
     Route::post('support-chat/{conversation}/claim', [SupportChatController::class, 'claim'])->whereNumber('conversation')->name('support-chat.claim');
     Route::post('support-chat/{conversation}/reply', [SupportChatController::class, 'reply'])->whereNumber('conversation')->name('support-chat.reply');
     Route::post('support-chat/{conversation}/resolve', [SupportChatController::class, 'resolve'])->whereNumber('conversation')->name('support-chat.resolve');

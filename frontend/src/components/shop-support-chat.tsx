@@ -126,6 +126,7 @@ export default function ShopSupportChat() {
     const input = useRef<HTMLInputElement>(null);
     const codeInput = useRef<HTMLInputElement>(null);
     const messagesEnd = useRef<HTMLDivElement>(null);
+    const autoCodeRequested = useRef(false);
 
     const messages = chat.messages;
     const conversationStatus = chat.status;
@@ -213,6 +214,7 @@ export default function ShopSupportChat() {
                 if (starting) {
                     // A new conversation: the code shown was the previous one's.
                     setCode(null);
+                    autoCodeRequested.current = false;
                     mark('chat_started');
                 }
             })
@@ -240,6 +242,34 @@ export default function ShopSupportChat() {
             .catch(() => setError('Mất kết nối. Vui lòng thử lại.'))
             .finally(() => setRequestingCode(false));
     };
+
+    // A guest whose conversation has just been closed should not have to find the
+    // "Lấy mã xem lại" button: issue the code once, as soon as the closure reaches the widget.
+    // The server still sends code_expires_at when a code already exists, so a saved code is
+    // never replaced behind the customer's back.
+    useEffect(() => {
+        if (
+            !open ||
+            hasAccount ||
+            conversationStatus !== 'closed' ||
+            !chat.can_request_code ||
+            chat.code_expires_at ||
+            code ||
+            autoCodeRequested.current
+        ) {
+            return;
+        }
+        autoCodeRequested.current = true;
+        requestCode();
+    }, [
+        open,
+        hasAccount,
+        conversationStatus,
+        chat.can_request_code,
+        chat.code_expires_at,
+        code,
+        requestCode,
+    ]);
 
     const lookUp = (event: FormEvent) => {
         event.preventDefault();

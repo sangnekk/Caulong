@@ -84,8 +84,13 @@ class DemoSales extends Command
             }
         });
 
+        if (DemoData::shownByDefault()) {
+            $this->callSilently('shop:demo-vip');
+        }
+
         $this->info('Đã tạo '.$made.' đơn mẫu trong '.$months.' tháng (doanh số mẫu '.number_format($sales, 0, ',', '.').' ₫)'
             .($this->accounts ? ', '.count($this->accounts).' tài khoản khách mẫu' : '').'.');
+        $this->line('Đã tặng mã riêng cho các khách mẫu chi tiêu lớn (xem Quản trị → Khách hàng).');
         $this->line((DemoData::shownByDefault()
             ? 'Máy local: trang quản trị đã tính sẵn dữ liệu mẫu (có công tắc để tắt).'
             : 'Xem ở Quản trị → Báo cáo, bật “Tính cả đơn mẫu”.').' Xóa bằng: php artisan shop:demo-sales --clear');

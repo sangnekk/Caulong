@@ -5,6 +5,8 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import {
+    CouponState,
+    couponTerms,
     date,
     money,
     PageHeader,
@@ -15,7 +17,7 @@ import {
     staffRoles,
     Tabs,
 } from './shared';
-import type { Pagination } from './shared';
+import type { CouponStateName, CouponTerms, Pagination } from './shared';
 
 type Customer = {
     id: number;
@@ -33,20 +35,39 @@ type Customer = {
     last_order_at: string | null;
 };
 type Filters = { q: string; role: string; segment: string };
+type VipCoupon = CouponTerms & {
+    code: string;
+    name: string;
+    starts_at: string | null;
+    expires_at: string | null;
+    state: CouponStateName;
+};
+type Vip = {
+    id: number;
+    name: string;
+    email: string;
+    segment: string | null;
+    collected: number;
+    coupon: VipCoupon | null;
+};
 
 export default function Customers({
     customers,
+    vips,
     filters,
     counts,
     segments,
 }: {
     customers: Pagination<Customer>;
+    /** The customers who have paid the shop the most, with a personal voucher when they have one. */
+    vips: Vip[];
     filters: Filters;
     counts: { all: number; admins: number };
     /** Customers per group, as last worked out. */
     segments: Record<string, number>;
 }) {
     const [q, setQ] = useState(filters.q);
+    const [copied, setCopied] = useState<string | null>(null);
     const submit = (event: FormEvent) => {
         event.preventDefault();
         router.get(
@@ -54,6 +75,18 @@ export default function Customers({
             {},
             { preserveState: true, preserveScroll: true },
         );
+    };
+    const copy = async (code: string) => {
+        try {
+            await navigator.clipboard.writeText(code);
+            setCopied(code);
+            window.setTimeout(
+                () => setCopied((current) => (current === code ? null : current)),
+                1800,
+            );
+        } catch {
+            setCopied(null);
+        }
     };
 
     return (
@@ -95,6 +128,96 @@ export default function Customers({
                     },
                 ]}
             />
+            {vips.length > 0 && (
+                <section
+                    className="admin-panel admin-vip"
+                    aria-labelledby="vip-customers"
+                >
+                    <div className="admin-section-heading">
+                        <div>
+                            <h2 id="vip-customers">Khách chi tiêu lớn</h2>
+                            <p className="admin-muted admin-vip-intro">
+                                Những khách đã thanh toán nhiều nhất, kèm mã
+                                giảm giá riêng nếu shop đã tặng.
+                            </p>
+                        </div>
+                        <span className="admin-muted">Theo số tiền đã thu</span>
+                    </div>
+                    <div className="admin-vip-grid">
+                        {vips.map((vip) => (
+                            <article className="admin-vip-card" key={vip.id}>
+                                <div className="admin-vip-head">
+                                    <div>
+                                        <Link
+                                            href={
+                                                '/admin/customers/' +
+                                                vip.id +
+                                                '?tab=coupons'
+                                            }
+                                        >
+                                            {vip.name}
+                                        </Link>
+                                        <small>{vip.email}</small>
+                                    </div>
+                                    <SegmentBadge segment={vip.segment} />
+                                </div>
+                                <p className="admin-vip-spend">
+                                    {money(vip.collected)}
+                                    <small>đã thu</small>
+                                </p>
+                                {vip.coupon ? (
+                                    <div className="admin-vip-coupon">
+                                        <span className="admin-vip-code">
+                                            {vip.coupon.code}
+                                        </span>
+                                        <small>
+                                            {vip.coupon.name} ·{' '}
+                                            {couponTerms(vip.coupon)}
+                                        </small>
+                                        <div className="admin-vip-foot">
+                                            <CouponState
+                                                state={vip.coupon.state}
+                                            />
+                                            <span className="admin-muted">
+                                                {vip.coupon.expires_at
+                                                    ? 'HSD ' +
+                                                      date(
+                                                          vip.coupon
+                                                              .expires_at,
+                                                      )
+                                                    : 'Không hết hạn'}
+                                            </span>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            className="admin-button admin-button-secondary admin-button-small"
+                                            onClick={() =>
+                                                copy(vip.coupon!.code)
+                                            }
+                                        >
+                                            {copied === vip.coupon.code
+                                                ? 'Đã chép mã'
+                                                : 'Sao chép mã'}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <p className="admin-muted admin-vip-empty">
+                                        Chưa có mã riêng.{' '}
+                                        <Link
+                                            href={
+                                                '/admin/coupons/create?customer=' +
+                                                vip.id
+                                            }
+                                        >
+                                            Tạo mã
+                                        </Link>
+                                    </p>
+                                )}
+                            </article>
+                        ))}
+                    </div>
+                </section>
+            )}
             <form className="admin-filters" onSubmit={submit} role="search">
                 <label className="admin-search">
                     Tìm tài khoản

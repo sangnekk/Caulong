@@ -502,6 +502,32 @@ class SupportChatTest extends TestCase
         }
     }
 
+    public function test_staff_can_open_a_finished_conversation_with_the_code_the_customer_reads_again(): void
+    {
+        $customer = User::factory()->create();
+        $ticket = $this->ticketOf($customer, 'Đơn của tôi bị lỗi', 'closed');
+        $botOnly = $this->automatedConversation($customer);
+        app(SupportChat::class)->close($botOnly);
+        $ticketCode = app(SupportChat::class)->issueCode($ticket)['code'];
+        $botCode = app(SupportChat::class)->issueCode($botOnly)['code'];
+        $ticketUrl = route('admin.support-chat.index', ['status' => 'all', 'conversation' => $ticket->id]);
+        $botUrl = route('admin.support-chat.index', ['status' => 'all', 'conversation' => $botOnly->id]);
+
+        // Those who manage the shop may read either; support staff only the ticket.
+        $owner = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($owner)->post('/admin/support-chat/lookup', ['code' => $ticketCode])
+            ->assertRedirect($ticketUrl);
+        $this->post('/admin/support-chat/lookup', ['code' => $botCode])->assertRedirect($botUrl);
+
+        $support = $this->member('support');
+        $this->actingAs($support)->post('/admin/support-chat/lookup', ['code' => $ticketCode])
+            ->assertRedirect($ticketUrl);
+        $this->from('/admin/support-chat')->post('/admin/support-chat/lookup', ['code' => $botCode])
+            ->assertRedirect('/admin/support-chat')->assertSessionHasErrors('code');
+        $this->post('/admin/support-chat/lookup', ['code' => 'AAAAA-BBBBB'])
+            ->assertSessionHasErrors('code');
+    }
+
     public function test_support_staff_do_not_receive_automated_conversations_in_the_customer_context(): void
     {
         $customer = User::factory()->create();

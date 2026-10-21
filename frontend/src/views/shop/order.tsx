@@ -4,6 +4,7 @@ import { Head, Link, usePage } from '@/lib/page';
 import { useEffect, useState } from 'react';
 import { DemoBadge, OrderTotals, ShopContact } from '@/layouts/shop-layout';
 import { mark } from '@/lib/analytics';
+import { OrderDeliveryJourney } from '@/components/delivery-journey';
 import {
     paymentLabel,
     shortOrderCode,
@@ -198,6 +199,10 @@ export default function OrderPage({
                     dịch hàng thực tế.
                 </p>
             )}
+            <OrderDeliveryJourney
+                status={order.status}
+                awaitingPayment={awaited}
+            />
             {/* Who the order goes to and where: masked in Clarity recordings. */}
             <div className="store-two-column" data-clarity-mask="true">
                 <section>

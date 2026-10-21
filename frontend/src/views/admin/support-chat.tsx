@@ -301,6 +301,7 @@ export default function SupportChat({
     can_manage_shop: boolean;
 }) {
     const form = useForm({ message: '' });
+    const lookup = useForm({ code: '' });
     const thread = useRef<HTMLDivElement>(null);
     const previousUnread = useRef(unread_count);
 
@@ -364,6 +365,23 @@ export default function SupportChat({
         );
     };
 
+    const submitLookup = (event: FormEvent) => {
+        event.preventDefault();
+        if (!lookup.data.code.trim() || lookup.processing) return;
+        lookup.post('/admin/support-chat/lookup', {
+            preserveScroll: true,
+            onSuccess: () => lookup.reset('code'),
+        });
+    };
+
+    const closeNow = () => {
+        if (!selected) return;
+        const confirmed = window.confirm(
+            'Đóng hội thoại ngay? Khách gửi tin mới sẽ bắt đầu một hội thoại khác.',
+        );
+        if (confirmed) act('close');
+    };
+
     const over = selected?.status === 'closed';
     const tabs: [Filter, string, number | null][] = [
         ['active', 'Đang xử lý', counts.open + counts.pending],
@@ -396,6 +414,56 @@ export default function SupportChat({
                     {unread_count.toLocaleString('vi-VN')} chưa đọc
                 </span>
             </nav>
+            <form
+                className="admin-chat-lookup"
+                onSubmit={submitLookup}
+                role="search"
+            >
+                <label htmlFor="admin-chat-lookup">
+                    Mở lại hội thoại bằng mã của khách
+                </label>
+                <div>
+                    <input
+                        id="admin-chat-lookup"
+                        value={lookup.data.code}
+                        placeholder="ABCDE-FGH23"
+                        maxLength={20}
+                        autoComplete="off"
+                        autoCapitalize="characters"
+                        spellCheck={false}
+                        disabled={lookup.processing}
+                        aria-invalid={!!lookup.errors.code}
+                        aria-describedby="admin-chat-lookup-help"
+                        onChange={(event) => {
+                            lookup.setData('code', event.target.value);
+                            lookup.clearErrors('code');
+                        }}
+                    />
+                    <button
+                        type="submit"
+                        className="admin-button admin-button-secondary admin-button-small"
+                        disabled={
+                            lookup.processing || !lookup.data.code.trim()
+                        }
+                    >
+                        {lookup.processing ? 'Đang mở…' : 'Mở hội thoại'}
+                    </button>
+                </div>
+                {lookup.errors.code ? (
+                    <p className="admin-chat-error" role="alert">
+                        {lookup.errors.code}
+                    </p>
+                ) : (
+                    <p
+                        id="admin-chat-lookup-help"
+                        className="admin-muted"
+                    >
+                        Mã 10 ký tự khách đọc lại sau khi hội thoại đã đóng
+                        hoặc đã giải quyết. Nhân viên hỗ trợ chỉ mở được
+                        ticket; quản lý mở được cả hội thoại của trợ lý.
+                    </p>
+                )}
+            </form>
             <div
                 className="admin-chat-layout"
                 data-context={context ? 'shown' : undefined}
@@ -510,21 +578,23 @@ export default function SupportChat({
                                             selected.status === 'pending') && (
                                             <button
                                                 type="button"
-                                                className="admin-button-secondary"
+                                                className="admin-button"
+                                                aria-describedby="admin-chat-action-help"
                                                 onClick={() => act('resolve')}
                                             >
                                                 <Check aria-hidden="true" />
-                                                Đánh dấu đã giải quyết
+                                                Đã giải quyết xong
                                             </button>
                                         )}
                                     {selected.can_reply && !over && (
                                         <button
                                             type="button"
-                                            className="admin-button-secondary"
-                                            onClick={() => act('close')}
+                                            className="admin-button admin-button-danger"
+                                            aria-describedby="admin-chat-action-help"
+                                            onClick={closeNow}
                                         >
                                             <CheckCheck aria-hidden="true" />
-                                            Đóng hội thoại
+                                            Đóng ngay
                                         </button>
                                     )}
                                     {selected.can_release && (
@@ -537,6 +607,16 @@ export default function SupportChat({
                                                 ? 'Trả lại ticket'
                                                 : 'Gỡ người đang nhận'}
                                         </button>
+                                    )}
+                                    {selected.can_reply && !over && (
+                                        <p
+                                            className="admin-chat-action-help"
+                                            id="admin-chat-action-help"
+                                        >
+                                            {selected.status === 'resolved'
+                                                ? 'Đã giải quyết xong. Ticket tự đóng sau 3 ngày; chọn Đóng ngay nếu không cần chờ khách.'
+                                                : 'Đã giải quyết xong: lưu kết quả, khách vẫn nhắn tiếp được. Đóng ngay: kết thúc hẳn, tin sau mở hội thoại mới.'}
+                                        </p>
                                     )}
                                 </div>
                             </header>

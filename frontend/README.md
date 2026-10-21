@@ -16,6 +16,10 @@ Hoặc chạy cả hai cùng lúc từ thư mục gốc: `php artisan dev`.
 
 Bản production: `npm run build` rồi `npm run start`.
 
+Demo giao hàng tại `/demo/giao-hang`: ba cảnh gói ghém vợt Hyper Core8000, giao hàng và tới gần nhà, có tạm dừng và phát lại. Chọn mốc ở nút phía trên hoặc timeline đều phát lại từ gói ghém tới mốc đó ở tốc độ 3×; tới đích thì chuyển về chuyển động bình thường và không tự sang mốc sau. Chọn lại cùng một mốc hoặc “Phát lại” đều xem lại toàn bộ chặng trước. Morph tăng tối đa 1,8× để vẫn thấy rõ kiện hàng nhấc khỏi bàn, xoay, đổi tỷ lệ rồi gắn sau xe. Xe, bánh xe và đường phố giữ đà chuyển động khi tới khu dân cư. Nút “Chạy cả hành trình” phát tuần tự ba cảnh ở tốc độ thường. Canvas dừng khi khuất hoặc trang ẩn; chế độ giảm chuyển động bỏ qua phần xem lại và hiện thẳng mốc đã chọn. Cảnh đóng gói dùng poster mô hình sẵn có; nguồn và giấy phép nằm ngay dưới hoạt cảnh.
+
+Component `delivery-journey.tsx` được dùng chung với trang `/orders/[order]`: đơn chờ xác nhận/thanh toán hiển thị hình tĩnh; đã xác nhận xem nhanh gói ghém; đang giao xem nhanh từ gói ghém đến giao hàng; đã giao xem nhanh cả hành trình rồi giữ cảnh tới nhà tĩnh; đơn hủy không có hoạt cảnh. Trạng thái thật lấy từ đơn hàng và luôn giữ nguyên trong lúc xem lại, không suy ra vị trí shipper hay thời gian tới nơi. Có bố cục điện thoại và chế độ giảm chuyển động. Kiểm tra tương tác bằng `node tests/delivery-browser.mjs` từ thư mục gốc (frontend ở cổng 3001, Chrome có debugging ở cổng 9222; đặt `DELIVERY_URL` nếu dùng cổng khác).
+
 ## Cách hoạt động
 
 - **Trang:** mỗi route trong `src/app` là một dòng `laravelPage(View, Layout)`. Khi có request, server component hỏi Laravel đúng URL đó (`src/lib/laravel/server.ts`), kèm cookie của khách, và nhận lại tên trang cùng props, giống dữ liệu Laravel trả cho Inertia. Một trang chỉ gọi Laravel một lần; thông tin dùng chung (người đăng nhập, số món trong giỏ, thông báo) đi kèm trong đó.

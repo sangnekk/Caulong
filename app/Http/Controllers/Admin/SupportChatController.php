@@ -122,6 +122,23 @@ class SupportChatController extends Controller
         ]);
     }
 
+    /**
+     * Opens the conversation a customer's code belongs to. The code is not shown in the
+     * inbox: staff ask the customer for it, then read the messages it unlocks. Support staff
+     * get the same answer for a code that is wrong and for one that belongs to a conversation
+     * the assistant handled alone, so neither leaks.
+     */
+    public function lookup(Request $request, SupportChat $chat): RedirectResponse
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:40']]);
+        $conversation = $chat->byCode($data['code']);
+        if (! $conversation || (! $request->user()?->can('manage-shop') && ! $conversation->needs_human)) {
+            throw ValidationException::withMessages(['code' => 'Mã không đúng hoặc đã hết hạn.']);
+        }
+
+        return redirect()->route('admin.support-chat.index', ['status' => 'all', 'conversation' => $conversation->id]);
+    }
+
     public function claim(Request $request, SupportConversation $conversation): RedirectResponse
     {
         if (! $conversation->needs_human || $conversation->status === 'closed') {

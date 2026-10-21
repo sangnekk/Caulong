@@ -70,7 +70,7 @@ class StaffRolesTest extends TestCase
 
     public function test_every_admin_route_but_the_inbox_asks_for_one_of_the_two_rights(): void
     {
-        $open = ['admin.dashboard', 'admin.support-chat.index', 'admin.support-chat.claim', 'admin.support-chat.reply', 'admin.support-chat.resolve', 'admin.support-chat.close', 'admin.support-chat.release'];
+        $open = ['admin.dashboard', 'admin.support-chat.index', 'admin.support-chat.lookup', 'admin.support-chat.claim', 'admin.support-chat.reply', 'admin.support-chat.resolve', 'admin.support-chat.close', 'admin.support-chat.release'];
         // The owner's alone: the shop's figures and settings, every order in one file, its staff.
         $owner = ['admin.reports', 'admin.settings.edit', 'admin.settings.update', 'admin.orders.export', 'admin.staff.index', 'admin.staff.store', 'admin.staff.update', 'admin.staff.destroy'];
         $admin = collect(Route::getRoutes()->getRoutes())->filter(fn (RoutingRoute $route) => str_starts_with((string) $route->getName(), 'admin.'));
