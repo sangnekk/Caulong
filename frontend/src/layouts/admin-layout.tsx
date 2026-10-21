@@ -87,7 +87,6 @@ export default function AdminLayout({ children }: PropsWithChildren) {
     const [signingOut, setSigningOut] = useState(false);
     const menuButton = useRef<HTMLButtonElement>(null);
     const previousSupportChats = useRef(0);
-    const previousSupportCount = useRef(pendingSupportChats);
 
     // A visit closes the drawer; Escape closes it and gives focus back to the menu button.
     useEffect(() => router.on('start', () => setMenuOpen(false)), []);
@@ -102,10 +101,13 @@ export default function AdminLayout({ children }: PropsWithChildren) {
         return () => document.removeEventListener('keydown', onKey);
     }, [menuOpen]);
 
+    // One poll for the counters, and only while the tab is visible: a hidden tab must not
+    // keep the server busy with a page it cannot show.
     useEffect(() => {
         if (!user || path === '/admin/support-chat') return;
         const interval = window.setInterval(() => {
-            router.reload({ only: ['shop'] });
+            if (document.visibilityState === 'visible')
+                router.reload({ only: ['shop'] });
         }, 5000);
         return () => window.clearInterval(interval);
     }, [path, user]);
@@ -118,23 +120,6 @@ export default function AdminLayout({ children }: PropsWithChildren) {
             router.visit('/admin/support-chat?status=open');
         }
         previousSupportChats.current = pendingSupportChats;
-    }, [path, pendingSupportChats]);
-
-    useEffect(() => {
-        const interval = window.setInterval(() => {
-            router.reload({ only: ['shop'] });
-        }, 5000);
-        return () => window.clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        if (
-            pendingSupportChats > previousSupportCount.current &&
-            path !== '/admin/support-chat'
-        ) {
-            router.visit('/admin/support-chat?status=open');
-        }
-        previousSupportCount.current = pendingSupportChats;
     }, [path, pendingSupportChats]);
 
     const isCurrent = (href: string) =>

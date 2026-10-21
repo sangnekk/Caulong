@@ -201,19 +201,16 @@ html:has(.commerce-admin) {
 /* Page transitions. Each page is a React <ViewTransition> (lib/laravel/page.tsx): on a
    navigation the page leaving and the page arriving get the class named after the motion
    (lib/page/transition.ts), and the browser animates between their snapshots.
-   Between pages: one shared vertical axis. The old content lifts away and is gone within a
-   tenth of a second; the new content rises into place right behind it. They overlap for only
-   a few frames, so two layouts are never seen through each other, and there is no blank pause.
-   The store header and the admin sidebar stay put. */
+   Between pages: the old page stays still while the new one fades in over it and rises a
+   few pixels. Nothing fades to the background, so a slow answer never leaves the visitor
+   looking at an empty canvas. The store header and the admin sidebar stay put. */
 ::view-transition-old(.page) {
-    animation:
-        page-fade-out 100ms linear both,
-        page-lift-out 320ms cubic-bezier(0.2, 0, 0, 1) both;
+    animation: none;
 }
 ::view-transition-new(.page) {
     animation:
-        page-fade-in 220ms 70ms cubic-bezier(0, 0, 0.2, 1) both,
-        page-rise-in 320ms cubic-bezier(0.2, 0, 0, 1) both;
+        page-fade-in 140ms cubic-bezier(0, 0, 0.2, 1) both,
+        page-rise-in 200ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 /* Landing → store: a different world, so no blend at all. The white store rises as one sheet
    (header included) over the dark hall, which sinks back and dims beneath it. Returning to the
@@ -259,16 +256,6 @@ html:active-view-transition-type(enter-landing)::view-transition {
     animation-duration: 280ms;
     height: 100%;
     object-fit: contain;
-}
-@keyframes page-fade-out {
-    to {
-        opacity: 0;
-    }
-}
-@keyframes page-lift-out {
-    to {
-        transform: translateY(-10px);
-    }
 }
 @keyframes page-fade-in {
     from {

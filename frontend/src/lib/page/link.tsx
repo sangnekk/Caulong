@@ -4,6 +4,7 @@ import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     forwardRef,
+    useState,
     type AllHTMLAttributes,
     type ElementType,
     type MouseEvent,
@@ -45,7 +46,10 @@ export type LinkProps = Omit<
         data?: RequestPayload;
         preserveState?: boolean;
         onError?: VisitOptions['onError'];
-        /** Inertia's prefetch modes; Next.js prefetches on its own, so only `false` matters. */
+        /**
+         * Inertia's prefetch modes. A click prefetches by default when the pointer reaches
+         * the link; `false` turns that off, and `true` fetches the whole route on sight.
+         */
         prefetch?: boolean | string | string[];
         cacheFor?: unknown;
         viewTransition?: boolean;
@@ -93,6 +97,12 @@ export const Link = forwardRef<HTMLElement, LinkProps>(function Link(
     ref,
 ) {
     const pathname = usePathname();
+    // Next.js skips the full fetch for a dynamic route until the visitor shows intent. The
+    // shop's pages are all dynamic (the session is read on the server), so ask for the full
+    // route as soon as the pointer (or keyboard focus) reaches the link. `prefetch={false}`
+    // still opts out; `prefetch={true}` fetches on sight, as Next.js documents.
+    const [fullPrefetch, setFullPrefetch] = useState(false);
+    const prefetchOnHover = prefetch !== false && prefetch !== true;
     const verb = (method ?? hrefMethod(href) ?? 'get').toLowerCase() as Method;
     const callbacks = {
         onBefore,
@@ -139,12 +149,26 @@ export const Link = forwardRef<HTMLElement, LinkProps>(function Link(
             href={target}
             replace={replace}
             scroll={!preserveScroll}
-            prefetch={prefetch === false ? false : undefined}
+            prefetch={
+                prefetch === false
+                    ? false
+                    : prefetch === true || fullPrefetch
+                      ? true
+                      : undefined
+            }
             transitionTypes={transitionTypes(
                 pathname,
                 target.split(/[?#]/)[0] || pathname,
             )}
             {...(rest as React.AnchorHTMLAttributes<HTMLAnchorElement>)}
+            onMouseEnter={(event) => {
+                if (prefetchOnHover) setFullPrefetch(true);
+                rest.onMouseEnter?.(event);
+            }}
+            onFocus={(event) => {
+                if (prefetchOnHover) setFullPrefetch(true);
+                rest.onFocus?.(event);
+            }}
             onClick={(event) => {
                 onClick?.(event);
                 if (
