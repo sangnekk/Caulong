@@ -18,7 +18,7 @@ import PasskeyVerify from '@/components/passkey-verify';
 export default function ConfirmPassword() {
     return (
         <>
-            <Head title="Confirm password" />
+            <Head title="Xác nhận mật khẩu" />
 
             {/* @chisel-passkeys */}
             <PasskeyVerify
@@ -26,9 +26,9 @@ export default function ConfirmPassword() {
                     options: confirmOptions(),
                     submit: confirmStore(),
                 }}
-                label="Confirm with passkey"
-                loadingLabel="Confirming..."
-                separator="Or confirm with password"
+                label="Xác nhận bằng passkey"
+                loadingLabel="Đang xác nhận…"
+                separator="Hoặc nhập mật khẩu"
             />
             {/* @end-chisel-passkeys */}
 
@@ -36,11 +36,11 @@ export default function ConfirmPassword() {
                 {({ processing, errors }) => (
                     <div className="space-y-6">
                         <div className="grid gap-2">
-                            <Label htmlFor="password">Password</Label>
+                            <Label htmlFor="password">Mật khẩu</Label>
                             <PasswordInput
                                 id="password"
                                 name="password"
-                                placeholder="Password"
+                                placeholder="Mật khẩu hiện tại"
                                 autoComplete="current-password"
                                 autoFocus
                             />
@@ -55,7 +55,7 @@ export default function ConfirmPassword() {
                                 data-test="confirm-password-button"
                             >
                                 {processing && <Spinner />}
-                                Confirm password
+                                Xác nhận
                             </Button>
                         </div>
                     </div>
@@ -66,7 +66,7 @@ export default function ConfirmPassword() {
 }
 
 ConfirmPassword.layout = {
-    title: 'Confirm password',
+    title: 'Xác nhận mật khẩu',
     description:
-        'This is a secure area of the application. Please confirm your password before continuing.',
+        'Phần này thay đổi cách đăng nhập hoặc quyền của tài khoản. Nhập lại mật khẩu để tiếp tục.',
 };

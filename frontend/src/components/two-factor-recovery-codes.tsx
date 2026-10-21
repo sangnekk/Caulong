@@ -57,11 +57,11 @@ export default function TwoFactorRecoveryCodes({
             <CardHeader>
                 <CardTitle className="flex gap-3">
                     <LockKeyhole className="size-4" aria-hidden="true" />
-                    2FA recovery codes
+                    Mã khôi phục
                 </CardTitle>
                 <CardDescription>
-                    Recovery codes let you regain access if you lose your 2FA
-                    device. Store them in a secure password manager.
+                    Dùng khi bạn mất điện thoại có ứng dụng xác thực. Lưu các mã
+                    này ở nơi an toàn, ví dụ trình quản lý mật khẩu.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -76,7 +76,9 @@ export default function TwoFactorRecoveryCodes({
                             className="size-4"
                             aria-hidden="true"
                         />
-                        {codesAreVisible ? 'Hide' : 'View'} recovery codes
+                        {codesAreVisible
+                            ? 'Ẩn mã khôi phục'
+                            : 'Xem mã khôi phục'}
                     </Button>
 
                     {canRegenerateCodes && (
@@ -92,7 +94,7 @@ export default function TwoFactorRecoveryCodes({
                                     disabled={processing}
                                     aria-describedby="regenerate-warning"
                                 >
-                                    <RefreshCw /> Regenerate codes
+                                    <RefreshCw /> Tạo mã mới
                                 </Button>
                             )}
                         </Form>
@@ -112,7 +114,7 @@ export default function TwoFactorRecoveryCodes({
                                     ref={codesSectionRef}
                                     className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
                                     role="list"
-                                    aria-label="Recovery codes"
+                                    aria-label="Mã khôi phục"
                                 >
                                     {recoveryCodesList.length ? (
                                         recoveryCodesList.map((code, index) => (
@@ -127,7 +129,7 @@ export default function TwoFactorRecoveryCodes({
                                     ) : (
                                         <div
                                             className="space-y-2"
-                                            aria-label="Loading recovery codes"
+                                            aria-label="Đang tải mã khôi phục"
                                         >
                                             {Array.from(
                                                 { length: 8 },
@@ -145,13 +147,12 @@ export default function TwoFactorRecoveryCodes({
 
                                 <div className="text-xs text-muted-foreground select-none">
                                     <p id="regenerate-warning">
-                                        Each recovery code can be used once to
-                                        access your account and will be removed
-                                        after use. If you need more, click{' '}
+                                        Mỗi mã chỉ dùng được một lần và bị xóa
+                                        sau khi dùng. Cần thêm thì bấm{' '}
                                         <span className="font-bold">
-                                            Regenerate codes
+                                            Tạo mã mới
                                         </span>{' '}
-                                        above.
+                                        ở trên; các mã cũ sẽ hết hiệu lực.
                                     </p>
                                 </div>
                             </>

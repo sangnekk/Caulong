@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Spinner } from '@/components/ui/spinner';
 import {
     InputOTP,
     InputOTPGroup,
@@ -25,18 +26,18 @@ export default function TwoFactorChallenge() {
     }>(() => {
         if (showRecoveryInput) {
             return {
-                title: 'Recovery code',
+                title: 'Mã khôi phục',
                 description:
-                    'Please confirm access to your account by entering one of your emergency recovery codes.',
-                toggleText: 'login using an authentication code',
+                    'Nhập một trong các mã khôi phục bạn đã lưu khi bật xác thực hai lớp. Mỗi mã chỉ dùng được một lần.',
+                toggleText: 'dùng mã từ ứng dụng xác thực',
             };
         }
 
         return {
-            title: 'Authentication code',
+            title: 'Xác thực hai lớp',
             description:
-                'Enter the authentication code provided by your authenticator application.',
-            toggleText: 'login using a recovery code',
+                'Nhập mã 6 số đang hiện trong ứng dụng xác thực trên điện thoại của bạn.',
+            toggleText: 'dùng mã khôi phục',
         };
     }, [showRecoveryInput]);
 
@@ -53,7 +54,7 @@ export default function TwoFactorChallenge() {
 
     return (
         <>
-            <Head title="Two-factor authentication" />
+            <Head title="Xác thực hai lớp" />
 
             <div className="space-y-6">
                 <Form
@@ -69,7 +70,8 @@ export default function TwoFactorChallenge() {
                                     <Input
                                         name="recovery_code"
                                         type="text"
-                                        placeholder="Enter recovery code"
+                                        placeholder="Mã khôi phục"
+                                        autoComplete="one-time-code"
                                         autoFocus={showRecoveryInput}
                                         required
                                     />
@@ -111,11 +113,12 @@ export default function TwoFactorChallenge() {
                                 className="w-full"
                                 disabled={processing}
                             >
-                                Continue
+                                {processing && <Spinner />}
+                                Tiếp tục
                             </Button>
 
                             <div className="text-center text-sm text-muted-foreground">
-                                <span>or you can </span>
+                                <span>Hoặc </span>
                                 <button
                                     type="button"
                                     className="cursor-pointer text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"

@@ -1,80 +1,52 @@
 'use client';
 
 import { Link } from '@/lib/page';
+import { KeyRound, ReceiptText, UserRound } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
-import Heading from '@/components/heading';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
-import { cn, toUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
+import { useNoRecording } from '@/lib/analytics';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
-import type { NavItem } from '@/types';
+import '@/css/brand-ui.css';
 
-const sidebarNavItems: NavItem[] = [
-    {
-        title: 'Profile',
-        href: edit(),
-        icon: null,
-    },
-    {
-        title: 'Security',
-        href: editSecurity(),
-        icon: null,
-    },
-    {
-        title: 'Appearance',
-        href: editAppearance(),
-        icon: null,
-    },
+const tabs = [
+    { title: 'Đơn hàng & tài khoản', href: '/account', icon: ReceiptText },
+    { title: 'Hồ sơ', href: edit(), icon: UserRound },
+    { title: 'Bảo mật đăng nhập', href: editSecurity(), icon: KeyRound },
 ];
 
+/** The account's own settings, inside the store: same header, same paper, Vietnamese. */
 export default function SettingsLayout({ children }: PropsWithChildren) {
+    // Settings are never recorded by Clarity, as on the sign-in pages.
+    useNoRecording();
     const { isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
-        <div className="px-4 py-6">
-            <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
-            />
-
-            <div className="flex flex-col lg:flex-row lg:space-x-12">
-                <aside className="w-full max-w-xl lg:w-48">
-                    <nav
-                        className="flex flex-col space-y-1 space-x-0"
-                        aria-label="Settings"
-                    >
-                        {sidebarNavItems.map((item, index) => (
-                            <Button
-                                key={`${toUrl(item.href)}-${index}`}
-                                size="sm"
-                                variant="ghost"
-                                asChild
-                                className={cn('w-full justify-start', {
-                                    'bg-muted': isCurrentOrParentUrl(item.href),
-                                })}
-                            >
-                                <Link href={item.href}>
-                                    {item.icon && (
-                                        <item.icon className="h-4 w-4" />
-                                    )}
-                                    {item.title}
-                                </Link>
-                            </Button>
-                        ))}
-                    </nav>
-                </aside>
-
-                <Separator className="my-6 lg:hidden" />
-
-                <div className="flex-1 md:max-w-2xl">
-                    <section className="max-w-xl space-y-12">
-                        {children}
-                    </section>
+        <div className="store-settings">
+            <header className="store-page-heading">
+                <div>
+                    <h1>Cài đặt tài khoản</h1>
+                    <p>Hồ sơ, mật khẩu, xác thực hai lớp và passkey của bạn.</p>
                 </div>
-            </div>
+            </header>
+            <nav className="store-settings-tabs" aria-label="Cài đặt tài khoản">
+                {tabs.map(({ title, href, icon: Icon }) => {
+                    const current = isCurrentOrParentUrl(href);
+                    return (
+                        <Link
+                            key={title}
+                            href={href}
+                            aria-current={current ? 'page' : undefined}
+                        >
+                            <Icon size={17} aria-hidden="true" />
+                            {title}
+                        </Link>
+                    );
+                })}
+            </nav>
+            <section className="store-settings-body brand-ui">
+                {children}
+            </section>
         </div>
     );
 }

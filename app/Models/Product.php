@@ -92,7 +92,18 @@ class Product extends Model
             return null;
         }
 
-        return Storage::disk('public')->url($path);
+        $url = Storage::disk('public')->url($path);
+
+        // The disk's URL is built from APP_URL. A visitor who opened the shop at another
+        // address (127.0.0.1, this machine's Wi-Fi address from a phone) would get photos from
+        // a host that is not the page's: blocked as cross-origin, or not reachable at all. In a
+        // request, the same path on the address the visitor is using (Next.js forwards it).
+        $app = rtrim((string) config('app.url'), '/');
+        if (! app()->runningInConsole() && $app !== '' && str_starts_with($url, $app.'/')) {
+            return request()->root().substr($url, strlen($app));
+        }
+
+        return $url;
     }
 
     /** @return Attribute<string, never> */

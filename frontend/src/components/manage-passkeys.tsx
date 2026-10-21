@@ -17,9 +17,10 @@ const EmptyState = () => {
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-muted">
                 <KeyRound className="h-7 w-7 text-muted-foreground" />
             </div>
-            <p className="font-medium">No passkeys yet</p>
+            <p className="font-medium">Chưa có passkey nào</p>
             <p className="mt-1 text-sm text-muted-foreground">
-                Add a passkey to sign in without a password
+                Thêm passkey để đăng nhập bằng vân tay, khuôn mặt hoặc mã khóa
+                máy, không cần gõ mật khẩu.
             </p>
         </div>
     );
@@ -48,7 +49,7 @@ export default function ManagePasskeys(props: Props) {
             <Heading
                 variant="small"
                 title="Passkeys"
-                description="Manage your passkeys for passwordless sign-in"
+                description="Đăng nhập không cần mật khẩu trên các thiết bị bạn tin dùng."
             />
 
             <div className="overflow-hidden rounded-lg border border-border">

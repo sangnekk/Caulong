@@ -1,7 +1,7 @@
 'use client';
 
 import { Head, Link, router, useForm } from '@/lib/page';
-import { LogOut } from 'lucide-react';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { ProductImage } from '@/layouts/shop-layout';
 import {
@@ -815,6 +815,24 @@ export default function Account({
                                     : 'Đổi mật khẩu'}
                             </button>
                         </form>
+                    </section>
+
+                    <section
+                        className="store-account-card"
+                        aria-labelledby="bao-mat"
+                    >
+                        <h2 id="bao-mat">Bảo mật đăng nhập</h2>
+                        <p className="store-hint store-account-delete-note">
+                            Bật xác thực hai lớp hoặc thêm passkey để đăng nhập
+                            bằng vân tay, khuôn mặt mà không cần gõ mật khẩu.
+                        </p>
+                        <Link
+                            href="/settings/security"
+                            className="store-button store-button-secondary"
+                        >
+                            <ShieldCheck size={17} aria-hidden="true" />
+                            Thiết lập bảo mật
+                        </Link>
                     </section>
 
                     {/* A staff account is taken out of the staff by an admin first. */}
